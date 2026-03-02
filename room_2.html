@@ -447,14 +447,6 @@ function createDoor() {
         metalness: 0.1
     });
 
-    new THREE.TextureLoader().load(resolveURL('images/porte.jpg'), (tex) => {
-        doorMat.color.set(0xffffff);
-        doorMat.map = tex;
-        doorMat.needsUpdate = true;
-    }, undefined, (err) => {
-        console.warn("Texture porte.jpg absente.");
-    });
-
     // Porte 1 - Mur Nord (z = -99.8) - Affiche "Toc Toc !"
     doorMesh = new THREE.Mesh(doorGeo, doorMat);
     doorMesh.position.set(0, doorHeight / 2 + 0.08, -99.8);
@@ -546,13 +538,6 @@ function createRug() {
 function createSortBox() {
     const boxSize = 5, boxHeight = 4, wallThick = 0.2;
     const woodMat = new THREE.MeshStandardMaterial({ color: 0x8B4513, roughness: 0.8 });
-
-    new THREE.TextureLoader().load(resolveURL('images/texture_bois.jpg'), (tex) => {
-        tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-        woodMat.color.set(0xffffff);
-        woodMat.map = tex;
-        woodMat.needsUpdate = true;
-    });
 
     const topMat = new THREE.MeshStandardMaterial({ color: 0xc62828 });
     box = new THREE.Group();
