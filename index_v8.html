@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shape Sorter 3D - Expert WebGL</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f0f0;
+            user-select: none;
+            touch-action: none;
+        }
+
+        #ui-container {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            pointer-events: none;
+            color: #333;
+            text-shadow: 1px 1px 2px white;
+            z-index: 10;
+        }
+
+        #score-display {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        #controls-info {
+            font-size: 14px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 12px;
+            border-radius: 8px;
+            pointer-events: auto;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            border: 1px solid #ccc;
+        }
+
+        #reset-btn {
+            margin-top: 15px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            pointer-events: auto;
+            transition: background 0.3s, transform 0.1s;
+        }
+
+        #reset-btn:hover {
+            background-color: #c0392b;
+            transform: scale(1.05);
+        }
+
+        canvas {
+            display: block;
+            outline: none;
+        }
+
+        /* Message pour le succès du tri */
+        #feedback-msg {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 48px;
+            font-weight: bold;
+            color: #27ae60;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            z-index: 5;
+        }
+
+        /* Message spécifique pour la porte */
+        #door-msg {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 60px;
+            font-weight: black;
+            color: #d35400;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s, transform 0.2s;
+            z-index: 6;
+            text-shadow: 3px 3px 0px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+
+<div id="ui-container">
+    <div id="score-display">Score: <span id="score-val">0</span> / 5</div>
+    <div id="controls-info">
+        <strong>Navigation :</strong><br>
+        - 🖱️ <strong>Clic Droit</strong> : Tourner la vue<br>
+        - 🖱️ <strong>Molette</strong> : Zoomer / Dézoomer<br>
+        - ⌨️ <strong>Z / S</strong> : Avancer / Reculer<br>
+        - ⌨️ <strong>Q / D</strong> : Gauche / Droite<br>
+        - ⌨️ <strong>Espace</strong> : Sauter<br>
+        <hr>
+        <strong>Jeu :</strong><br>
+        - 🖱️ <strong>Clic Gauche</strong> : Déplacer / Frapper la porte<br>
+        - ⌨️ <strong>Flèches</strong> : Orienter la pièce tenue<br>
+        - 📦 <strong>Cube Mauve</strong> : Test de collision haute<br>
+        <button id="reset-btn">Réinitialiser le jeu</button>
+    </div>
+</div>
+
+<div id="feedback-msg">BRAVO !</div>
+<div id="door-msg">TOC TOC !</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/controls/OrbitControls.js"></script>
+
+<script>
+/**
+ * CONFIGURATION ET ÉTAT DU JEU
+ */
+let scene, camera, renderer, world, controls;
+let shapes = [];
+let box, boxTop, rug, babyModel, babyBody, doorMesh;
+let selectedShape = null;
+let isDragging = false;
+let score = 0;
+let raycaster = new THREE.Raycaster();
+let mouse = new THREE.Vector2();
+let offset = new THREE.Vector3();
+
+// Limites de la pièce pour le blocage caméra
+const ROOM_LIMIT = 98;
+
+// Variables pour le saut et le mouvement
+let verticalVelocity = 0;
+const gravityConst = 0.015;
+const jumpStrength = 0.45;
+const baseEyeHeight = 8;
+
+// Matériaux physiques - Réduction du rebond pour l'effet "bois"
+const shapePhysMaterial = new CANNON.Material("shapeMaterial");
+const obstaclePhysMaterial = new CANNON.Material("obstacleMaterial");
+
+const keysPressed = {};
+
+const SHAPE_TYPES = {
+    CIRCLE: 'circle',
+    TRIANGLE: 'triangle',
+    SQUARE: 'square',
+    STAR: 'star',
+    HEART: 'heart',
+    PURPLE_CUBE: 'purple_cube'
+};
+
+const HOLE_POSITIONS = {
+    circle:   { x: -1.4, z: -1.4 },
+    triangle: { x: 1.4,  z: -1.4 },
+    square:   { x: 0,    z: 0 },
+    star:     { x: -1.4, z: 1.4 },
+    heart:    { x: 1.4,  z: 1.4 }
+};
+
+/**
+ * UTILITAIRE POUR LES URLS
+ */
+function resolveURL(path) {
+    if (window.location.protocol === 'blob:') {
+        return window.location.origin + '/' + path.replace(/^\.\//, '');
+    }
+    return path;
+}
+
+/**
+ * TRACÉS DE FORMES
+ */
+function getTriangleShape() {
+    const shape = new THREE.Shape();
+    const r = 0.8; 
+    shape.moveTo(0, r);
+    shape.lineTo(r * Math.cos(7 * Math.PI / 6), r * Math.sin(7 * Math.PI / 6));
+    shape.lineTo(r * Math.cos(11 * Math.PI / 6), r * Math.sin(11 * Math.PI / 6));
+    shape.lineTo(0, r);
+    return shape;
+}
+
+function getHeartShape() {
+    const shape = new THREE.Shape();
+    const x = 0, y = 0;
+    shape.moveTo( x, y + 0.3 );
+    shape.bezierCurveTo( x, y + 0.3, x - 0.5, y + 1.2, x - 1.2, y + 1.2 );
+    shape.bezierCurveTo( x - 2, y + 1.2, x - 2, y + 0.35, x - 2, y + 0.35 );
+    shape.bezierCurveTo( x - 2, y - 0.3, x - 1.2, y - 1, x, y - 1.8 );
+    shape.bezierCurveTo( x + 1.2, y - 1, x + 2, y - 0.3, x + 2, y + 0.35 );
+    shape.bezierCurveTo( x + 2, y + 0.35, x + 2, y + 1.2, x + 1.2, y + 1.2 );
+    shape.bezierCurveTo( x + 0.5, y + 1.2, x, y + 0.3, x, y + 0.3 );
+    return shape;
+}
+
+function getStarShape() {
+    const shape = new THREE.Shape();
+    const pts = 5;
+    const outerRadius = 0.85;
+    const innerRadius = 0.4;
+    for (let i = 0; i < pts * 2; i++) {
+        const radius = i % 2 === 0 ? outerRadius : innerRadius;
+        const a = (i / (pts * 2)) * Math.PI * 2;
+        const angle = a - Math.PI / 2;
+        if (i === 0) shape.moveTo(Math.cos(angle) * radius, Math.sin(angle) * radius);
+        else shape.lineTo(Math.cos(angle) * radius, Math.sin(angle) * radius);
+    }
+    return shape;
+}
+
+/**
+ * INITIALISATION
+ */
+function init() {
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xb3e5fc);
+
+    camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 2000);
+    camera.position.set(0, baseEyeHeight, 25);
+    camera.lookAt(0, 2, 0);
+
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    document.body.appendChild(renderer.domElement);
+
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.screenSpacePanning = false;
+    controls.minDistance = 2;
+    controls.maxDistance = 150;
+    controls.maxPolarAngle = Math.PI / 2.1; 
+    
+    controls.mouseButtons = {
+        LEFT: null, 
+        MIDDLE: THREE.MOUSE.DOLLY,
+        RIGHT: THREE.MOUSE.ROTATE
+    };
+
+    world = new CANNON.World();
+    world.gravity.set(0, -20, 0);
+
+    const contactMaterial = new CANNON.ContactMaterial(
+        shapePhysMaterial, 
+        obstaclePhysMaterial, 
+        { friction: 0.4, restitution: 0.2 } 
+    );
+    world.addContactMaterial(contactMaterial);
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); 
+    scene.add(ambientLight);
+
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.4);
+    dirLight.position.set(10, 25, 10);
+    dirLight.castShadow = true;
+    dirLight.shadow.mapSize.set(2048, 2048);
+    scene.add(dirLight);
+
+    const babyLight = new THREE.PointLight(0xffffff, 1.5, 35);
+    babyLight.position.set(0, 7, -2); 
+    scene.add(babyLight);
+
+    const babyRimLight = new THREE.PointLight(0x00aaff, 0.5, 20);
+    babyRimLight.position.set(0, 10, -10);
+    scene.add(babyRimLight);
+
+    const cameraLight = new THREE.DirectionalLight(0xffffff, 0.2);
+    cameraLight.position.copy(camera.position);
+    scene.add(cameraLight);
+    scene.cameraLight = cameraLight;
+
+    createFloor();
+    createRoomWalls(); 
+    createDoor(); 
+    createRug(); 
+    createSortBox();
+    createPieces();
+    
+    animate();
+
+    try {
+        loadBabyModel();
+    } catch (e) {
+        console.warn("Échec loadBabyModel:", e);
+    }
+
+    window.addEventListener('resize', onWindowResize);
+    window.addEventListener('pointerdown', onPointerDown);
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+    
+    window.addEventListener('keydown', (e) => {
+        keysPressed[e.key.toLowerCase()] = true;
+        onKeyDown(e);
+    });
+    window.addEventListener('keyup', (e) => {
+        keysPressed[e.key.toLowerCase()] = false;
+    });
+    
+    document.getElementById('reset-btn').addEventListener('click', resetGame);
+}
+
+function createFloor() {
+    const floorGeo = new THREE.PlaneGeometry(200, 200);
+    const floorMat = new THREE.MeshStandardMaterial({ color: 0xcccccc });
+    const floorMesh = new THREE.Mesh(floorGeo, floorMat);
+    floorMesh.rotation.x = -Math.PI / 2;
+    floorMesh.receiveShadow = true;
+    scene.add(floorMesh);
+
+    const groundBody = new CANNON.Body({ 
+        mass: 0, 
+        shape: new CANNON.Plane(),
+        material: obstaclePhysMaterial 
+    });
+    groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
+    world.addBody(groundBody);
+}
+
+function createRoomWalls() {
+    const wallHeight = 60;
+    const halfSize = 100;
+    const wallColor = 0xe8eaf6; 
+
+    const wallMat = new THREE.MeshStandardMaterial({ 
+        color: wallColor, 
+        side: THREE.DoubleSide,
+        roughness: 0.9
+    });
+
+    new THREE.TextureLoader().load(resolveURL('images/wall.jpg'), (tex) => {
+        tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+        tex.repeat.set(4, 1.2); 
+        wallMat.color.set(0xffffff); 
+        wallMat.map = tex;
+        wallMat.needsUpdate = true;
+    }, undefined, (err) => {
+        console.warn("Texture murale absente.");
+    });
+
+    const createWall = (posX, posZ, rotY) => {
+        const wallBody = new CANNON.Body({ mass: 0, material: obstaclePhysMaterial });
+        wallBody.addShape(new CANNON.Box(new CANNON.Vec3(halfSize, wallHeight, 1)));
+        wallBody.position.set(posX, wallHeight, posZ);
+        if (rotY) wallBody.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), rotY);
+        world.addBody(wallBody);
+        
+        const wallGeo = new THREE.PlaneGeometry(halfSize * 2, wallHeight * 2);
+        const wallMesh = new THREE.Mesh(wallGeo, wallMat);
+        wallMesh.position.set(posX, wallHeight, posZ);
+        if (rotY) wallMesh.rotation.y = rotY;
+        wallMesh.receiveShadow = true;
+        scene.add(wallMesh);
+    };
+
+    createWall(0, -halfSize, 0);          
+    createWall(0, halfSize, 0);           
+    createWall(-halfSize, 0, Math.PI / 2); 
+    createWall(halfSize, 0, Math.PI / 2);  
+}
+
+function createDoor() {
+    const doorWidth = 12;
+    const doorHeight = 25;
+    const doorGeo = new THREE.PlaneGeometry(doorWidth, doorHeight);
+    const doorMat = new THREE.MeshStandardMaterial({ 
+        color: 0x4e342e,
+        roughness: 0.8,
+        metalness: 0.1
+    });
+
+    new THREE.TextureLoader().load(resolveURL('images/porte.jpg'), (tex) => {
+        doorMat.color.set(0xffffff);
+        doorMat.map = tex;
+        doorMat.needsUpdate = true;
+    }, undefined, (err) => {
+        console.warn("Texture porte.jpg absente.");
+    });
+
+    doorMesh = new THREE.Mesh(doorGeo, doorMat);
+    doorMesh.position.set(0, doorHeight / 2 + 0.08, -99.8);
+    doorMesh.receiveShadow = true;
+    doorMesh.name = "interactive_door";
+    scene.add(doorMesh);
+}
+
+function loadBabyModel() {
+    const loader = new THREE.GLTFLoader();
+    const url = resolveURL('images/baby.glb');
+    
+    loader.load(url, 
+        (gltf) => {
+            babyModel = gltf.scene;
+            babyModel.scale.set(13, 13, 13); 
+            babyModel.updateMatrixWorld(true);
+            const boundingBox = new THREE.Box3().setFromObject(babyModel);
+            const size = boundingBox.getSize(new THREE.Vector3());
+            const heightOffset = -boundingBox.min.y;
+            
+            const modelPos = new THREE.Vector3(0, 0.08 + heightOffset, -7.5);
+            babyModel.position.copy(modelPos); 
+
+            babyModel.traverse((child) => {
+                if (child.isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                    if(child.material) {
+                        child.material.roughness = 0.75;
+                        child.material.metalness = 0.05;
+                        child.material.needsUpdate = true;
+                    }
+                }
+            });
+            scene.add(babyModel);
+
+            babyBody = new CANNON.Body({ 
+                mass: 0, 
+                material: obstaclePhysMaterial,
+                position: new CANNON.Vec3(modelPos.x, modelPos.y, modelPos.z)
+            }); 
+            
+            const baseShape = new CANNON.Box(new CANNON.Vec3(size.x * 0.35, size.y * 0.1, size.z * 0.4));
+            babyBody.addShape(baseShape, new CANNON.Vec3(0, size.y * 0.1, 0.3));
+            
+            const torsoShape = new CANNON.Box(new CANNON.Vec3(size.x * 0.22, size.y * 0.2, size.z * 0.22));
+            babyBody.addShape(torsoShape, new CANNON.Vec3(0, size.y * 0.4, 0));
+            
+            const headShape = new CANNON.Sphere(size.x * 0.28);
+            babyBody.addShape(headShape, new CANNON.Vec3(0, size.y * 0.78, 0.1));
+            
+            babyBody.updateBoundingRadius();
+            world.addBody(babyBody);
+        },
+        undefined,
+        (error) => console.warn("baby.glb introuvable.")
+    );
+}
+
+function createRug() {
+    const rugSize = 18;
+    const rugGeo = new THREE.PlaneGeometry(rugSize, rugSize);
+    const rugMat = new THREE.MeshStandardMaterial({ color: 0xddc4a2, roughness: 1.0 });
+
+    new THREE.TextureLoader().load(resolveURL('images/tapis.jpg'), (tex) => {
+        rugMat.color.set(0xffffff);
+        rugMat.map = tex;
+        rugMat.needsUpdate = true;
+    });
+
+    rug = new THREE.Mesh(rugGeo, rugMat);
+    rug.rotation.x = -Math.PI / 2;
+    rug.position.set(0, 0.08, 0); 
+    rug.receiveShadow = true;
+    scene.add(rug);
+}
+
+function createSortBox() {
+    const boxSize = 5, boxHeight = 4, wallThick = 0.2;
+    const woodMat = new THREE.MeshStandardMaterial({ color: 0x8B4513, roughness: 0.8 });
+
+    new THREE.TextureLoader().load(resolveURL('images/texture_bois.jpg'), (tex) => {
+        tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+        woodMat.color.set(0xffffff);
+        woodMat.map = tex;
+        woodMat.needsUpdate = true;
+    });
+
+    const topMat = new THREE.MeshStandardMaterial({ color: 0xc62828 });
+    box = new THREE.Group();
+    
+    const baseMesh = new THREE.Mesh(new THREE.BoxGeometry(boxSize, 0.2, boxSize), woodMat);
+    baseMesh.position.y = 0.1;
+    baseMesh.receiveShadow = true;
+    box.add(baseMesh);
+
+    const baseBody = new CANNON.Body({ mass: 0, material: obstaclePhysMaterial });
+    baseBody.addShape(new CANNON.Box(new CANNON.Vec3(boxSize/2, 0.1, boxSize/2)));
+    baseBody.position.set(0, 0.1, 0);
+    world.addBody(baseBody);
+
+    const createWall = (x, z, rotY, isSideX) => {
+        const wall = new THREE.Mesh(new THREE.BoxGeometry(boxSize, boxHeight, wallThick), woodMat);
+        wall.position.set(x, boxHeight / 2, z);
+        wall.rotation.y = rotY;
+        wall.castShadow = true;
+        wall.receiveShadow = true;
+        box.add(wall);
+        const wallBody = new CANNON.Body({ mass: 0, material: obstaclePhysMaterial });
+        const hX = isSideX ? wallThick/2 : boxSize/2;
+        const hY = boxHeight / 2;
+        const hZ = isSideX ? boxSize/2 : wallThick/2;
+        wallBody.addShape(new CANNON.Box(new CANNON.Vec3(hX, hY, hZ)));
+        wallBody.position.set(x, boxHeight / 2, z);
+        world.addBody(wallBody);
+    };
+
+    createWall(0, -boxSize/2, 0, false);
+    createWall(0, boxSize/2, 0, false);
+    createWall(-boxSize/2, 0, Math.PI/2, true);
+    createWall(boxSize/2, 0, Math.PI/2, true);
+
+    boxTop = new THREE.Mesh(new THREE.BoxGeometry(boxSize, wallThick, boxSize), topMat);
+    boxTop.position.y = boxHeight;
+    boxTop.receiveShadow = true;
+    box.add(boxTop);
+
+    const topBody = new CANNON.Body({ mass: 0, material: obstaclePhysMaterial });
+    topBody.addShape(new CANNON.Box(new CANNON.Vec3(boxSize/2, wallThick/2, boxSize/2)));
+    topBody.position.set(0, boxHeight, 0);
+    world.addBody(topBody);
+
+    Object.keys(HOLE_POSITIONS).forEach(key => {
+        const pos = HOLE_POSITIONS[key];
+        let holeGeo;
+        switch(key) {
+            case SHAPE_TYPES.CIRCLE: holeGeo = new THREE.CircleGeometry(0.55, 32); break;
+            case SHAPE_TYPES.SQUARE: holeGeo = new THREE.PlaneGeometry(0.9, 0.9); break;
+            case SHAPE_TYPES.TRIANGLE: holeGeo = new THREE.ShapeGeometry(getTriangleShape()); break;
+            case SHAPE_TYPES.STAR: holeGeo = new THREE.ShapeGeometry(getStarShape()); break;
+            case SHAPE_TYPES.HEART: 
+                holeGeo = new THREE.ShapeGeometry(getHeartShape());
+                holeGeo.scale(0.35, 0.35, 0.35); break;
+        }
+        holeGeo.center();
+        const holeMesh = new THREE.Mesh(holeGeo, new THREE.MeshBasicMaterial({ color: 0x212121, side: THREE.DoubleSide }));
+        holeMesh.rotation.x = -Math.PI / 2;
+        holeMesh.position.set(pos.x, boxHeight + 0.11, pos.z);
+        box.add(holeMesh);
+    });
+    scene.add(box);
+}
+
+function createPieces() {
+    const types = Object.values(SHAPE_TYPES);
+    const colors = [0x1e88e5, 0xfb8c00, 0x43a047, 0xfdd835, 0xd81b60, 0x800080];
+    
+    types.forEach((type, index) => {
+        const geometry = getGeometryForType(type);
+        const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color: colors[index], roughness: 0.5 }));
+        mesh.castShadow = true; mesh.receiveShadow = true;
+        
+        const angle = Math.PI * 0.25 + (index / (types.length - 1)) * (Math.PI * 0.6);
+        const dist = type === SHAPE_TYPES.PURPLE_CUBE ? 12 : 9.5;
+        mesh.position.set(Math.cos(angle) * dist, 1.5, Math.sin(angle) * dist);
+        mesh.rotation.y = Math.random() * Math.PI * 2;
+        scene.add(mesh);
+        
+        const body = new CANNON.Body({ 
+            mass: 1, 
+            material: shapePhysMaterial
+        });
+
+        const physShape = getPhysicsShapeForType(type);
+        if (type === SHAPE_TYPES.CIRCLE) {
+            const quat = new CANNON.Quaternion();
+            quat.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), Math.PI / 2);
+            body.addShape(physShape, new CANNON.Vec3(), quat);
+        } else {
+            body.addShape(physShape);
+        }
+
+        body.position.copy(mesh.position); 
+        body.quaternion.copy(mesh.quaternion);
+        world.addBody(body);
+        shapes.push({ type, mesh, body, isCorrect: false });
+    });
+}
+
+function getGeometryForType(type) {
+    const settings = { depth: 1.4, bevelEnabled: true, bevelThickness: 0.05, bevelSize: 0.05 };
+    let geo;
+    switch(type) {
+        case SHAPE_TYPES.CIRCLE: geo = new THREE.CylinderGeometry(0.5, 0.5, 1.4, 32); break;
+        case SHAPE_TYPES.SQUARE: geo = new THREE.BoxGeometry(0.9, 1.4, 0.9); break;
+        case SHAPE_TYPES.TRIANGLE: geo = new THREE.ExtrudeGeometry(getTriangleShape(), settings); geo.center(); geo.scale(0.8, 1.0, 0.8); geo.rotateX(Math.PI/2); break;
+        case SHAPE_TYPES.STAR: geo = new THREE.ExtrudeGeometry(getStarShape(), settings); geo.center(); geo.rotateX(Math.PI/2); break;
+        case SHAPE_TYPES.HEART: geo = new THREE.ExtrudeGeometry(getHeartShape(), settings); geo.center(); geo.scale(0.35, 0.35, 0.35); geo.rotateX(Math.PI/2); break;
+        case SHAPE_TYPES.PURPLE_CUBE: geo = new THREE.BoxGeometry(1.2, 1.2, 1.2); break;
+    }
+    return geo;
+}
+
+function getPhysicsShapeForType(type) {
+    switch(type) {
+        case SHAPE_TYPES.CIRCLE: return new CANNON.Cylinder(0.5, 0.5, 1.4, 16);
+        case SHAPE_TYPES.SQUARE: return new CANNON.Box(new CANNON.Vec3(0.45, 0.7, 0.45));
+        case SHAPE_TYPES.TRIANGLE: return new CANNON.Box(new CANNON.Vec3(0.4, 0.7, 0.4));
+        case SHAPE_TYPES.PURPLE_CUBE: return new CANNON.Box(new CANNON.Vec3(0.6, 0.6, 0.6));
+        default: return new CANNON.Sphere(0.75); 
+    }
+}
+
+/**
+ * INTERACTIONS
+ */
+function onPointerDown(event) {
+    if (event.button !== 0) return;
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    raycaster.setFromCamera(mouse, camera);
+
+    const intersects = raycaster.intersectObjects(shapes.map(s => s.mesh));
+
+    if (intersects.length > 0) {
+        selectedShape = shapes.find(s => s.mesh === intersects[0].object);
+        if (selectedShape.isCorrect) { selectedShape = null; return; }
+        isDragging = true;
+        selectedShape.body.mass = 0;
+        selectedShape.body.updateMassProperties();
+        selectedShape.body.velocity.set(0, 0, 0);
+        selectedShape.body.angularVelocity.set(0, 0, 0);
+        
+        const dragY = (selectedShape.type === SHAPE_TYPES.PURPLE_CUBE) ? 15.0 : 6.0;
+        const dragPlaneTemp = new THREE.Plane(new THREE.Vector3(0, 1, 0), -dragY);
+        
+        const intersection = new THREE.Vector3();
+        if (raycaster.ray.intersectPlane(dragPlaneTemp, intersection)) {
+            offset.copy(selectedShape.mesh.position).sub(intersection);
+        }
+        controls.enabled = false;
+    } else {
+        const doorIntersects = raycaster.intersectObject(doorMesh);
+        if (doorIntersects.length > 0) {
+            showDoorKnock();
+        }
+    }
+}
+
+function onPointerMove(event) {
+    if (!isDragging || !selectedShape) return;
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    raycaster.setFromCamera(mouse, camera);
+    
+    const dragY = (selectedShape.type === SHAPE_TYPES.PURPLE_CUBE) ? 15.0 : 6.0;
+    const dragPlaneTemp = new THREE.Plane(new THREE.Vector3(0, 1, 0), -dragY);
+    
+    const intersection = new THREE.Vector3();
+    if (raycaster.ray.intersectPlane(dragPlaneTemp, intersection)) {
+        const newPos = intersection.add(offset);
+        selectedShape.mesh.position.set(newPos.x, dragY, newPos.z);
+        selectedShape.body.position.copy(selectedShape.mesh.position);
+    }
+}
+
+function onPointerUp() {
+    isDragging = false;
+    if (selectedShape) {
+        if (selectedShape.type !== SHAPE_TYPES.PURPLE_CUBE) {
+            checkFit(selectedShape);
+        }
+        
+        if (!selectedShape.isCorrect) {
+            selectedShape.body.mass = 1;
+            selectedShape.body.updateMassProperties();
+            selectedShape.body.wakeUp();
+        }
+        selectedShape = null;
+    }
+    controls.enabled = true;
+}
+
+function onKeyDown(event) {
+    if (!selectedShape || selectedShape.isCorrect) return;
+    const rotStep = Math.PI / 12;
+    const key = event.key;
+    if (key === 'ArrowLeft') selectedShape.mesh.rotateY(-rotStep);
+    else if (key === 'ArrowRight') selectedShape.mesh.rotateY(rotStep);
+    else if (key === 'ArrowUp') selectedShape.mesh.rotateX(-rotStep);
+    else if (key === 'ArrowDown') selectedShape.mesh.rotateX(rotStep);
+    selectedShape.body.quaternion.copy(selectedShape.mesh.quaternion);
+}
+
+/**
+ * LOGIQUE DE DÉPLACEMENT CLAVIER DANS LA SCÈNE (ZSQD + ESPACE)
+ * Avec blocage aux murs de la pièce.
+ */
+function handleSceneMovement() {
+    const moveSpeed = 0.4;
+    const direction = new THREE.Vector3();
+    const side = new THREE.Vector3();
+    
+    camera.getWorldDirection(direction);
+    direction.y = 0;
+    direction.normalize();
+    
+    side.crossVectors(direction, camera.up).normalize();
+
+    let moveX = 0;
+    let moveZ = 0;
+
+    if (keysPressed['z']) { // Avancer
+        moveX += direction.x * moveSpeed;
+        moveZ += direction.z * moveSpeed;
+    }
+    if (keysPressed['s']) { // Reculer
+        moveX -= direction.x * moveSpeed;
+        moveZ -= direction.z * moveSpeed;
+    }
+    if (keysPressed['q']) { // Gauche (Corrigé : side pointe vers la gauche, donc +)
+        moveX += side.x * moveSpeed;
+        moveZ += side.z * moveSpeed;
+    }
+    if (keysPressed['d']) { // Droite (Corrigé : opposé de side, donc -)
+        moveX -= side.x * moveSpeed;
+        moveZ -= side.z * moveSpeed;
+    }
+
+    // Calcul de la nouvelle position théorique
+    const nextX = camera.position.x + moveX;
+    const nextZ = camera.position.z + moveZ;
+
+    // Blocage au murs : on n'applique le mouvement que si on est dans les limites
+    if (Math.abs(nextX) < ROOM_LIMIT) {
+        camera.position.x = nextX;
+        controls.target.x += moveX;
+    }
+    if (Math.abs(nextZ) < ROOM_LIMIT) {
+        camera.position.z = nextZ;
+        controls.target.z += moveZ;
+    }
+
+    // Gestion du saut (Barre d'espace)
+    if (keysPressed[' '] && camera.position.y <= baseEyeHeight + 0.1) {
+        verticalVelocity = jumpStrength;
+    }
+
+    // Physique simple du saut
+    if (camera.position.y > baseEyeHeight || verticalVelocity > 0) {
+        camera.position.y += verticalVelocity;
+        controls.target.y += verticalVelocity;
+        verticalVelocity -= gravityConst;
+        
+        if (camera.position.y < baseEyeHeight) {
+            camera.position.y = baseEyeHeight;
+            controls.target.y = 2; 
+            verticalVelocity = 0;
+        }
+    }
+}
+
+function checkFit(shapeObj) {
+    const target = HOLE_POSITIONS[shapeObj.type];
+    if (!target) return;
+
+    const pos = shapeObj.mesh.position;
+    const dist = Math.sqrt(Math.pow(pos.x - target.x, 2) + Math.pow(pos.z - target.z, 2));
+    const euler = new THREE.Euler().setFromQuaternion(shapeObj.mesh.quaternion);
+    const isFlat = (Math.abs(euler.x) < 0.4 || Math.abs(Math.abs(euler.x) - Math.PI) < 0.4) &&
+                   (Math.abs(euler.z) < 0.4 || Math.abs(Math.abs(euler.z) - Math.PI) < 0.4);
+    let symmetry = Math.PI * 2;
+    if (shapeObj.type === SHAPE_TYPES.SQUARE) symmetry = Math.PI / 2;
+    if (shapeObj.type === SHAPE_TYPES.TRIANGLE) symmetry = (Math.PI * 2) / 3;
+    if (shapeObj.type === SHAPE_TYPES.STAR) symmetry = (Math.PI * 2) / 5;
+    if (shapeObj.type === SHAPE_TYPES.CIRCLE) symmetry = 0;
+    let isOriented = symmetry === 0;
+    if (!isOriented) {
+        let diff = Math.abs((euler.y % symmetry + symmetry) % symmetry);
+        if (diff > symmetry / 2) diff = symmetry - diff;
+        isOriented = diff < 0.45;
+    }
+    if (dist < 1.1 && isFlat && isOriented) successFit(shapeObj, target);
+}
+
+function successFit(shapeObj, target) {
+    shapeObj.isCorrect = true;
+    score++;
+    document.getElementById('score-val').innerText = score;
+    shapeObj.mesh.position.set(target.x, 4.2, target.z);
+    shapeObj.body.position.copy(shapeObj.mesh.position);
+    setTimeout(() => {
+        shapeObj.body.collisionFilterMask = 0;
+        shapeObj.body.mass = 1;
+        shapeObj.body.updateMassProperties();
+        setTimeout(() => { shapeObj.body.collisionFilterMask = -1; }, 150);
+    }, 50);
+    const msg = document.getElementById('feedback-msg');
+    msg.style.opacity = '1';
+    setTimeout(() => { msg.style.opacity = '0'; }, 800);
+}
+
+/**
+ * ANIMATION DU TOC TOC
+ */
+function showDoorKnock() {
+    const msg = document.getElementById('door-msg');
+    msg.style.opacity = '1';
+    msg.style.transform = 'translate(-50%, -50%) scale(1.2)';
+    setTimeout(() => { 
+        msg.style.opacity = '0'; 
+        msg.style.transform = 'translate(-50%, -50%) scale(1)';
+    }, 800);
+}
+
+function resetGame() {
+    score = 0;
+    document.getElementById('score-val').innerText = score;
+    shapes.forEach((s, index) => {
+        const angle = Math.PI * 0.25 + (index / (shapes.length - 1)) * (Math.PI * 0.6);
+        const dist = s.type === SHAPE_TYPES.PURPLE_CUBE ? 12 : 9.5;
+        const pos = new THREE.Vector3(Math.cos(angle) * dist, 1.5, Math.sin(angle) * dist);
+        s.isCorrect = false; s.body.mass = 1; s.body.collisionFilterMask = -1; s.body.updateMassProperties();
+        s.body.position.copy(pos); s.body.velocity.set(0, 0, 0); s.body.angularVelocity.set(0, 0, 0);
+        s.mesh.rotation.set(0, Math.random() * Math.PI * 2, 0);
+        s.body.quaternion.copy(s.mesh.quaternion); s.mesh.position.copy(pos);
+    });
+}
+
+function onWindowResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+function animate() {
+    requestAnimationFrame(animate);
+    world.step(1 / 60);
+    handleSceneMovement();
+    controls.update();
+    
+    // SÉCURITÉ : Empêcher la caméra de sortir lors de la rotation avec OrbitControls
+    camera.position.x = Math.max(-ROOM_LIMIT, Math.min(ROOM_LIMIT, camera.position.x));
+    camera.position.z = Math.max(-ROOM_LIMIT, Math.min(ROOM_LIMIT, camera.position.z));
+    
+    if (scene.cameraLight) {
+        scene.cameraLight.position.copy(camera.position);
+    }
+
+    shapes.forEach(s => {
+        if (!isDragging || s !== selectedShape) {
+            s.mesh.position.copy(s.body.position);
+            s.mesh.quaternion.copy(s.body.quaternion);
+        }
+    });
+    renderer.render(scene, camera);
+}
+
+window.onload = init;
+</script>
+</body>
+</html>

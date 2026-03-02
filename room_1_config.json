@@ -1,0 +1,14 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-01-23T00:00:00.000Z",
+  "camera": {
+    "position": {
+      "x": 0,
+      "y": 8,
+      "z": 20
+    },
+    "fov": 75
+  },
+  "lights": [],
+  "importedObjects": []
+}

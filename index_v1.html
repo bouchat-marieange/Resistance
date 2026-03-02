@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shape Sorter 3D - Expert WebGL</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f0f0;
+        }
+
+        #ui-container {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            pointer-events: none;
+            color: #333;
+            text-shadow: 1px 1px 2px white;
+        }
+
+        #score-display {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        #controls-info {
+            font-size: 14px;
+            background: rgba(255, 255, 255, 0.7);
+            padding: 10px;
+            border-radius: 8px;
+            pointer-events: auto;
+        }
+
+        #reset-btn {
+            margin-top: 15px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            pointer-events: auto;
+            transition: background 0.3s;
+        }
+
+        #reset-btn:hover {
+            background-color: #c0392b;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        #feedback-msg {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 48px;
+            font-weight: bold;
+            color: #27ae60;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+    </style>
+</head>
+<body>
+
+<div id="ui-container">
+    <div id="score-display">Score: <span id="score-val">0</span> / 5</div>
+    <div id="controls-info">
+        <strong>Contrôles :</strong><br>
+        - Glisser/Déposer pour déplacer<br>
+        - Touche <strong>R</strong> : Rotation Y<br>
+        - Touche <strong>T</strong> : Rotation X<br>
+        - Relâcher sur le bon trou pour insérer
+        <br>
+        <button id="reset-btn">Réinitialiser le jeu</button>
+    </div>
+</div>
+
+<div id="feedback-msg">BIEN JOUÉ !</div>
+
+<!-- Bibliothèques -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"></script>
+
+<script>
+/**
+ * CONFIGURATION ET VARIABLES GLOBALES
+ */
+let scene, camera, renderer, world;
+let shapes = [];
+let box, boxTop;
+let selectedShape = null;
+let isDragging = false;
+let score = 0;
+let raycaster = new THREE.Raycaster();
+let mouse = new THREE.Vector2();
+let dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -2.5); // Plan de drag à hauteur Y=2.5
+let offset = new THREE.Vector3();
+
+// Définition des types de formes
+const SHAPE_TYPES = {
+    CIRCLE: 'circle',
+    TRIANGLE: 'triangle',
+    SQUARE: 'square',
+    STAR: 'star',
+    HEART: 'heart'
+};
+
+const HOLE_POSITIONS = {
+    circle: { x: -1.5, z: -1.5, rotation: 0 },
+    triangle: { x: 1.5, z: -1.5, rotation: 0 },
+    square: { x: 0, z: 0, rotation: 0 },
+    star: { x: -1.5, z: 1.5, rotation: 0 },
+    heart: { x: 1.5, z: 1.5, rotation: 0 }
+};
+
+/**
+ * INITIALISATION
+ */
+function init() {
+    // 1. Scène Three.js
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x87ceeb); // Ciel bleu clair
+
+    camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 10, 12);
+    camera.lookAt(0, 0, 0);
+
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    document.body.appendChild(renderer.domElement);
+
+    // 2. Physique Cannon.js
+    world = new CANNON.World();
+    world.gravity.set(0, -9.82, 0);
+    world.broadphase = new CANNON.NaiveBroadphase();
+    world.solver.iterations = 10;
+
+    // 3. Lumières
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambientLight);
+
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    dirLight.position.set(10, 20, 10);
+    dirLight.castShadow = true;
+    dirLight.shadow.mapSize.width = 2048;
+    dirLight.shadow.mapSize.height = 2048;
+    dirLight.shadow.camera.left = -15;
+    dirLight.shadow.camera.right = 15;
+    dirLight.shadow.camera.top = 15;
+    dirLight.shadow.camera.bottom = -15;
+    scene.add(dirLight);
+
+    // 4. Sol
+    createFloor();
+
+    // 5. La Boîte
+    createSortBox();
+
+    // 6. Les Pièces
+    createPieces();
+
+    // Evenements
+    window.addEventListener('resize', onWindowResize);
+    window.addEventListener('pointerdown', onPointerDown);
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('keydown', onKeyDown);
+    document.getElementById('reset-btn').addEventListener('click', resetGame);
+
+    animate();
+}
+
+/**
+ * CRÉATION DES OBJETS
+ */
+
+function createFloor() {
+    const floorGeo = new THREE.PlaneGeometry(50, 50);
+    const floorMat = new THREE.MeshStandardMaterial({ color: 0x999999 });
+    const floorMesh = new THREE.Mesh(floorGeo, floorMat);
+    floorMesh.rotation.x = -Math.PI / 2;
+    floorMesh.receiveShadow = true;
+    scene.add(floorMesh);
+
+    // Physique sol
+    const groundBody = new CANNON.Body({
+        mass: 0,
+        shape: new CANNON.Plane(),
+        material: new CANNON.Material("groundMaterial")
+    });
+    groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
+    world.addBody(groundBody);
+}
+
+function createSortBox() {
+    const boxSize = 5;
+    const boxHeight = 4;
+    
+    // Matériau Bois
+    const woodMat = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
+    const topMat = new THREE.MeshStandardMaterial({ color: 0xd32f2f }); // Rouge pour le haut
+
+    // Conteneur visuel
+    box = new THREE.Group();
+
+    // Base
+    const baseGeo = new THREE.BoxGeometry(boxSize, 0.2, boxSize);
+    const baseMesh = new THREE.Mesh(baseGeo, woodMat);
+    baseMesh.position.y = 0.1;
+    baseMesh.receiveShadow = true;
+    box.add(baseMesh);
+
+    // Murs (Simples pour la visibilité)
+    const wallHeight = boxHeight;
+    const wallThick = 0.2;
+
+    const createWall = (x, z, rotY, w) => {
+        const wallGeo = new THREE.BoxGeometry(w, wallHeight, wallThick);
+        const wall = new THREE.Mesh(wallGeo, woodMat);
+        wall.position.set(x, wallHeight / 2, z);
+        wall.rotation.y = rotY;
+        wall.castShadow = true;
+        wall.receiveShadow = true;
+        box.add(wall);
+    };
+
+    createWall(0, -boxSize/2, 0, boxSize);
+    createWall(0, boxSize/2, 0, boxSize);
+    createWall(-boxSize/2, 0, Math.PI/2, boxSize);
+    createWall(boxSize/2, 0, Math.PI/2, boxSize);
+
+    // Face supérieure avec "trous"
+    // Pour simplifier, on fait une face pleine visuelle et on dessine les trous en noir
+    // La collision sera gérée logiquement
+    const topGeo = new THREE.BoxGeometry(boxSize, 0.2, boxSize);
+    boxTop = new THREE.Mesh(topGeo, topMat);
+    boxTop.position.y = boxHeight;
+    boxTop.receiveShadow = true;
+    box.add(boxTop);
+
+    // Dessiner les trous visuels (disques noirs sur le dessus)
+    Object.keys(HOLE_POSITIONS).forEach(key => {
+        const pos = HOLE_POSITIONS[key];
+        const holeGeo = new THREE.CircleGeometry(0.6, 32);
+        const holeMat = new THREE.MeshBasicMaterial({ color: 0x222222 });
+        const hole = new THREE.Mesh(holeGeo, holeMat);
+        hole.rotation.x = -Math.PI / 2;
+        hole.position.set(pos.x, boxHeight + 0.11, pos.z);
+        box.add(hole);
+    });
+
+    scene.add(box);
+
+    // Physique de la boîte (Un gros bloc statique pour que les pièces rebondissent dessus)
+    const boxBody = new CANNON.Body({
+        mass: 0,
+        shape: new CANNON.Box(new CANNON.Vec3(boxSize/2, boxHeight/2, boxSize/2))
+    });
+    boxBody.position.set(0, boxHeight/2, 0);
+    world.addBody(boxBody);
+}
+
+function createPieces() {
+    const types = Object.values(SHAPE_TYPES);
+    const colors = [0x2196F3, 0xFF9800, 0x4CAF50, 0xFFEB3B, 0xF44336];
+
+    types.forEach((type, index) => {
+        const geometry = getGeometryForType(type);
+        const material = new THREE.MeshStandardMaterial({ color: colors[index] });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        
+        // Position aléatoire autour de la boîte
+        const angle = (index / types.length) * Math.PI * 2;
+        const radius = 6;
+        mesh.position.set(Math.cos(angle) * radius, 1, Math.sin(angle) * radius);
+        
+        scene.add(mesh);
+
+        // Physique de la pièce
+        const shapePhys = getPhysicsShapeForType(type);
+        const body = new CANNON.Body({
+            mass: 1,
+            shape: shapePhys,
+            material: new CANNON.Material("pieceMaterial")
+        });
+        body.position.copy(mesh.position);
+        world.addBody(body);
+
+        shapes.push({
+            type: type,
+            mesh: mesh,
+            body: body,
+            isStacked: false,
+            isCorrect: false
+        });
+    });
+}
+
+/**
+ * GÉNÉRATEURS DE GÉOMÉTRIE
+ */
+
+function getGeometryForType(type) {
+    switch(type) {
+        case SHAPE_TYPES.CIRCLE: return new THREE.CylinderGeometry(0.5, 0.5, 0.8, 32);
+        case SHAPE_TYPES.SQUARE: return new THREE.BoxGeometry(0.8, 0.8, 0.8);
+        case SHAPE_TYPES.TRIANGLE: return new THREE.CylinderGeometry(0.6, 0.6, 0.8, 3);
+        case SHAPE_TYPES.STAR: return createStarGeometry();
+        case SHAPE_TYPES.HEART: return createHeartGeometry();
+    }
+}
+
+function getPhysicsShapeForType(type) {
+    // Simplification pour Cannon.js
+    switch(type) {
+        case SHAPE_TYPES.CIRCLE: return new CANNON.Cylinder(0.5, 0.5, 0.8, 16);
+        case SHAPE_TYPES.SQUARE: return new CANNON.Box(new CANNON.Vec3(0.4, 0.4, 0.4));
+        default: return new CANNON.Sphere(0.5); // Fallback sphère pour les formes complexes
+    }
+}
+
+function createStarGeometry() {
+    const shape = new THREE.Shape();
+    const pts = 5;
+    const outerRadius = 0.6;
+    const innerRadius = 0.3;
+    for (let i = 0; i < pts * 2; i++) {
+        const radius = i % 2 === 0 ? outerRadius : innerRadius;
+        const a = (i / (pts * 2)) * Math.PI * 2;
+        if (i === 0) shape.moveTo(Math.cos(a) * radius, Math.sin(a) * radius);
+        else shape.lineTo(Math.cos(a) * radius, Math.sin(a) * radius);
+    }
+    const extrudeSettings = { depth: 0.8, bevelEnabled: false };
+    const geo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+    geo.center();
+    geo.rotateX(Math.PI/2);
+    return geo;
+}
+
+function createHeartGeometry() {
+    const shape = new THREE.Shape();
+    const x = 0, y = 0;
+    shape.moveTo(x + 0.25, y + 0.25);
+    shape.bezierCurveTo(x + 0.25, y + 0.25, x + 0.2, y, x, y);
+    shape.bezierCurveTo(x - 0.3, y, x - 0.3, y + 0.35, x - 0.3, y + 0.35);
+    shape.bezierCurveTo(x - 0.3, y + 0.55, x - 0.1, y + 0.77, x + 0.25, y + 0.95);
+    shape.bezierCurveTo(x + 0.6, y + 0.77, x + 0.8, y + 0.55, x + 0.8, y + 0.35);
+    shape.bezierCurveTo(x + 0.8, y + 0.35, x + 0.8, y, x + 0.5, y);
+    shape.bezierCurveTo(x + 0.35, y, x + 0.25, y + 0.25, x + 0.25, y + 0.25);
+    const extrudeSettings = { depth: 0.8, bevelEnabled: false };
+    const geo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+    geo.center();
+    geo.scale(1.2, 1.2, 1.2);
+    geo.rotateX(Math.PI/2);
+    geo.rotateZ(Math.PI);
+    return geo;
+}
+
+/**
+ * LOGIQUE D'INTERACTION
+ */
+
+function onPointerDown(event) {
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObjects(shapes.map(s => s.mesh));
+
+    if (intersects.length > 0) {
+        const mesh = intersects[0].object;
+        selectedShape = shapes.find(s => s.mesh === mesh);
+        
+        if (selectedShape.isCorrect) return; // Déjà dans la boîte
+
+        isDragging = true;
+        
+        // Désactiver la gravité pendant le drag
+        selectedShape.body.mass = 0;
+        selectedShape.body.updateMassProperties();
+        selectedShape.body.velocity.set(0, 0, 0);
+        selectedShape.body.angularVelocity.set(0, 0, 0);
+
+        // Calculer l'offset pour un drag fluide
+        const intersection = new THREE.Vector3();
+        raycaster.ray.intersectPlane(dragPlane, intersection);
+        offset.copy(selectedShape.mesh.position).sub(intersection);
+    }
+}
+
+function onPointerMove(event) {
+    if (!isDragging || !selectedShape) return;
+
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+    raycaster.setFromCamera(mouse, camera);
+    const intersection = new THREE.Vector3();
+    if (raycaster.ray.intersectPlane(dragPlane, intersection)) {
+        const newPos = intersection.add(offset);
+        selectedShape.mesh.position.set(newPos.x, 5, newPos.z); // Surélevé à Y=5
+        selectedShape.body.position.copy(selectedShape.mesh.position);
+    }
+}
+
+function onPointerUp() {
+    if (!isDragging || !selectedShape) return;
+    
+    isDragging = false;
+    checkFit(selectedShape);
+    
+    // Rendre la main à la physique (sauf si déjà tombé)
+    if (selectedShape && !selectedShape.isCorrect) {
+        selectedShape.body.mass = 1;
+        selectedShape.body.updateMassProperties();
+    }
+    
+    selectedShape = null;
+}
+
+function onKeyDown(event) {
+    if (!selectedShape || selectedShape.isCorrect) return;
+
+    const rotationAmount = Math.PI / 12; // 15 degrés
+    if (event.key.toLowerCase() === 'r') {
+        selectedShape.mesh.rotateY(rotationAmount);
+        selectedShape.body.quaternion.copy(selectedShape.mesh.quaternion);
+    }
+    if (event.key.toLowerCase() === 't') {
+        selectedShape.mesh.rotateX(rotationAmount);
+        selectedShape.body.quaternion.copy(selectedShape.mesh.quaternion);
+    }
+}
+
+/**
+ * LOGIQUE DE VALIDATION (LE "FIT")
+ */
+function checkFit(shapeObj) {
+    const target = HOLE_POSITIONS[shapeObj.type];
+    const currentPos = shapeObj.mesh.position;
+    
+    // 1. Vérification de la distance
+    const dist = Math.sqrt(Math.pow(currentPos.x - target.x, 2) + Math.pow(currentPos.z - target.z, 2));
+    
+    // 2. Vérification de l'orientation
+    // On vérifie si la face est à plat (X et Z proches de 0 ou multiples de PI)
+    const euler = new THREE.Euler().setFromQuaternion(shapeObj.mesh.quaternion);
+    const isFlat = (Math.abs(euler.x) < 0.2 || Math.abs(Math.abs(euler.x) - Math.PI) < 0.2) &&
+                   (Math.abs(euler.z) < 0.2 || Math.abs(Math.abs(euler.z) - Math.PI) < 0.2);
+
+    // Pour certaines formes (carré, triangle, étoile), il faut aussi vérifier la rotation Y
+    // Ici on reste permissif pour le gameplay fun, mais on exige que ce soit "à plat"
+    
+    if (dist < 0.6 && isFlat) {
+        successFit(shapeObj, target);
+    }
+}
+
+function successFit(shapeObj, target) {
+    shapeObj.isCorrect = true;
+    score++;
+    document.getElementById('score-val').innerText = score;
+
+    // Aligner parfaitement
+    shapeObj.mesh.position.set(target.x, 4.2, target.z);
+    shapeObj.body.position.copy(shapeObj.mesh.position);
+    
+    // Petit délai avant de laisser tomber au travers
+    setTimeout(() => {
+        // Pour "glisser", on désactive temporairement les collisions avec la boîte
+        // Mais Cannon est rigide, donc on va simplement téléporter la pièce un peu plus bas
+        // et lui donner une petite impulsion
+        shapeObj.body.collisionFilterMask = 0; // Ne collisionne plus avec rien
+        shapeObj.body.mass = 1;
+        shapeObj.body.updateMassProperties();
+        
+        // Réactiver les collisions normales (avec le fond de la boite et le sol) après une seconde
+        setTimeout(() => {
+            shapeObj.body.collisionFilterMask = -1;
+        }, 500);
+    }, 100);
+
+    // Feedback visuel
+    showFeedback();
+}
+
+function showFeedback() {
+    const msg = document.getElementById('feedback-msg');
+    msg.style.opacity = '1';
+    setTimeout(() => { msg.style.opacity = '0'; }, 1000);
+}
+
+function resetGame() {
+    score = 0;
+    document.getElementById('score-val').innerText = score;
+    
+    shapes.forEach((s, index) => {
+        const angle = (index / shapes.length) * Math.PI * 2;
+        const radius = 6;
+        const pos = new THREE.Vector3(Math.cos(angle) * radius, 1, Math.sin(angle) * radius);
+        
+        s.isCorrect = false;
+        s.body.mass = 1;
+        s.body.collisionFilterMask = -1;
+        s.body.updateMassProperties();
+        s.body.position.copy(pos);
+        s.body.velocity.set(0, 0, 0);
+        s.body.angularVelocity.set(0, 0, 0);
+        s.body.quaternion.set(0, 0, 0, 1);
+        s.mesh.position.copy(pos);
+        s.mesh.quaternion.set(0, 0, 0, 1);
+    });
+}
+
+function onWindowResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+/**
+ * BOUCLE D'ANIMATION
+ */
+function animate() {
+    requestAnimationFrame(animate);
+
+    // Step Physique
+    world.step(1 / 60);
+
+    // Mise à jour des meshes Three.js depuis Cannon.js
+    shapes.forEach(s => {
+        if (!isDragging || s !== selectedShape) {
+            s.mesh.position.copy(s.body.position);
+            s.mesh.quaternion.copy(s.body.quaternion);
+        }
+    });
+
+    renderer.render(scene, camera);
+}
+
+// Lancement
+window.onload = init;
+
+</script>
+</body>
+</html>
