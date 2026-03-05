@@ -10,6 +10,10 @@ nul
 # Copie de sauvegarde manuelle
 room_1 - Copie.html
 
+# Export brut (trop gros pour GitHub, découpé dans scene_data/)
+room_1_scene_data.json
+export_scene.js
+
 # OS
 Thumbs.db
 Desktop.ini

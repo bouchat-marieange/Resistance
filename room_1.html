@@ -5359,6 +5359,83 @@ async function loadProjectOnStartup() {
     await loadProjectFromLocalStorage();
 }
 
+// ==================== BOOTSTRAP DEPUIS FICHIERS (GitHub Pages) ====================
+// Si aucune donnée n'existe dans le navigateur, charger depuis scene_data/
+async function bootstrapFromFiles() {
+    // Vérifier si IndexedDB a déjà des données
+    try {
+        const existing = await RoomEditorDB.get(
+            RoomEditorDB.STORE_PROJECTS,
+            'project_' + currentRoomName
+        );
+        if (existing && existing.version === 2) {
+            console.log('✅ IndexedDB contient déjà les données, pas de bootstrap nécessaire');
+            return;
+        }
+    } catch (e) { /* IndexedDB non disponible */ }
+
+    // Vérifier si localStorage a des données
+    const lsData = localStorage.getItem('floorPlan_' + currentRoomName);
+    if (lsData) {
+        console.log('✅ localStorage contient déjà les données, pas de bootstrap nécessaire');
+        return;
+    }
+
+    // Aucune donnée trouvée → charger depuis les fichiers
+    console.log('🔄 Aucune donnée sauvegardée, chargement depuis scene_data/...');
+    const subtitle = document.querySelector('.loading-subtitle');
+
+    try {
+        if (subtitle) subtitle.textContent = 'Chargement des données de la scène...';
+
+        const response = await fetch('scene_data/project.json');
+        if (!response.ok) throw new Error('project.json introuvable');
+        const manifest = await response.json();
+
+        // Restaurer localStorage
+        if (manifest.localStorage) {
+            for (const [key, value] of Object.entries(manifest.localStorage)) {
+                localStorage.setItem(key, value);
+            }
+            console.log('📦 localStorage restauré');
+        }
+
+        // Restaurer le projet dans IndexedDB
+        if (manifest.project) {
+            await RoomEditorDB.put(RoomEditorDB.STORE_PROJECTS, manifest.project);
+            console.log('📦 Projet restauré dans IndexedDB');
+        }
+
+        // Restaurer les blobs (textures, modèles 3D, audio)
+        if (manifest.blobIds && manifest.blobIds.length > 0) {
+            const total = manifest.blobIds.length;
+            let loaded = 0;
+
+            for (const blobId of manifest.blobIds) {
+                try {
+                    if (subtitle) subtitle.textContent = `Chargement des ressources... (${loaded + 1}/${total})`;
+
+                    const blobResponse = await fetch(`scene_data/blobs/${blobId}.json`);
+                    if (blobResponse.ok) {
+                        const blobData = await blobResponse.json();
+                        await RoomEditorDB.put(RoomEditorDB.STORE_BLOBS, blobData);
+                        loaded++;
+                    }
+                } catch (e) {
+                    console.warn(`⚠️ Échec chargement blob ${blobId}:`, e);
+                }
+            }
+            console.log(`📦 ${loaded}/${total} blobs restaurés dans IndexedDB`);
+        }
+
+        if (subtitle) subtitle.textContent = 'Chargement en cours...';
+        console.log('✅ Bootstrap depuis fichiers terminé !');
+    } catch (e) {
+        console.warn('⚠️ Bootstrap depuis fichiers échoué:', e);
+        if (subtitle) subtitle.textContent = 'Chargement en cours...';
+    }
+}
+
 // Charger depuis localStorage (compatibilité arrière)
 async function loadProjectFromLocalStorage() {
     const savedPlan = localStorage.getItem('floorPlan_' + currentRoomName);
@@ -19361,6 +19438,8 @@ function hideLoadingScreen() {
 setTimeout(async () => {
     initEditor();
     initAccordions();
+    // Bootstrap: si aucune donnée dans le navigateur, charger depuis scene_data/
+    await bootstrapFromFiles();
     // Charger le projet sauvegardé (murs, textures, objets, lumières)
     // Cela charge aussi savedNabyTransform depuis les données de projet
     await loadProjectOnStartup();
