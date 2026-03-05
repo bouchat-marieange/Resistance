@@ -5360,25 +5360,42 @@ async function loadProjectOnStartup() {
 }
 
 // ==================== BOOTSTRAP DEPUIS FICHIERS (GitHub Pages) ====================
-// Si aucune donnée n'existe dans le navigateur, charger les métadonnées depuis scene_data/
+// Si aucune donnée valide n'existe dans le navigateur, charger depuis scene_data/
 // Les blobs (textures, modèles 3D) seront chargés à la demande via RoomEditorDB.get()
 async function bootstrapFromFiles() {
-    // Vérifier si IndexedDB a déjà des données
-    let hasIdbData = false;
+    // Vérifier si IndexedDB a des données COMPLÈTES (pas corrompues)
     try {
         const existing = await RoomEditorDB.get(
             RoomEditorDB.STORE_PROJECTS,
             'project_' + currentRoomName
         );
         if (existing && existing.version === 2) {
-            hasIdbData = true;
-            console.log('✅ IndexedDB contient déjà les données du projet');
-            return;
+            // Vérifier que les données ne sont pas vides/corrompues
+            const hasWalls = existing.walls && existing.walls.length > 0;
+            const hasObjects = existing.importedObjects && existing.importedObjects.length > 0;
+            const hasLights = existing.lights && existing.lights.length > 0;
+            const hasTiles = existing.floorTiles && existing.floorTiles.length > 0;
+
+            if (hasWalls || hasObjects || hasLights || hasTiles) {
+                console.log('✅ IndexedDB contient des données valides (' +
+                    (existing.walls ? existing.walls.length : 0) + ' murs, ' +
+                    (existing.importedObjects ? existing.importedObjects.length : 0) + ' objets, ' +
+                    (existing.lights ? existing.lights.length : 0) + ' lumières)');
+                return;
+            } else {
+                console.warn('⚠️ IndexedDB contient un projet vide/corrompu, re-bootstrap nécessaire...');
+                try { await RoomEditorDB.delete(RoomEditorDB.STORE_PROJECTS, 'project_' + currentRoomName); } catch (e) {}
+            }
         }
     } catch (e) { /* IndexedDB non disponible */ }
 
-    // Aucune donnée trouvée → charger le manifeste depuis les fichiers
-    console.log('🔄 Aucune donnée sauvegardée, bootstrap depuis scene_data/...');
+    // Nettoyer le localStorage potentiellement corrompu aussi
+    localStorage.removeItem('floorPlan_' + currentRoomName);
+    localStorage.removeItem('room1_importedObjects');
+    localStorage.removeItem('room1_customLights');
+
+    // Charger le manifeste depuis les fichiers
+    console.log('🔄 Bootstrap depuis scene_data/...');
     const subtitle = document.querySelector('.loading-subtitle');
 
     try {
@@ -5399,12 +5416,15 @@ async function bootstrapFromFiles() {
         // Restaurer le projet dans IndexedDB (métadonnées seulement, ~0.2 MB)
         if (manifest.project) {
             await RoomEditorDB.put(RoomEditorDB.STORE_PROJECTS, manifest.project);
-            console.log('📦 Projet restauré dans IndexedDB');
+            console.log('📦 Projet restauré dans IndexedDB (' +
+                manifest.project.walls.length + ' murs, ' +
+                manifest.project.importedObjects.length + ' objets, ' +
+                manifest.project.lights.length + ' lumières)');
         }
 
         // Les blobs seront chargés automatiquement à la demande
         // via le fallback dans RoomEditorDB.get()
-        console.log(`✅ Bootstrap terminé ! Les ${manifest.blobIds ? manifest.blobIds.length : 0} textures seront chargées à la demande.`);
+        console.log('✅ Bootstrap terminé ! Les ' + (manifest.blobIds ? manifest.blobIds.length : 0) + ' textures seront chargées à la demande.');
 
         if (subtitle) subtitle.textContent = 'Construction de la scène...';
     } catch (e) {
