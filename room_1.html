@@ -10372,7 +10372,9 @@ function checkMovementAudioMouse() {
 }
 
 // --- Système audio de pas rythmique (marche/course) ---
-let _footstepAudioPool = [];  // Pool d'éléments audio pour les pas
+// Un SEUL élément audio actif pour les pas — évite la superposition
+let _activeFootstepAudio = null;
+let _footstepWasSprinting = false;  // Détecter les transitions marche ↔ course
 
 function updateFootstepAudio(delta) {
     if (interactionMode !== 'game') return;
@@ -10385,8 +10387,19 @@ function updateFootstepAudio(delta) {
 
     if (!isMoving) return;
 
+    // Détecter la transition marche ↔ course : reset le timer pour un changement immédiat
+    const isSprinting = !!keysPressed['shift'];
+    if (isSprinting !== _footstepWasSprinting) {
+        _footstepWasSprinting = isSprinting;
+        footstepTimer = 0;  // Forcer un nouveau pas immédiat au changement d'allure
+        // Stopper le son en cours pour éviter la superposition
+        if (_activeFootstepAudio) {
+            _activeFootstepAudio.pause();
+            _activeFootstepAudio = null;
+        }
+    }
+
     // Accumuler le temps et déclencher les pas selon l'intervalle
-    const isSprinting = keysPressed['shift'];
     const interval = isSprinting ? FOOTSTEP_RUN_INTERVAL : FOOTSTEP_WALK_INTERVAL;
 
     footstepTimer += delta;
@@ -10397,39 +10410,52 @@ function updateFootstepAudio(delta) {
 }
 
 function playFootstepSound() {
-    const isSprinting = keysPressed['shift'];
+    const isSprinting = !!keysPressed['shift'];
 
+    // Chercher le bon track : course si sprint, sinon premier track de marche
+    let chosenTrack = null;
     for (const track of audioTracks.mouvement) {
         if (!track.dataURL || track.muted) continue;
-
-        // Sélectionner le bon track selon marche/course
-        const isRunTrack = track.movementAction === 'run';
-        const isWalkTrack = ['forward', 'backward', 'left', 'right'].includes(track.movementAction);
-
-        if (isSprinting && isRunTrack) {
-            playOneFootstep(track);
-            return;
+        if (isSprinting && track.movementAction === 'run') {
+            chosenTrack = track;
+            break;
         }
-        if (!isSprinting && isWalkTrack) {
-            playOneFootstep(track);
-            return;
+        if (!isSprinting && ['forward', 'backward', 'left', 'right'].includes(track.movementAction)) {
+            chosenTrack = track;
+            break;
         }
     }
-}
 
-function playOneFootstep(track) {
-    const audio = createAudioElement(track);
+    if (!chosenTrack) return;
+
+    // Stopper le son de pas précédent avant d'en jouer un nouveau
+    if (_activeFootstepAudio) {
+        _activeFootstepAudio.pause();
+        _activeFootstepAudio = null;
+    }
+
+    const audio = createAudioElement(chosenTrack);
     if (!audio) return;
     audio.loop = false;
     audio.currentTime = 0;
     audio.play().catch(() => {});
-    // Nettoyer quand terminé
+    _activeFootstepAudio = audio;
+
+    // Nettoyer la référence quand le son est terminé
     audio.onended = () => {
-        audio.remove && audio.remove();
+        if (_activeFootstepAudio === audio) {
+            _activeFootstepAudio = null;
+        }
     };
 }
 
 function stopAllFootstepAudio() {
+    // Stopper le son de pas actif
+    if (_activeFootstepAudio) {
+        _activeFootstepAudio.pause();
+        _activeFootstepAudio = null;
+    }
+    // Stopper les autres audio de mouvement (jump, grab, etc.)
     for (const key in activeMovementAudio) {
         if (activeMovementAudio[key]) {
             activeMovementAudio[key].pause();
@@ -10438,6 +10464,7 @@ function stopAllFootstepAudio() {
     }
     activeMovementAudio = {};
     footstepTimer = 0;
+    _footstepWasSprinting = false;
 }
 
 function playTrackForTrigger(track) {
