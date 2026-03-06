@@ -2506,6 +2506,14 @@
     </svg>
 </div>
 
+<!-- ========== POINTER LOCK OVERLAY ========== -->
+<div id="pointer-lock-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.3); z-index:499; align-items:center; justify-content:center; pointer-events:auto; cursor:pointer;">
+    <div style="color:white; font-size:18px; font-family:sans-serif; text-align:center; background:rgba(0,0,0,0.6); padding:20px 40px; border-radius:10px;">
+        Cliquez pour jouer<br>
+        <span style="font-size:12px; opacity:0.7;">ESC pour lib&eacute;rer la souris</span>
+    </div>
+</div>
+
 <!-- ========== OVERLAY SYSTEM ========== -->
 <div id="video-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:9999; cursor:none;">
     <div id="video-player-container" style="position:absolute; top:0; left:0; width:100%; height:100%; display:flex; align-items:center; justify-content:center;">
@@ -2635,9 +2643,34 @@ const gravityConst = 0.015;
 const jumpStrength = 0.45;
 const baseEyeHeight = 1.60; // Hauteur des yeux (personne de ~1.70m → yeux à ~1.60m)
 
-// Vitesses de déplacement (configurables via l'éditeur)
-let walkSpeed = 0.025;
-let runSpeed = 0.08;
+// Vitesses de déplacement (configurables via l'éditeur) — en m/s (delta-time)
+let walkSpeed = 3.5;   // ~3.5 m/s = marche confortable
+let runSpeed = 7.0;    // ~7.0 m/s = course (2x marche)
+
+// --- Système de mouvement immersif ---
+let currentSpeed = 0;                    // Vitesse interpolée actuelle (m/s)
+const ACCELERATION = 12.0;              // m/s² — accélération
+const DECELERATION = 10.0;             // m/s² — décélération
+
+// Head bob (balancement de tête)
+let headBobTime = 0;
+const HEAD_BOB_WALK_FREQ = 8.0;        // oscillations/sec en marchant
+const HEAD_BOB_RUN_FREQ  = 12.0;       // oscillations/sec en courant
+const HEAD_BOB_WALK_AMP  = 0.020;      // amplitude verticale (m) en marchant
+const HEAD_BOB_RUN_AMP   = 0.035;      // amplitude verticale (m) en courant
+let headBobOffset = 0;                  // offset Y courant appliqué à la caméra
+
+// Pointer lock
+let isPointerLocked = false;
+let pointerLockYaw = 0;                 // rotation horizontale (radians)
+let pointerLockPitch = 0;               // rotation verticale (radians)
+
+// Audio de pas rythmique
+let footstepTimer = 0;
+const FOOTSTEP_WALK_INTERVAL = 0.5;    // secondes entre pas en marchant
+const FOOTSTEP_RUN_INTERVAL  = 0.3;    // secondes entre pas en courant
+let isMoving = false;
+let wasMoving = false;
 
 // Matériaux physiques
 const shapePhysMaterial = new CANNON.Material("shapeMaterial");
@@ -2807,6 +2840,13 @@ function init() {
 
     // Réinitialiser l'état du panning espace si la fenêtre perd le focus
     window.addEventListener('blur', () => {
+        // Reset mouvement FPS si la fenêtre perd le focus
+        currentSpeed = 0;
+        isMoving = false;
+        wasMoving = false;
+        footstepTimer = 0;
+        stopAllFootstepAudio();
+
         if (isSpacePressed || isSpacePanning) {
             isSpacePressed = false;
             isSpacePanning = false;
@@ -3165,8 +3205,14 @@ function createRug() {
  */
 function onPointerDown(event) {
     if (event.button !== 0) return;
-    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    if (isPointerLocked) {
+        // En pointer lock, raycast depuis le centre de l'écran
+        mouse.x = 0;
+        mouse.y = 0;
+    } else {
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    }
     raycaster.setFromCamera(mouse, camera);
 
     {
@@ -3466,23 +3512,23 @@ function updateAllCharacterCollisionProxies() {
 // Configure OrbitControls selon le mode de jeu
 function updateControlsForMode() {
     if (interactionMode === 'game') {
-        // Mode FPS : pas de zoom, rotation = regard seulement (pas d'orbite)
+        // Mode FPS avec Pointer Lock : OrbitControls désactivé pour la rotation
+        // La caméra est contrôlée directement via le Pointer Lock
         controls.enableZoom = false;
+        controls.enableRotate = false;  // Pointer Lock gère la rotation
         controls.minDistance = 0.01;
         controls.maxDistance = 0.01;
-        controls.minPolarAngle = Math.PI * 0.15;   // Pas trop vers le haut
-        controls.maxPolarAngle = Math.PI * 0.85;    // Pas trop vers le bas
         controls.enablePan = false;
-        controls.rotateSpeed = 0.4;
-        controls.enableDamping = false; // Pas d'inertie en FPS pour une réponse immédiate
+        controls.enableDamping = false;
         controls.mouseButtons = {
             LEFT: null,
-            MIDDLE: null,                    // Pas de zoom
-            RIGHT: THREE.MOUSE.ROTATE       // Regard avec clic droit
+            MIDDLE: null,
+            RIGHT: null  // Plus besoin du clic droit pour regarder
         };
     } else {
         // Mode développeur : comportement orbital libre
         controls.enableZoom = true;
+        controls.enableRotate = true;  // Restaurer la rotation orbit
         controls.minDistance = 2;
         controls.maxDistance = 150;
         controls.minPolarAngle = 0;
@@ -3523,16 +3569,130 @@ function setupFPSCamera() {
     );
 
     updateControlsForMode();
+    initPointerLock();
     console.log(`🎮 Mode FPS activé - Hauteur verrouillée à Y=${gamePlayerY.toFixed(2)}`);
+}
+
+// --- Système Pointer Lock pour caméra FPS immersive ---
+let _pointerLockInitialized = false;
+const MOUSE_SENSITIVITY = 0.002;
+const MIN_PITCH = -Math.PI * 0.35;  // ~63° vers le bas
+const MAX_PITCH = Math.PI * 0.35;   // ~63° vers le haut
+
+function initPointerLock() {
+    if (_pointerLockInitialized) return;
+    _pointerLockInitialized = true;
+
+    // Clic sur le canvas ou l'overlay pour capturer la souris
+    const canvas = renderer.domElement;
+    const overlay = document.getElementById('pointer-lock-overlay');
+
+    function requestLock() {
+        if (interactionMode !== 'game') return;
+        if (document.pointerLockElement === canvas) return;
+        canvas.requestPointerLock();
+    }
+
+    canvas.addEventListener('click', (e) => {
+        if (interactionMode !== 'game') return;
+        if (e.button !== 0) return;
+        if (!isPointerLocked) {
+            requestLock();
+        }
+    });
+
+    if (overlay) {
+        overlay.addEventListener('click', requestLock);
+    }
+
+    // Écouter les changements de pointer lock
+    document.addEventListener('pointerlockchange', () => {
+        isPointerLocked = (document.pointerLockElement === canvas);
+        if (isPointerLocked) {
+            // Capturer l'orientation actuelle de la caméra
+            const dir = new THREE.Vector3();
+            camera.getWorldDirection(dir);
+            pointerLockYaw = Math.atan2(dir.x, dir.z);
+            pointerLockPitch = Math.asin(Math.max(-1, Math.min(1, dir.y)));
+            // Masquer l'overlay
+            if (overlay) overlay.style.display = 'none';
+            console.log('🔒 Pointer Lock activé');
+        } else {
+            // Afficher l'overlay si toujours en mode jeu
+            if (interactionMode === 'game' && overlay) {
+                overlay.style.display = 'flex';
+            }
+            console.log('🔓 Pointer Lock désactivé');
+        }
+    });
+
+    document.addEventListener('pointerlockerror', () => {
+        console.warn('⚠️ Pointer Lock refusé');
+    });
+
+    // Mouvement souris en pointer lock
+    document.addEventListener('mousemove', (e) => {
+        if (!isPointerLocked || interactionMode !== 'game') return;
+
+        pointerLockYaw -= e.movementX * MOUSE_SENSITIVITY;
+        pointerLockPitch -= e.movementY * MOUSE_SENSITIVITY;
+        pointerLockPitch = Math.max(MIN_PITCH, Math.min(MAX_PITCH, pointerLockPitch));
+
+        // Appliquer l'orientation à la caméra via un quaternion
+        const euler = new THREE.Euler(pointerLockPitch, pointerLockYaw, 0, 'YXZ');
+        camera.quaternion.setFromEuler(euler);
+
+        // Mettre à jour controls.target pour rester compatible avec OrbitControls
+        const lookDir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+        controls.target.set(
+            camera.position.x + lookDir.x * 0.01,
+            camera.position.y + lookDir.y * 0.01,
+            camera.position.z + lookDir.z * 0.01
+        );
+
+        // Déclencher les sons de caméra
+        checkMovementAudioMouse();
+    });
+}
+
+function showPointerLockOverlay() {
+    const overlay = document.getElementById('pointer-lock-overlay');
+    if (overlay && interactionMode === 'game') {
+        overlay.style.display = 'flex';
+    }
+}
+
+function hidePointerLockOverlay() {
+    const overlay = document.getElementById('pointer-lock-overlay');
+    if (overlay) overlay.style.display = 'none';
+}
+
+// --- Head Bob (balancement de tête) ---
+function updateHeadBob(delta) {
+    if (interactionMode !== 'game') return;
+
+    if (isMoving && currentSpeed > 0.5) {
+        const isSprinting = keysPressed['shift'];
+        const freq = isSprinting ? HEAD_BOB_RUN_FREQ : HEAD_BOB_WALK_FREQ;
+        const ampY = isSprinting ? HEAD_BOB_RUN_AMP : HEAD_BOB_WALK_AMP;
+
+        headBobTime += delta * freq * Math.PI * 2;
+        headBobOffset = Math.sin(headBobTime) * ampY;
+    } else {
+        // Retour progressif à la position neutre
+        headBobOffset *= 0.85;
+        if (Math.abs(headBobOffset) < 0.0005) headBobOffset = 0;
+        headBobTime = 0;
+    }
 }
 
 /**
  * LOGIQUE DE DÉPLACEMENT CLAVIER DANS LA SCÈNE (ZSQD)
  */
-function handleSceneMovement() {
+function handleSceneMovement(delta) {
     // En mode jeu : déplacement FPS avec collisions et hauteur verrouillée
     if (interactionMode === 'game') {
-        handleGameMovement();
+        handleGameMovement(delta);
         return;
     }
 
@@ -3562,39 +3722,57 @@ function handleSceneMovement() {
     if (Math.abs(nextZ) < ROOM_LIMIT) { camera.position.z = nextZ; controls.target.z += moveZ; }
 }
 
-// Mouvement FPS en mode jeu (collisions, wall-sliding, hauteur fixe)
-function handleGameMovement() {
-    const moveSpeed = keysPressed['shift'] ? runSpeed : walkSpeed;
-    const direction = new THREE.Vector3();
-    const side = new THREE.Vector3();
+// Mouvement FPS en mode jeu — delta-time, accélération/décélération, collisions
+function handleGameMovement(delta) {
+    // 1. Direction souhaitée depuis les touches
+    const forward = new THREE.Vector3();
+    camera.getWorldDirection(forward);
+    forward.y = 0;
+    forward.normalize();
+    const right = new THREE.Vector3();
+    right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
 
-    camera.getWorldDirection(direction);
-    direction.y = 0;
-    direction.normalize();
-    side.crossVectors(direction, new THREE.Vector3(0, 1, 0)).normalize();
+    const inputDir = new THREE.Vector3(0, 0, 0);
+    if (keysPressed['z'] || keysPressed['w']) inputDir.add(forward);
+    if (keysPressed['s']) inputDir.sub(forward);
+    if (keysPressed['q'] || keysPressed['a']) inputDir.sub(right);
+    if (keysPressed['d']) inputDir.add(right);
 
-    let moveX = 0, moveZ = 0;
+    const hasInput = inputDir.lengthSq() > 0.001;
+    if (hasInput) inputDir.normalize();
 
-    if (keysPressed['z'] || keysPressed['w']) { moveX += direction.x * moveSpeed; moveZ += direction.z * moveSpeed; }
-    if (keysPressed['s']) { moveX -= direction.x * moveSpeed; moveZ -= direction.z * moveSpeed; }
-    if (keysPressed['q'] || keysPressed['a']) { moveX -= side.x * moveSpeed; moveZ -= side.z * moveSpeed; }
-    if (keysPressed['d']) { moveX += side.x * moveSpeed; moveZ += side.z * moveSpeed; }
+    // 2. Vitesse cible
+    const isSprinting = keysPressed['shift'] && hasInput;
+    const targetSpeed = hasInput ? (isSprinting ? runSpeed : walkSpeed) : 0;
 
-    if (moveX === 0 && moveZ === 0) return;
+    // 3. Accélération / décélération progressive
+    if (targetSpeed > currentSpeed) {
+        currentSpeed = Math.min(targetSpeed, currentSpeed + ACCELERATION * delta);
+    } else {
+        currentSpeed = Math.max(targetSpeed, currentSpeed - DECELERATION * delta);
+    }
 
-    // Calculer le mouvement autorisé avec wall-sliding
-    const moveVec = new THREE.Vector3(moveX, 0, moveZ);
+    isMoving = currentSpeed > 0.1;
+
+    if (currentSpeed < 0.01) {
+        currentSpeed = 0;
+        return;
+    }
+
+    // 4. Vecteur de déplacement
+    const moveVec = inputDir.multiplyScalar(currentSpeed * delta);
+
+    // 5. Collision avec wall-sliding
     const allowed = computeAllowedMovement(camera.position, moveVec);
-
     if (allowed.lengthSq() < 0.00001) return;
 
-    // Appliquer le déplacement
+    // 6. Appliquer le déplacement
     camera.position.x += allowed.x;
     camera.position.z += allowed.z;
     controls.target.x += allowed.x;
     controls.target.z += allowed.z;
 
-    // Clamper aux limites de la pièce
+    // 7. Limites de la pièce
     camera.position.x = Math.max(-ROOM_LIMIT, Math.min(ROOM_LIMIT, camera.position.x));
     camera.position.z = Math.max(-ROOM_LIMIT, Math.min(ROOM_LIMIT, camera.position.z));
 }
@@ -3608,16 +3786,25 @@ function enforceGameHeight() {
     const lookDir = new THREE.Vector3();
     camera.getWorldDirection(lookDir);
 
-    // Verrouiller la hauteur Y du joueur (pieds au sol)
-    camera.position.y = gamePlayerY;
+    // Verrouiller la hauteur Y du joueur (pieds au sol) + head bob
+    camera.position.y = gamePlayerY + headBobOffset;
 
-    // Repositionner le target à 0.01 devant la caméra en préservant la direction du regard
-    // Cela permet à OrbitControls de gérer librement le regard vertical (polar angle)
-    controls.target.set(
-        camera.position.x + lookDir.x * 0.01,
-        camera.position.y + lookDir.y * 0.01,
-        camera.position.z + lookDir.z * 0.01
-    );
+    // Repositionner le target : en pointer lock, la caméra est gérée directement
+    if (!isPointerLocked) {
+        controls.target.set(
+            camera.position.x + lookDir.x * 0.01,
+            camera.position.y + lookDir.y * 0.01,
+            camera.position.z + lookDir.z * 0.01
+        );
+    } else {
+        // En pointer lock, recalculer le target depuis le quaternion de la caméra
+        const plDir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+        controls.target.set(
+            camera.position.x + plDir.x * 0.01,
+            camera.position.y + plDir.y * 0.01,
+            camera.position.z + plDir.z * 0.01
+        );
+    }
 }
 
 function onWindowResize() {
@@ -3646,13 +3833,19 @@ function animate() {
         updateAllCharacterCollisionProxies();
     }
 
-    handleSceneMovement();
-    controls.update();
+    handleSceneMovement(delta);
 
-    // MODE JEU: Verrouiller la hauteur + repousser hors des murs + zones
+    // En pointer lock, pas besoin de controls.update() (la rotation est gérée directement)
+    if (!isPointerLocked) {
+        controls.update();
+    }
+
+    // MODE JEU: Head bob, hauteur, collisions, zones, audio de pas
     if (interactionMode === 'game') {
+        updateHeadBob(delta);
         enforceGameHeight();
         enforceCameraCollisions();
+        updateFootstepAudio(delta);
         checkZoneProximity();
         checkHoldTrigger();
         checkHoverAndProximityTriggers();
@@ -4807,7 +5000,19 @@ function toggleInteractionMode() {
     const gameSetupTab = document.getElementById('mode-game-setup');
     const audioTab = document.getElementById('mode-audio');
 
+    // Reset état mouvement à chaque changement de mode
+    currentSpeed = 0;
+    headBobOffset = 0;
+    headBobTime = 0;
+    isMoving = false;
+    wasMoving = false;
+    footstepTimer = 0;
+
     if (interactionMode === 'developer') {
+        // Libérer le pointer lock en quittant le mode jeu
+        if (document.pointerLockElement) document.exitPointerLock();
+        isPointerLocked = false;
+        hidePointerLockOverlay();
         // Mode Développeur : indicateur en bas
         indicator.style.top = '40px';
         indicator.style.background = '#4a9eff'; // Bleu pour mode dev
@@ -4898,6 +5103,8 @@ function toggleInteractionMode() {
         if (collapseBtn) collapseBtn.style.display = 'none';
         // Activer le mode FPS (verrouiller la hauteur, configurer les contrôles)
         setupFPSCamera();
+        // Afficher l'overlay pointer lock pour inviter à cliquer
+        showPointerLockOverlay();
         // Démarrer l'audio de jeu (seulement si l'écran de chargement est déjà parti)
         if (loadingScreenDismissed) {
             startGameAudio();
@@ -10047,15 +10254,19 @@ function checkMovementAudioKeyDown(key) {
     if (interactionMode !== 'game') return;
     const lowerKey = key.toLowerCase();
 
+    // Actions de déplacement gérées par le système rythmique (updateFootstepAudio)
+    const rhythmActions = ['forward', 'backward', 'left', 'right', 'run'];
+
     for (const track of audioTracks.mouvement) {
         if (!track.movementAction || track.muted || !track.dataURL) continue;
+        // Skip les actions de déplacement — gérées par le système de pas rythmique
+        if (rhythmActions.includes(track.movementAction)) continue;
         const keys = MOVEMENT_ACTION_KEYS[track.movementAction];
         if (!keys || !keys.includes(lowerKey)) continue;
 
         const trackKey = track.id + '_' + track.movementAction;
 
         if (track.movementPlayMode === 'while-held') {
-            // Jouer en continu tant que la touche est maintenue, arrêter au relâchement
             if (!activeMovementAudio[trackKey]) {
                 const audio = createAudioElement(track);
                 if (audio) {
@@ -10065,7 +10276,6 @@ function checkMovementAudioKeyDown(key) {
                 }
             }
         } else if (track.movementPlayMode === 'once-per-action') {
-            // Jouer une fois en entier à chaque appui (ne pas redémarrer si déjà en cours)
             if (!activeMovementAudio[trackKey] || activeMovementAudio[trackKey].ended) {
                 const audio = createAudioElement(track);
                 if (audio) {
@@ -10076,7 +10286,6 @@ function checkMovementAudioKeyDown(key) {
                 }
             }
         } else if (track.movementPlayMode === 'loop-during') {
-            // Boucle pendant l'action, arrêter quand touche relâchée
             if (!activeMovementAudio[trackKey]) {
                 const audio = createAudioElement(track);
                 if (audio) {
@@ -10093,22 +10302,25 @@ function checkMovementAudioKeyUp(key) {
     if (interactionMode !== 'game') return;
     const lowerKey = key.toLowerCase();
 
+    // Actions de déplacement gérées par le système rythmique
+    const rhythmActions = ['forward', 'backward', 'left', 'right', 'run'];
+
     for (const track of audioTracks.mouvement) {
         if (!track.movementAction) continue;
+        // Skip les actions de déplacement
+        if (rhythmActions.includes(track.movementAction)) continue;
         const keys = MOVEMENT_ACTION_KEYS[track.movementAction];
         if (!keys || !keys.includes(lowerKey)) continue;
 
         const trackKey = track.id + '_' + track.movementAction;
 
         if (track.movementPlayMode === 'while-held' || track.movementPlayMode === 'loop-during') {
-            // Arrêter le son au relâchement de la touche
             if (activeMovementAudio[trackKey]) {
                 activeMovementAudio[trackKey].pause();
                 activeMovementAudio[trackKey].currentTime = 0;
                 delete activeMovementAudio[trackKey];
             }
         }
-        // 'once-per-action' joue jusqu'à la fin, pas d'arrêt au relâchement
     }
 }
 
@@ -10157,6 +10369,75 @@ function checkMovementAudioMouse() {
             }
         }
     }, 150);
+}
+
+// --- Système audio de pas rythmique (marche/course) ---
+let _footstepAudioPool = [];  // Pool d'éléments audio pour les pas
+
+function updateFootstepAudio(delta) {
+    if (interactionMode !== 'game') return;
+
+    // Transition mouvement → arrêt
+    if (!isMoving && wasMoving) {
+        stopAllFootstepAudio();
+    }
+    wasMoving = isMoving;
+
+    if (!isMoving) return;
+
+    // Accumuler le temps et déclencher les pas selon l'intervalle
+    const isSprinting = keysPressed['shift'];
+    const interval = isSprinting ? FOOTSTEP_RUN_INTERVAL : FOOTSTEP_WALK_INTERVAL;
+
+    footstepTimer += delta;
+    if (footstepTimer >= interval) {
+        footstepTimer -= interval;
+        playFootstepSound();
+    }
+}
+
+function playFootstepSound() {
+    const isSprinting = keysPressed['shift'];
+
+    for (const track of audioTracks.mouvement) {
+        if (!track.dataURL || track.muted) continue;
+
+        // Sélectionner le bon track selon marche/course
+        const isRunTrack = track.movementAction === 'run';
+        const isWalkTrack = ['forward', 'backward', 'left', 'right'].includes(track.movementAction);
+
+        if (isSprinting && isRunTrack) {
+            playOneFootstep(track);
+            return;
+        }
+        if (!isSprinting && isWalkTrack) {
+            playOneFootstep(track);
+            return;
+        }
+    }
+}
+
+function playOneFootstep(track) {
+    const audio = createAudioElement(track);
+    if (!audio) return;
+    audio.loop = false;
+    audio.currentTime = 0;
+    audio.play().catch(() => {});
+    // Nettoyer quand terminé
+    audio.onended = () => {
+        audio.remove && audio.remove();
+    };
+}
+
+function stopAllFootstepAudio() {
+    for (const key in activeMovementAudio) {
+        if (activeMovementAudio[key]) {
+            activeMovementAudio[key].pause();
+            activeMovementAudio[key].currentTime = 0;
+        }
+    }
+    activeMovementAudio = {};
+    footstepTimer = 0;
 }
 
 function playTrackForTrigger(track) {
