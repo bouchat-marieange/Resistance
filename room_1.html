@@ -2547,7 +2547,7 @@ const jumpStrength = 0.45;
 const baseEyeHeight = 1.60; // Hauteur des yeux (personne de ~1.70m → yeux à ~1.60m)
 
 // Vitesses de déplacement — valeurs fixes (sliders supprimés)
-let walkSpeed = 1;     // unités/s
+let walkSpeed = 0.8;   // unités/s
 let runSpeed = 3;      // unités/s
 
 // --- Système de mouvement immersif ---
@@ -2559,8 +2559,8 @@ const DECELERATION = 40.0;             // unités/s² — décélération rapide
 let headBobTime = 0;
 const HEAD_BOB_WALK_FREQ = 8.0;        // oscillations/sec en marchant
 const HEAD_BOB_RUN_FREQ  = 12.0;       // oscillations/sec en courant
-const HEAD_BOB_WALK_AMP  = 0.020;      // amplitude verticale (m) en marchant
-const HEAD_BOB_RUN_AMP   = 0.035;      // amplitude verticale (m) en courant
+const HEAD_BOB_WALK_AMP  = 0.008;      // amplitude verticale (m) en marchant (réduit)
+const HEAD_BOB_RUN_AMP   = 0.014;      // amplitude verticale (m) en courant (réduit)
 let headBobOffset = 0;                  // offset Y courant appliqué à la caméra
 
 // Audio de pas — lecture en boucle continue pendant le déplacement
