@@ -2547,8 +2547,8 @@ const jumpStrength = 0.45;
 const baseEyeHeight = 1.60; // Hauteur des yeux (personne de ~1.70m → yeux à ~1.60m)
 
 // Vitesses de déplacement (configurables via l'éditeur) — en m/s (delta-time)
-let walkSpeed = 4.5;   // ~4.5 m/s = marche dynamique
-let runSpeed = 7.0;    // ~7.0 m/s = course (≈1.5x marche)
+let walkSpeed = 13.5;  // ~13.5 m/s = marche rapide (×3)
+let runSpeed = 21.0;   // ~21.0 m/s = course rapide (×3)
 
 // --- Système de mouvement immersif ---
 let currentSpeed = 0;                    // Vitesse interpolée actuelle (m/s)
@@ -2563,16 +2563,14 @@ const HEAD_BOB_WALK_AMP  = 0.020;      // amplitude verticale (m) en marchant
 const HEAD_BOB_RUN_AMP   = 0.035;      // amplitude verticale (m) en courant
 let headBobOffset = 0;                  // offset Y courant appliqué à la caméra
 
-// Audio de pas rythmique — chargement direct des fichiers MP3
-let footstepTimer = 0;
-const FOOTSTEP_WALK_INTERVAL = 0.45;   // secondes entre pas en marchant
-const FOOTSTEP_RUN_INTERVAL  = 0.28;   // secondes entre pas en courant
+// Audio de pas — lecture en boucle continue pendant le déplacement
 let isMoving = false;
 let wasMoving = false;
-const FOOTSTEP_WALK_SRC = 'Audio/Mouvement/Pas%20rapides%20sur%20beton%20cut.mp3';
-const FOOTSTEP_RUN_SRC  = 'Audio/Mouvement/courir%20sur%20beton%20cut.mp3';
+const FOOTSTEP_WALK_SRC = 'Audio/Mouvement/Pas rapides sur beton cut.mp3';
+const FOOTSTEP_RUN_SRC  = 'Audio/Mouvement/courir sur beton cut.mp3';
 let _footstepWalkAudio = null;  // Audio pré-chargé pour la marche
 let _footstepRunAudio = null;   // Audio pré-chargé pour la course
+let _footstepWasSprinting = false;
 
 // Matériaux physiques
 const shapePhysMaterial = new CANNON.Material("shapeMaterial");
@@ -2747,7 +2745,6 @@ function init() {
         currentSpeed = 0;
         isMoving = false;
         wasMoving = false;
-        footstepTimer = 0;
         stopAllFootstepAudio();
 
         if (isSpacePressed || isSpacePanning) {
@@ -4788,7 +4785,6 @@ function toggleInteractionMode() {
     headBobTime = 0;
     isMoving = false;
     wasMoving = false;
-    footstepTimer = 0;
 
     if (interactionMode === 'developer') {
         // Mode Développeur : indicateur en bas
@@ -5600,8 +5596,8 @@ async function loadProjectFromLocalStorage() {
 
             // Charger les vitesses de déplacement
             if (planData.movementSpeeds) {
-                walkSpeed = planData.movementSpeeds.walk || 4.5;
-                runSpeed = planData.movementSpeeds.run || 7.0;
+                walkSpeed = planData.movementSpeeds.walk || 13.5;
+                runSpeed = planData.movementSpeeds.run || 21.0;
                 console.log(`📂 Vitesses chargées depuis localStorage: marche=${walkSpeed}, course=${runSpeed}`);
             }
 
@@ -5951,8 +5947,8 @@ async function loadProjectFromIndexedDB(projectData) {
 
     // Charger les vitesses de déplacement
     if (projectData.movementSpeeds) {
-        walkSpeed = projectData.movementSpeeds.walk || 4.5;
-        runSpeed = projectData.movementSpeeds.run || 7.0;
+        walkSpeed = projectData.movementSpeeds.walk || 13.5;
+        runSpeed = projectData.movementSpeeds.run || 21.0;
         console.log(`  ✅ Vitesses restaurées: marche=${walkSpeed}, course=${runSpeed}`);
     }
 
@@ -10155,33 +10151,32 @@ function checkMovementAudioMouse() {
     }, 150);
 }
 
-// --- Système audio de pas rythmique (chargement direct des fichiers MP3) ---
-// Un SEUL son de pas à la fois — jamais de superposition
-let _footstepWasSprinting = false;
+// --- Système audio de pas — boucle continue pendant le déplacement ---
+// Un SEUL son à la fois : marche OU course, jamais les deux
 
 // Pré-charger les deux sons de pas au démarrage
 function initFootstepAudio() {
     _footstepWalkAudio = new Audio(FOOTSTEP_WALK_SRC);
     _footstepWalkAudio.preload = 'auto';
-    _footstepWalkAudio.loop = false;
+    _footstepWalkAudio.loop = true;   // Boucle continue
     _footstepWalkAudio.volume = 0.8;
     _footstepWalkAudio.addEventListener('canplaythrough', () => {
         console.log('👟 Audio marche prêt (canplaythrough)');
     });
     _footstepWalkAudio.addEventListener('error', (e) => {
-        console.error('❌ Erreur chargement audio marche:', e.target.error);
+        console.error('❌ Erreur chargement audio marche:', e.target.error, 'src:', FOOTSTEP_WALK_SRC);
     });
     _footstepWalkAudio.load();
 
     _footstepRunAudio = new Audio(FOOTSTEP_RUN_SRC);
     _footstepRunAudio.preload = 'auto';
-    _footstepRunAudio.loop = false;
+    _footstepRunAudio.loop = true;    // Boucle continue
     _footstepRunAudio.volume = 0.8;
     _footstepRunAudio.addEventListener('canplaythrough', () => {
         console.log('👟 Audio course prêt (canplaythrough)');
     });
     _footstepRunAudio.addEventListener('error', (e) => {
-        console.error('❌ Erreur chargement audio course:', e.target.error);
+        console.error('❌ Erreur chargement audio course:', e.target.error, 'src:', FOOTSTEP_RUN_SRC);
     });
     _footstepRunAudio.load();
 
@@ -10191,7 +10186,7 @@ function initFootstepAudio() {
 function updateFootstepAudio(delta) {
     if (interactionMode !== 'game') return;
 
-    // Transition mouvement → arrêt : stopper le son
+    // Transition mouvement → arrêt : stopper les sons
     if (!isMoving && wasMoving) {
         stopAllFootstepAudio();
     }
@@ -10199,41 +10194,36 @@ function updateFootstepAudio(delta) {
 
     if (!isMoving) return;
 
-    // Détecter la transition marche ↔ course
+    // Détecter l'allure actuelle
     const isSprinting = !!keysPressed['shift'];
+
+    // Transition marche ↔ course : basculer le son
     if (isSprinting !== _footstepWasSprinting) {
         _footstepWasSprinting = isSprinting;
-        footstepTimer = 0;  // Premier pas immédiat au changement d'allure
-        // Stopper le son en cours de l'ancienne allure
         if (isSprinting) {
-            // On passe en course → stopper le son de marche
+            // Passer en course → stopper marche, lancer course
             if (_footstepWalkAudio) { _footstepWalkAudio.pause(); _footstepWalkAudio.currentTime = 0; }
+            if (_footstepRunAudio && _footstepRunAudio.paused) {
+                _footstepRunAudio.currentTime = 0;
+                _footstepRunAudio.play().catch(e => console.warn('👟 Run play():', e.message));
+            }
         } else {
-            // On passe en marche → stopper le son de course
+            // Passer en marche → stopper course, lancer marche
             if (_footstepRunAudio) { _footstepRunAudio.pause(); _footstepRunAudio.currentTime = 0; }
+            if (_footstepWalkAudio && _footstepWalkAudio.paused) {
+                _footstepWalkAudio.currentTime = 0;
+                _footstepWalkAudio.play().catch(e => console.warn('👟 Walk play():', e.message));
+            }
         }
+        return;
     }
 
-    // Accumuler le temps et déclencher un pas selon l'intervalle
-    const interval = isSprinting ? FOOTSTEP_RUN_INTERVAL : FOOTSTEP_WALK_INTERVAL;
-
-    footstepTimer += delta;
-    if (footstepTimer >= interval) {
-        footstepTimer -= interval;
-        playFootstepSound(isSprinting);
-    }
-}
-
-function playFootstepSound(isSprinting) {
-    // Sélectionner le bon Audio selon l'allure
+    // Si en mouvement et le bon son n'est pas en lecture → le lancer
     const audio = isSprinting ? _footstepRunAudio : _footstepWalkAudio;
-    if (!audio) { console.warn('👟 Audio null pour', isSprinting ? 'course' : 'marche'); return; }
-
-    // Rembobiner et jouer (un seul son à la fois)
-    audio.currentTime = 0;
-    audio.play().catch(e => {
-        console.warn('👟 Échec play() pour', isSprinting ? 'course' : 'marche', ':', e.message);
-    });
+    if (audio && audio.paused) {
+        audio.currentTime = 0;
+        audio.play().catch(e => console.warn('👟 Footstep play():', e.message));
+    }
 }
 
 function stopAllFootstepAudio() {
@@ -10248,7 +10238,6 @@ function stopAllFootstepAudio() {
         }
     }
     activeMovementAudio = {};
-    footstepTimer = 0;
     _footstepWasSprinting = false;
 }
 
@@ -18535,8 +18524,8 @@ async function loadFloorPlan() {
 
     // Charger les vitesses de déplacement
     if (planData.movementSpeeds) {
-        walkSpeed = planData.movementSpeeds.walk || 4.5;
-        runSpeed = planData.movementSpeeds.run || 7.0;
+        walkSpeed = planData.movementSpeeds.walk || 13.5;
+        runSpeed = planData.movementSpeeds.run || 21.0;
     }
 
     // Charger les zones d'interaction
