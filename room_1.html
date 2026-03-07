@@ -2546,14 +2546,14 @@ const gravityConst = 0.015;
 const jumpStrength = 0.45;
 const baseEyeHeight = 1.60; // Hauteur des yeux (personne de ~1.70m → yeux à ~1.60m)
 
-// Vitesses de déplacement (configurables via l'éditeur) — en m/s (delta-time)
-let walkSpeed = 13.5;  // ~13.5 m/s = marche rapide (×3)
-let runSpeed = 21.0;   // ~21.0 m/s = course rapide (×3)
+// Vitesses de déplacement — valeurs fixes (sliders supprimés)
+let walkSpeed = 35;    // unités/s — traversée pièce en ~5.5s
+let runSpeed = 55;     // unités/s — traversée pièce en ~3.5s
 
 // --- Système de mouvement immersif ---
-let currentSpeed = 0;                    // Vitesse interpolée actuelle (m/s)
-const ACCELERATION = 12.0;              // m/s² — accélération
-const DECELERATION = 10.0;             // m/s² — décélération
+let currentSpeed = 0;                    // Vitesse interpolée actuelle
+const ACCELERATION = 50.0;              // unités/s² — accélération vive
+const DECELERATION = 40.0;             // unités/s² — décélération rapide
 
 // Head bob (balancement de tête)
 let headBobTime = 0;
@@ -3553,7 +3553,7 @@ function handleGameMovement(delta) {
         currentSpeed = Math.max(targetSpeed, currentSpeed - DECELERATION * delta);
     }
 
-    isMoving = currentSpeed > 0.1;
+    isMoving = currentSpeed > 0.5;
 
     if (currentSpeed < 0.01) {
         currentSpeed = 0;
@@ -5594,12 +5594,7 @@ async function loadProjectFromLocalStorage() {
                 console.log(`  💡 Lumière ambiante restaurée: ${planData.ambientLightIntensity}`);
             }
 
-            // Charger les vitesses de déplacement
-            if (planData.movementSpeeds) {
-                walkSpeed = planData.movementSpeeds.walk || 13.5;
-                runSpeed = planData.movementSpeeds.run || 21.0;
-                console.log(`📂 Vitesses chargées depuis localStorage: marche=${walkSpeed}, course=${runSpeed}`);
-            }
+            // Vitesses de déplacement — valeurs fixes (ne plus charger depuis localStorage)
 
             // Charger les zones d'interaction depuis localStorage
             if (planData.interactionZones && planData.interactionZones.length > 0) {
@@ -5945,12 +5940,7 @@ async function loadProjectFromIndexedDB(projectData) {
         console.log(`  ✅ Position de spawn restaurée: (${spawnPosition.x.toFixed(2)}, ${spawnPosition.y.toFixed(2)}, ${spawnPosition.z.toFixed(2)})`);
     }
 
-    // Charger les vitesses de déplacement
-    if (projectData.movementSpeeds) {
-        walkSpeed = projectData.movementSpeeds.walk || 13.5;
-        runSpeed = projectData.movementSpeeds.run || 21.0;
-        console.log(`  ✅ Vitesses restaurées: marche=${walkSpeed}, course=${runSpeed}`);
-    }
+    // Vitesses de déplacement — valeurs fixes (ne plus charger depuis IndexedDB)
 
     // Charger les zones d'interaction
     if (projectData.interactionZones && projectData.interactionZones.length > 0) {
@@ -18522,11 +18512,7 @@ async function loadFloorPlan() {
         spawnSaved = true;
     }
 
-    // Charger les vitesses de déplacement
-    if (planData.movementSpeeds) {
-        walkSpeed = planData.movementSpeeds.walk || 13.5;
-        runSpeed = planData.movementSpeeds.run || 21.0;
-    }
+    // Vitesses de déplacement — valeurs fixes (ne plus charger depuis sauvegarde)
 
     // Charger les zones d'interaction
     if (planData.interactionZones && planData.interactionZones.length > 0) {
