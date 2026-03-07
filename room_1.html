@@ -2644,8 +2644,8 @@ const jumpStrength = 0.45;
 const baseEyeHeight = 1.60; // Hauteur des yeux (personne de ~1.70m → yeux à ~1.60m)
 
 // Vitesses de déplacement (configurables via l'éditeur) — en m/s (delta-time)
-let walkSpeed = 3.5;   // ~3.5 m/s = marche confortable
-let runSpeed = 7.0;    // ~7.0 m/s = course (2x marche)
+let walkSpeed = 4.5;   // ~4.5 m/s = marche dynamique
+let runSpeed = 7.0;    // ~7.0 m/s = course (≈1.5x marche)
 
 // --- Système de mouvement immersif ---
 let currentSpeed = 0;                    // Vitesse interpolée actuelle (m/s)
@@ -2665,12 +2665,16 @@ let isPointerLocked = false;
 let pointerLockYaw = 0;                 // rotation horizontale (radians)
 let pointerLockPitch = 0;               // rotation verticale (radians)
 
-// Audio de pas rythmique
+// Audio de pas rythmique — chargement direct des fichiers MP3
 let footstepTimer = 0;
-const FOOTSTEP_WALK_INTERVAL = 0.5;    // secondes entre pas en marchant
-const FOOTSTEP_RUN_INTERVAL  = 0.3;    // secondes entre pas en courant
+const FOOTSTEP_WALK_INTERVAL = 0.45;   // secondes entre pas en marchant
+const FOOTSTEP_RUN_INTERVAL  = 0.28;   // secondes entre pas en courant
 let isMoving = false;
 let wasMoving = false;
+const FOOTSTEP_WALK_SRC = 'Audio/Mouvement/Pas rapides sur beton cut.mp3';
+const FOOTSTEP_RUN_SRC  = 'Audio/Mouvement/courir sur beton cut.mp3';
+let _footstepWalkAudio = null;  // Audio pré-chargé pour la marche
+let _footstepRunAudio = null;   // Audio pré-chargé pour la course
 
 // Matériaux physiques
 const shapePhysMaterial = new CANNON.Material("shapeMaterial");
@@ -2809,6 +2813,7 @@ function init() {
     }
 
     animate();
+    initFootstepAudio();
 
     // Note: loadAnimatedCharacter() est maintenant appelé APRÈS loadProjectOnStartup()
     // pour que savedNabyTransform soit déjà chargé quand le GLB finit de se charger
@@ -10371,15 +10376,29 @@ function checkMovementAudioMouse() {
     }, 150);
 }
 
-// --- Système audio de pas rythmique (marche/course) ---
-// Un SEUL élément audio actif pour les pas — évite la superposition
-let _activeFootstepAudio = null;
-let _footstepWasSprinting = false;  // Détecter les transitions marche ↔ course
+// --- Système audio de pas rythmique (chargement direct des fichiers MP3) ---
+// Un SEUL son de pas à la fois — jamais de superposition
+let _footstepWasSprinting = false;
+
+// Pré-charger les deux sons de pas au démarrage
+function initFootstepAudio() {
+    _footstepWalkAudio = new Audio(FOOTSTEP_WALK_SRC);
+    _footstepWalkAudio.preload = 'auto';
+    _footstepWalkAudio.loop = false;
+    _footstepWalkAudio.volume = 0.8;
+
+    _footstepRunAudio = new Audio(FOOTSTEP_RUN_SRC);
+    _footstepRunAudio.preload = 'auto';
+    _footstepRunAudio.loop = false;
+    _footstepRunAudio.volume = 0.8;
+
+    console.log('👟 Audio de pas pré-chargé (marche + course)');
+}
 
 function updateFootstepAudio(delta) {
     if (interactionMode !== 'game') return;
 
-    // Transition mouvement → arrêt
+    // Transition mouvement → arrêt : stopper le son
     if (!isMoving && wasMoving) {
         stopAllFootstepAudio();
     }
@@ -10387,74 +10406,45 @@ function updateFootstepAudio(delta) {
 
     if (!isMoving) return;
 
-    // Détecter la transition marche ↔ course : reset le timer pour un changement immédiat
+    // Détecter la transition marche ↔ course
     const isSprinting = !!keysPressed['shift'];
     if (isSprinting !== _footstepWasSprinting) {
         _footstepWasSprinting = isSprinting;
-        footstepTimer = 0;  // Forcer un nouveau pas immédiat au changement d'allure
-        // Stopper le son en cours pour éviter la superposition
-        if (_activeFootstepAudio) {
-            _activeFootstepAudio.pause();
-            _activeFootstepAudio = null;
+        footstepTimer = 0;  // Premier pas immédiat au changement d'allure
+        // Stopper le son en cours de l'ancienne allure
+        if (isSprinting) {
+            // On passe en course → stopper le son de marche
+            if (_footstepWalkAudio) { _footstepWalkAudio.pause(); _footstepWalkAudio.currentTime = 0; }
+        } else {
+            // On passe en marche → stopper le son de course
+            if (_footstepRunAudio) { _footstepRunAudio.pause(); _footstepRunAudio.currentTime = 0; }
         }
     }
 
-    // Accumuler le temps et déclencher les pas selon l'intervalle
+    // Accumuler le temps et déclencher un pas selon l'intervalle
     const interval = isSprinting ? FOOTSTEP_RUN_INTERVAL : FOOTSTEP_WALK_INTERVAL;
 
     footstepTimer += delta;
     if (footstepTimer >= interval) {
         footstepTimer -= interval;
-        playFootstepSound();
+        playFootstepSound(isSprinting);
     }
 }
 
-function playFootstepSound() {
-    const isSprinting = !!keysPressed['shift'];
-
-    // Chercher le bon track : course si sprint, sinon premier track de marche
-    let chosenTrack = null;
-    for (const track of audioTracks.mouvement) {
-        if (!track.dataURL || track.muted) continue;
-        if (isSprinting && track.movementAction === 'run') {
-            chosenTrack = track;
-            break;
-        }
-        if (!isSprinting && ['forward', 'backward', 'left', 'right'].includes(track.movementAction)) {
-            chosenTrack = track;
-            break;
-        }
-    }
-
-    if (!chosenTrack) return;
-
-    // Stopper le son de pas précédent avant d'en jouer un nouveau
-    if (_activeFootstepAudio) {
-        _activeFootstepAudio.pause();
-        _activeFootstepAudio = null;
-    }
-
-    const audio = createAudioElement(chosenTrack);
+function playFootstepSound(isSprinting) {
+    // Sélectionner le bon Audio selon l'allure
+    const audio = isSprinting ? _footstepRunAudio : _footstepWalkAudio;
     if (!audio) return;
-    audio.loop = false;
+
+    // Rembobiner et jouer (un seul son à la fois)
     audio.currentTime = 0;
     audio.play().catch(() => {});
-    _activeFootstepAudio = audio;
-
-    // Nettoyer la référence quand le son est terminé
-    audio.onended = () => {
-        if (_activeFootstepAudio === audio) {
-            _activeFootstepAudio = null;
-        }
-    };
 }
 
 function stopAllFootstepAudio() {
-    // Stopper le son de pas actif
-    if (_activeFootstepAudio) {
-        _activeFootstepAudio.pause();
-        _activeFootstepAudio = null;
-    }
+    // Stopper les deux sons de pas
+    if (_footstepWalkAudio) { _footstepWalkAudio.pause(); _footstepWalkAudio.currentTime = 0; }
+    if (_footstepRunAudio) { _footstepRunAudio.pause(); _footstepRunAudio.currentTime = 0; }
     // Stopper les autres audio de mouvement (jump, grab, etc.)
     for (const key in activeMovementAudio) {
         if (activeMovementAudio[key]) {
