@@ -1,0 +1,891 @@
+/* ===================================================
+   EDITOR CSS — Style Blender-like pour le panneau éditeur
+   Fichier extrait de room_1.html pour réutilisation autonome
+   =================================================== */
+
+/* Style Blender-like pour le panneau éditeur */
+#editor-panel {
+    background: #1a1a1a !important;
+    color: #d4d4d4 !important;
+}
+
+#editor-panel .tabs {
+    background: transparent !important;
+    padding: 0 !important;
+    gap: 2px !important;
+}
+
+#editor-panel .tab {
+    color: #808080 !important;
+    background: #2a2a2a !important;
+    border-radius: 4px !important;
+}
+
+#editor-panel .tab-active {
+    background: #3a3a3a !important;
+    color: #ffffff !important;
+}
+
+/* Accordéons style Blender */
+.editor-accordion {
+    background: #2a2a2a;
+    border: 1px solid #3a3a3a;
+    border-radius: 2px;
+    margin-bottom: 2px;
+}
+
+.editor-accordion-header {
+    background: #2a2a2a;
+    color: #d4d4d4;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    user-select: none;
+}
+
+.editor-accordion-header:hover {
+    background: #323232;
+}
+
+.accordion-arrow {
+    font-size: 10px;
+    transition: transform 0.15s ease;
+    color: #808080;
+    display: inline-block;
+    width: 12px;
+}
+
+.editor-accordion-content {
+    padding: 6px 8px;
+    background: #242424;
+    display: none;
+}
+
+.editor-accordion.open .editor-accordion-content {
+    display: block;
+}
+
+/* Liste d'objets style Blender Outliner */
+.object-tree-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 4px;
+    font-size: 11px;
+    color: #d4d4d4;
+    cursor: pointer;
+    user-select: none;
+}
+
+.object-tree-item:hover {
+    background: #3a3a3a;
+}
+
+.object-tree-item.selected {
+    background: #4a7ebf;
+    color: #ffffff;
+}
+
+.object-tree-item .icon {
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+}
+
+/* Curseur texte au survol du nom pour indiquer qu'il est éditable */
+.object-tree-item span[data-object-uuid]:hover {
+    cursor: text;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+}
+
+.object-tree-item .icon svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* Style global pour les SVG dans les boutons et tabs */
+#editor-panel .tab svg,
+#editor-panel .btn svg {
+    stroke: currentColor;
+}
+
+/* Assurer que les SVG dans les tabs actifs sont blancs */
+#editor-panel .tab-active svg {
+    stroke: #ffffff !important;
+}
+
+/* Onglets verticaux - Style Blender */
+.tab-vertical {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    position: relative;
+    padding: 0;
+    margin: 2px 0;
+}
+
+.tab-vertical::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: transparent;
+    transition: all 0.15s ease;
+}
+
+.tab-vertical:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.tab-vertical.tab-active {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.tab-vertical.tab-active::before {
+    background: #4a9eff;
+}
+
+.tab-vertical svg {
+    stroke: #999999;
+    transition: stroke 0.15s ease;
+}
+
+.tab-vertical:hover svg {
+    stroke: #cccccc;
+}
+
+.tab-vertical.tab-active svg {
+    stroke: #ffffff !important;
+}
+
+.object-tree-item .expand-arrow {
+    width: 12px;
+    font-size: 9px;
+    color: #808080;
+}
+
+.object-tree-children {
+    margin-left: 16px;
+}
+
+/* Inputs style Blender */
+#editor-panel input[type="number"],
+#editor-panel input[type="text"],
+#editor-panel select {
+    background: #1a1a1a !important;
+    border: 1px solid #3a3a3a !important;
+    color: #d4d4d4 !important;
+    font-size: 10px !important;
+    padding: 2px 4px !important;
+    height: 20px !important;
+}
+
+#editor-panel input[type="number"]:focus,
+#editor-panel select:focus {
+    border-color: #4a7ebf !important;
+    outline: none !important;
+}
+
+/* Boutons style Blender */
+#editor-panel .btn {
+    background: #3a3a3a !important;
+    border: 1px solid #4a4a4a !important;
+    color: #d4d4d4 !important;
+    font-size: 10px !important;
+    text-transform: none !important;
+    min-height: 20px !important;
+    height: 20px !important;
+    padding: 0 8px !important;
+}
+
+#editor-panel .btn:hover {
+    background: #4a4a4a !important;
+}
+
+#editor-panel .btn-primary {
+    background: #4a7ebf !important;
+    border-color: #5a8ecf !important;
+    color: #ffffff !important;
+}
+
+#editor-panel .btn-success {
+    background: #4a8f4a !important;
+    border-color: #5a9f5a !important;
+}
+
+#editor-panel .btn-error {
+    background: #8f4a4a !important;
+    border-color: #9f5a5a !important;
+}
+
+/* Checkboxes style Blender */
+#editor-panel .checkbox {
+    border-color: #4a4a4a !important;
+}
+
+/* Scrollbar style sombre */
+#editor-panel ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+#editor-panel ::-webkit-scrollbar-track {
+    background: #1a1a1a;
+}
+
+#editor-panel ::-webkit-scrollbar-thumb {
+    background: #4a4a4a;
+    border-radius: 2px;
+}
+
+#editor-panel ::-webkit-scrollbar-thumb:hover {
+    background: #5a5a5a;
+}
+
+/* Curseur personnalisé pour le mode floor-plan */
+.floor-plan-cursor {
+    cursor: crosshair !important;
+}
+
+.floor-plan-cursor-draw-wall {
+    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><line x1="12" y1="4" x2="12" y2="20" stroke="white" stroke-width="2"/><line x1="4" y1="12" x2="20" y2="12" stroke="white" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="lime" stroke="white" stroke-width="1.5"/></svg>') 12 12, crosshair !important;
+}
+
+.floor-plan-cursor-draw-room {
+    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" fill="none" stroke="lime" stroke-width="2"/><circle cx="12" cy="12" r="2" fill="white"/></svg>') 12 12, crosshair !important;
+}
+
+.floor-plan-cursor-delete {
+    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><line x1="6" y1="6" x2="18" y2="18" stroke="red" stroke-width="3"/><line x1="18" y1="6" x2="6" y2="18" stroke="red" stroke-width="3"/></svg>') 12 12, pointer !important;
+}
+
+.floor-plan-cursor-erase-wall {
+    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><rect x="4" y="8" width="16" height="8" fill="none" stroke="red" stroke-width="2"/><line x1="7" y1="10" x2="17" y2="14" stroke="red" stroke-width="2"/><line x1="7" y1="14" x2="17" y2="10" stroke="red" stroke-width="2"/></svg>') 12 12, crosshair !important;
+}
+
+.floor-plan-cursor-select {
+    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><polygon points="4,4 4,18 9,14 12,20 14,19 11,13 16,13" fill="%234488ff" stroke="white" stroke-width="1.5"/></svg>') 4 4, pointer !important;
+}
+
+.floor-plan-cursor-move {
+    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%234488ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="m15 19-3 3-3-3"/><path d="m19 9 3 3-3 3"/><path d="M2 12h20"/><path d="m5 9-3 3 3 3"/><path d="m9 5 3-3 3 3"/></svg>') 12 12, move !important;
+}
+
+.floor-plan-cursor-rotate {
+    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%234488ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>') 12 12, pointer !important;
+}
+
+.floor-plan-cursor-paint {
+    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%23ff8800" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v2"/><path d="M14 2v4"/><path d="M17 2a1 1 0 0 1 1 1v9H6V3a1 1 0 0 1 1-1z"/><path d="M6 12a1 1 0 0 0-1 1v1a2 2 0 0 0 2 2h2a1 1 0 0 1 1 1v2.9a2 2 0 1 0 4 0V17a1 1 0 0 1 1-1h2a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1"/></svg>') 4 22, pointer !important;
+}
+
+.space-pan-hand {
+    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2"/><path d="M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>') 12 12, grab !important;
+}
+
+.space-pan-grabbing {
+    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11.5V9a2 2 0 0 0-2-2a2 2 0 0 0-2 2v1.4"/><path d="M14 10V8a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2"/><path d="M10 9.9V9a2 2 0 0 0-2-2a2 2 0 0 0-2 2v5"/><path d="M6 14a2 2 0 0 0-2-2a2 2 0 0 0-2 2"/><path d="M18 11a2 2 0 1 1 4 0v3a8 8 0 0 1-8 8h-4a8 8 0 0 1-8-8 2 2 0 1 1 4 0"/></svg>') 12 12, grabbing !important;
+}
+
+.floor-plan-cursor-measure {
+    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%23ff69b4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 15v-3"/><path d="M14 15v-3"/><path d="M18 15v-3"/><path d="M2 8V4"/><path d="M22 6H2"/><path d="M22 8V4"/><path d="M6 15v-3"/><rect x="2" y="12" width="20" height="8" rx="2"/></svg>') 12 12, crosshair !important;
+}
+
+.measure-label {
+    position: absolute;
+    background: rgba(255, 105, 180, 0.9);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: bold;
+    font-family: 'Segoe UI', monospace;
+    pointer-events: none;
+    z-index: 100;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    transform: translate(-50%, -100%);
+    margin-top: -8px;
+}
+
+.game-cursor-spawn {
+    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%2300ccff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-5"/><path d="M9 8V3"/><path d="M15 8V3"/><circle cx="12" cy="1.5" r="0" fill="%2300ccff"/><path d="M9 8a3 3 0 1 0 6 0"/><path d="M12 17c-2.8 0-5-1.1-5-3v-1a5 5 0 0 1 10 0v1c0 1.9-2.2 3-5 3z"/></svg>') 12 12, crosshair !important;
+}
+
+.game-cursor-zone-rect {
+    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%2300CED1" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="1"/><line x1="12" y1="2" x2="12" y2="22" stroke-dasharray="2,2"/><line x1="2" y1="12" x2="22" y2="12" stroke-dasharray="2,2"/></svg>') 12 12, crosshair !important;
+}
+
+.game-cursor-zone-oval {
+    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%2300CED1" stroke-width="2"><ellipse cx="12" cy="12" rx="10" ry="7"/><line x1="12" y1="2" x2="12" y2="22" stroke-dasharray="2,2"/><line x1="2" y1="12" x2="22" y2="12" stroke-dasharray="2,2"/></svg>') 12 12, crosshair !important;
+}
+
+.game-cursor-zone-wall {
+    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%2300CED1" stroke-width="2"><rect x="6" y="2" width="12" height="20" rx="1"/><line x1="12" y1="2" x2="12" y2="22" stroke-dasharray="2,2"/></svg>') 12 12, crosshair !important;
+}
+
+.game-cursor-zone-object {
+    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%2300CED1" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M8 12h8"/></svg>') 12 12, pointer !important;
+}
+
+.game-cursor-zone-character {
+    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%2300CED1" stroke-width="2"><circle cx="12" cy="6" r="4"/><path d="M6 22v-4a6 6 0 0 1 12 0v4"/></svg>') 12 12, pointer !important;
+}
+
+.zone-list-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 4px;
+    margin: 1px 0;
+    font-size: 10px;
+    color: #d4d4d4;
+    cursor: pointer;
+    user-select: none;
+    background: #2a2a2a;
+    border-radius: 3px;
+    transition: all 0.15s;
+}
+.zone-list-item:hover { background: #3a3a3a; }
+.zone-list-item.selected { background: #2a7a7a; border: 1px solid #00CED1; }
+.zone-list-item.locked { opacity: 0.6; }
+
+/* === AUDIO PANEL === */
+.audio-section {
+    margin-bottom: 8px;
+    border: 1px solid #2a2a2a;
+    border-radius: 6px;
+    overflow: hidden;
+}
+.audio-section-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px;
+    background: #1a1a1a;
+    cursor: pointer;
+    user-select: none;
+    font-size: 10px;
+    font-weight: 600;
+    color: #ccc;
+}
+.audio-section-header:hover { background: #222; }
+.audio-section-body { padding: 4px 6px; background: #1e1e1e; }
+.audio-track-item {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 5px 6px;
+    margin: 2px 0;
+    font-size: 9px;
+    color: #d4d4d4;
+    background: #2a2a2a;
+    border-radius: 4px;
+    transition: background 0.15s;
+}
+.audio-track-item:hover { background: #333; }
+.audio-track-controls {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.audio-track-name {
+    display: block;
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: text;
+    padding: 1px 3px;
+    border-radius: 2px;
+    font-size: 10px;
+    font-weight: 500;
+}
+.audio-track-name:hover { background: #3a3a3a; }
+.audio-track-name-input {
+    display: block;
+    width: 100%;
+    background: #1a1a1a;
+    border: 1px solid #00CED1;
+    color: #e0e0e0;
+    font-size: 10px;
+    padding: 1px 3px;
+    border-radius: 2px;
+    outline: none;
+    box-sizing: border-box;
+}
+.audio-icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 2px;
+    opacity: 0.7;
+    display: flex;
+    align-items: center;
+    transition: opacity 0.15s;
+}
+.audio-icon-btn:hover { opacity: 1; }
+.audio-volume-control {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+.audio-volume-control input[type="number"] {
+    width: 46px;
+    background: #1a1a1a;
+    border: 1px solid #3a3a3a;
+    color: #d4d4d4;
+    font-size: 10px;
+    text-align: center;
+    padding: 2px 2px;
+    border-radius: 2px;
+    -moz-appearance: textfield;
+}
+.audio-volume-control input[type="number"]::-webkit-inner-spin-button { opacity: 1; }
+.audio-volume-icon-svg {
+    flex-shrink: 0;
+    opacity: 0.6;
+}
+.audio-import-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+    padding: 4px 8px;
+    margin: 4px 0;
+    background: #2a2a2a;
+    border: 1px dashed #4a4a4a;
+    border-radius: 4px;
+    color: #888;
+    font-size: 9px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.audio-import-btn:hover { border-color: #00CED1; color: #00CED1; }
+.audio-save-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    width: 100%;
+    padding: 4px 8px;
+    margin-top: 4px;
+    background: #1a3a3a;
+    border: 1px solid #00CED1;
+    border-radius: 4px;
+    color: #00CED1;
+    font-size: 9px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.audio-save-btn:hover { background: #2a4a4a; }
+.audio-trigger-modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.7);
+    z-index: 9998;
+}
+.audio-trigger-modal-content {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: #1e1e1e;
+    border: 1px solid #3a3a3a;
+    border-radius: 10px;
+    padding: 20px 24px;
+    min-width: 320px;
+    color: #d4d4d4;
+}
+.audio-trigger-modal-content h3 {
+    margin: 0 0 12px;
+    font-size: 13px;
+    color: #00CED1;
+}
+.audio-trigger-modal-content label {
+    display: block;
+    font-size: 10px;
+    color: #888;
+    margin: 8px 0 3px;
+}
+.audio-trigger-modal-content select {
+    width: 100%;
+    padding: 5px 8px;
+    background: #2a2a2a;
+    border: 1px solid #3a3a3a;
+    color: #d4d4d4;
+    border-radius: 4px;
+    font-size: 11px;
+}
+
+/* ====================================================
+   EDITOR CSS ADDITIONNEL — positionnement, panneau, boutons
+   =================================================== */
+
+        /* Panneau de contrôle d'édition - Style Blender */
+        #editor-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 340px;
+            max-height: 90vh;
+            overflow: hidden;
+            overflow-x: hidden;
+            background: #2a2a2a;
+            padding: 0;
+            border-radius: 8px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            font-size: 13px;
+            z-index: 100;
+            display: none;
+            transition: transform 0.3s ease;
+            border: 1px solid #1a1a1a;
+        }
+
+        #editor-panel .card-body {
+            background: #2a2a2a;
+            color: #cccccc;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        /* Empêcher tout débordement horizontal dans le panneau */
+        #editor-panel * {
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+
+        #editor-panel .join,
+        #editor-panel .flex {
+            flex-shrink: 1;
+            min-width: 0;
+        }
+
+        #editor-panel .card-body::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        #editor-panel .card-body::-webkit-scrollbar-track {
+            background: #1e1e1e;
+        }
+
+        #editor-panel .card-body::-webkit-scrollbar-thumb {
+            background: #4a4a4a;
+            border-radius: 4px;
+        }
+
+        #editor-panel .card-body::-webkit-scrollbar-thumb:hover {
+            background: #5a5a5a;
+        }
+
+        /* État plié du panneau éditeur */
+        #editor-panel.collapsed {
+            transform: translateX(calc(100% + 20px));
+        }
+
+        /* Bouton pour plier/déplier le panneau */
+        #toggle-panel-collapse {
+            position: absolute;
+            top: 20px;
+            right: 360px; /* À gauche du panneau */
+            width: auto;
+            height: auto;
+            padding: 0;
+            background: none;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+            z-index: 101;
+            display: none; /* Masqué quand l'éditeur est fermé */
+            filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.3));
+        }
+
+        #toggle-panel-collapse:hover {
+            transform: scale(1.1);
+            filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.4));
+        }
+
+        #toggle-panel-collapse img {
+            width: 32px;
+            height: 32px;
+        }
+
+        /* Quand le panneau est plié, déplacer le bouton vers la droite */
+        #toggle-panel-collapse.collapsed {
+            right: 20px;
+        }
+
+        #editor-panel h3 {
+            margin: 0 0 10px 0;
+            color: #e0e0e0;
+            font-size: 15px;
+            border-bottom: 1px solid #3a3a3a;
+            padding-bottom: 8px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+
+        /* Titres de section plus petits */
+        #editor-panel .text-xs,
+        #editor-panel .text-\[10px\] {
+            color: #999999;
+            text-transform: uppercase;
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        /* Zones de liste et sections - Thème sombre */
+        #editor-panel .bg-base-200 {
+            background: #1e1e1e !important;
+            border: 1px solid #3a3a3a;
+        }
+
+        #editor-panel .bg-base-100 {
+            background: #2a2a2a !important;
+        }
+
+        /* Améliorer les contrastes des textes */
+        #editor-panel span,
+        #editor-panel label,
+        #editor-panel div {
+            color: #cccccc;
+        }
+
+        /* Listes d'objets - Meilleure visibilité */
+        #objects-list,
+        #imported-objects-container,
+        #lights-list,
+        #ambient-light-section {
+            color: #e0e0e0;
+        }
+
+        /* S'assurer que les textes dans les listes sont visibles */
+        .object-tree-item,
+        .object-tree-item span {
+            color: #d4d4d4 !important;
+        }
+
+        .object-tree-item.selected,
+        .object-tree-item.selected span {
+            color: #ffffff !important;
+        }
+
+        /* Titres et labels dans l'éditeur */
+        #editor-panel .text-xs,
+        #editor-panel .text-\[10px\],
+        #editor-panel .font-semibold,
+        #editor-panel .label-text {
+            color: #999999 !important;
+        }
+
+        /* Texte dans les inputs et selects */
+        #editor-panel input,
+        #editor-panel select,
+        #editor-panel button {
+            color: #d4d4d4 !important;
+        }
+
+        /* Bordures des accordéons visibles */
+        .editor-accordion {
+            border-color: #3a3a3a !important;
+        }
+
+        .editor-accordion-header {
+            color: #d4d4d4 !important;
+        }
+
+        /* Messages d'aide */
+        .text-base-content\/60 {
+            color: #808080 !important;
+        }
+
+        #editor-panel button {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        #editor-panel button:hover {
+            transform: scale(1.02);
+        }
+
+        #toggle-editor-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: auto;
+            height: auto;
+            padding: 0;
+            background: none;
+            border: none;
+            cursor: pointer;
+            z-index: 99;
+            transition: all 0.3s;
+            filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.3));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #toggle-editor-btn:hover {
+            transform: scale(1.1);
+            filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.4));
+        }
+
+        #toggle-editor-btn img {
+            width: 28px;
+            height: 28px;
+        }
+
+        #close-editor-btn:hover {
+            opacity: 1 !important;
+            transform: scale(1.1);
+        }
+
+        .object-btn {
+            background-color: #ecf0f1;
+            color: #2c3e50;
+            border: 2px solid transparent;
+        }
+
+        .object-btn:hover {
+            background-color: #bdc3c7;
+        }
+
+        .object-btn.selected {
+            background-color: #3498db;
+            color: white;
+            border: 2px solid #2980b9;
+        }
+
+        .control-group {
+            margin: 15px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+
+        .control-group label {
+            display: block;
+            margin: 8px 0 3px 0;
+            font-weight: bold;
+            color: #34495e;
+        }
+
+        .control-group input[type="number"] {
+            width: calc(100% - 10px);
+            padding: 5px;
+            border: 1px solid #bdc3c7;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+
+        .action-btn {
+            background-color: #27ae60;
+            color: white;
+        }
+
+        .action-btn:hover:not(:disabled) {
+            background-color: #229954;
+        }
+
+        .action-btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .copy-btn {
+            background-color: #e67e22;
+            color: white;
+        }
+
+        .copy-btn:hover {
+            background-color: #d35400;
+        }
+
+        #selected-object-name {
+            background: #3498db;
+            color: white;
+            padding: 8px;
+            border-radius: 5px;
+            text-align: center;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .mode-btn {
+            padding: 10px 8px;
+            border: 2px solid transparent;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .mode-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .mode-btn.active {
+            border: 2px solid #2c3e50;
+            box-shadow: 0 0 10px rgba(52, 152, 219, 0.5);
+        }
+
+        /* Style pour les cases à cocher des axes */
+        #axis-controls input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #3498db;
+        }
+
+        #axis-controls label {
+            user-select: none;
+            padding: 5px 8px;
+            border-radius: 5px;
+            transition: background 0.2s;
+        }
+
+        #axis-controls label:hover {
+            background: rgba(52, 152, 219, 0.1);
+        }
+
+        /* Style pour les boutons de mode éditeur (Objets/Caméra/Lumières) */
+        .editor-mode-btn {
+            padding: 12px 8px;
+            border: 2px solid transparent;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .editor-mode-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .editor-mode-btn.active {
+            border: 2px solid #2c3e50;
+            box-shadow: 0 0 15px rgba(52, 152, 219, 0.6);
+        }

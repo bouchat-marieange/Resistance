@@ -1,0 +1,1035 @@
+<div id="editor-panel" class="card bg-base-100 shadow-xl" style="display: none; flex-direction: row;">
+    <!-- Barre latérale verticale avec icônes (style Blender) -->
+    <div class="flex flex-col bg-[#1e1e1e] border-r border-[#2a2a2a]" style="width: 48px; padding: 4px 0;">
+        <button role="tab" class="tab-vertical tab-active editor-mode-btn flex items-center justify-center" style="width: 48px; height: 44px;" id="mode-objects" title="Objets">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+        </button>
+        <button role="tab" class="tab-vertical editor-mode-btn flex items-center justify-center" style="width: 48px; height: 44px;" id="mode-camera" title="Caméra">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"/><rect x="2" y="6" width="14" height="12" rx="2"/></svg>
+        </button>
+        <button role="tab" class="tab-vertical editor-mode-btn flex items-center justify-center" style="width: 48px; height: 44px;" id="mode-lights" title="Lumières">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>
+        </button>
+        <button role="tab" class="tab-vertical editor-mode-btn flex items-center justify-center" style="width: 48px; height: 44px;" id="mode-floor-plan" title="Plan de pièce">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M21 7v10"/><path d="M21 17H7"/><rect x="7" y="7" width="14" height="10"/><path d="M7 12h7"/><path d="M14 7v10"/></svg>
+        </button>
+        <button role="tab" class="tab-vertical editor-mode-btn flex items-center justify-center" style="width: 48px; height: 44px;" id="mode-game-setup" title="Éléments de jeu">
+            <img src="icones/chess-knight.svg" width="22" height="22" style="filter: brightness(0) invert(0.8);">
+        </button>
+        <button role="tab" class="tab-vertical editor-mode-btn flex items-center justify-center" style="width: 48px; height: 44px;" id="mode-audio" title="Audio">
+            <img src="icones/audio-lines.svg" width="22" height="22" style="filter: brightness(0) invert(0.8);">
+        </button>
+
+        <!-- Spacer pour pousser le switch vers le bas -->
+        <div style="flex: 1;"></div>
+
+        <!-- Bouton Sauvegarde -->
+        <div style="display: flex; flex-direction: column; align-items: center; padding: 8px 0;">
+            <button id="save-project-btn" class="flex items-center justify-center" style="background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 8px; width: 40px; height: 40px; cursor: pointer; position: relative; transition: all 0.3s;" title="Sauvegarder le projet (Ctrl+S)">
+                <img src="icones/save.svg" width="20" height="20" style="filter: brightness(0) invert(0.7);">
+                <!-- Voyant rouge pour changements non sauvegardés -->
+                <div id="unsaved-indicator" style="position: absolute; top: -4px; right: -4px; width: 10px; height: 10px; background: #ff4444; border-radius: 50%; display: none; box-shadow: 0 0 6px #ff4444;"></div>
+            </button>
+        </div>
+
+        <!-- Switch Mode Jeu/Développeur -->
+        <div style="display: flex; flex-direction: column; align-items: center; padding: 8px 0; gap: 6px;">
+            <button id="interaction-mode-switch" class="flex flex-col items-center justify-center" style="background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 20px; width: 40px; height: 80px; padding: 4px; cursor: pointer; position: relative; transition: all 0.3s;" title="Basculer entre mode Jeu et mode Développeur">
+                <!-- Indicateur qui se déplace -->
+                <div id="switch-indicator" style="position: absolute; top: 4px; width: 32px; height: 36px; background: #ff6b35; border-radius: 16px; transition: all 0.3s; display: flex; align-items: center; justify-content: center;">
+                    <img src="icones/gamepad-2.svg" width="20" height="20" style="filter: brightness(0) invert(1);">
+                </div>
+
+                <!-- Icône Mode Jeu (en haut) -->
+                <div style="width: 32px; height: 36px; display: flex; align-items: center; justify-content: center; z-index: 1;">
+                    <!-- Icône affichée par l'indicateur -->
+                </div>
+
+                <!-- Icône Mode Développeur (en bas) -->
+                <div style="width: 32px; height: 36px; display: flex; align-items: center; justify-content: center; z-index: 1;">
+                    <img src="icones/code-xml.svg" width="20" height="20" style="filter: brightness(0) invert(1);">
+                </div>
+            </button>
+        </div>
+    </div>
+
+    <!-- Contenu principal (flex column: sticky header + scrollable content) -->
+    <div style="flex: 1; min-width: 0; position: relative; display: flex; flex-direction: column;">
+
+        <!-- Bouton X de fermeture (coin supérieur droit extérieur) -->
+        <button id="close-editor-btn" title="Fermer l'éditeur" style="position: absolute; top: 2px; right: 2px; background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 4px; cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center; opacity: 0.8; transition: all 0.2s; z-index: 50; width: 24px; height: 24px;"
+            onmouseenter="this.style.background='#ff4444'; this.style.opacity='1';"
+            onmouseleave="this.style.background='#2a2a2a'; this.style.opacity='0.8';">
+            <img src="icones/x.svg" alt="Fermer" width="14" height="14" style="filter: brightness(0) invert(1);">
+        </button>
+
+        <!-- VUES STANDARDS (STICKY - ne défile pas) -->
+        <div id="views-bar" style="flex-shrink: 0; padding: 8px 8px 0 8px; padding-right: 28px; background: inherit;">
+            <div class="text-[10px] font-semibold mb-1 px-1" style="color: #999999 !important;">Vues standards</div>
+
+            <!-- Ligne 1: Haut, Face, Libre -->
+            <div class="grid grid-cols-3 gap-1 mb-1">
+                <button class="btn btn-xs btn-ghost h-7 flex flex-col items-center justify-center gap-0 p-1" id="view-top-global" title="Vue de dessus" onclick="document.getElementById('view-top').click();">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12s2.545-5 7-5c4.454 0 7 5 7 5s-2.546 5-7 5c-4.455 0-7-5-7-5z"/><path d="M12 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/><path d="M21 17v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2"/><path d="M21 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v2"/></svg>
+                    <span style="font-size: 8px;">Haut</span>
+                </button>
+                <button class="btn btn-xs btn-ghost h-7 flex flex-col items-center justify-center gap-0 p-1" id="view-front-global" title="Vue de face" onclick="document.getElementById('view-front').click();">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+                    <span style="font-size: 8px;">Face</span>
+                </button>
+                <button class="btn btn-xs btn-ghost h-7 flex flex-col items-center justify-center gap-0 p-1" id="view-free-global" title="Vue libre (mouvement sans restriction)" onclick="document.getElementById('view-free').click();">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                    <span style="font-size: 8px;">Libre</span>
+                </button>
+            </div>
+
+            <!-- Ligne 2: Gauche, Droite, Reset -->
+            <div class="grid grid-cols-3 gap-1">
+                <button class="btn btn-xs btn-ghost h-7 flex flex-col items-center justify-center gap-0 p-1" id="view-left-global" title="Vue de gauche" onclick="document.getElementById('view-left').click();">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                    <span style="font-size: 8px;">Gauche</span>
+                </button>
+                <button class="btn btn-xs btn-ghost h-7 flex flex-col items-center justify-center gap-0 p-1" id="view-right-global" title="Vue de droite" onclick="document.getElementById('view-right').click();">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                    <span style="font-size: 8px;">Droite</span>
+                </button>
+                <button class="btn btn-xs btn-warning h-7 flex flex-col items-center justify-center gap-0 p-1" id="view-reset-global" title="Réinitialiser la vue" onclick="document.getElementById('view-reset').click();">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+                    <span style="font-size: 8px;">Reset</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- MODE DE TRANSFORMATION (STICKY - visible sur tous les onglets sauf Audio) -->
+        <div id="transform-bar" style="flex-shrink: 0; padding: 4px 8px 0 8px; padding-right: 28px; background: inherit;">
+            <div class="text-[10px] font-semibold mb-1 px-1" style="color: #999999 !important;">Mode de transformation</div>
+            <div class="join join-horizontal w-full">
+                <button class="btn btn-xs btn-primary join-item flex-1 mode-btn flex items-center justify-center gap-1" id="mode-translate" title="Position (Alt+<)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v16h16"/><path d="m5 19 6-6"/><path d="m2 6 3-3 3 3"/><path d="m18 16 3 3-3 3"/></svg>
+                    <span class="hidden sm:inline">Position</span>
+                </button>
+                <button class="btn btn-xs btn-ghost join-item flex-1 mode-btn flex items-center justify-center gap-1" id="mode-rotate" title="Rotation (Alt+W)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16.466 7.5C15.643 4.237 13.952 2 12 2 9.239 2 7 6.477 7 12s2.239 10 5 10c.342 0 .677-.069 1-.2"/><path d="m15.194 13.707 3.814 1.86-1.86 3.814"/><path d="M19 15.57c-1.804.885-4.274 1.43-7 1.43-5.523 0-10-2.239-10-5s4.477-5 10-5c3.05 0 5.023.374 6.5.8"/></svg>
+                    <span class="hidden sm:inline">Rotation</span>
+                </button>
+                <button class="btn btn-xs btn-ghost join-item flex-1 mode-btn flex items-center justify-center gap-1" id="mode-scale" title="Échelle (Alt+X)">
+                    <img src="icones/scale-3d.svg" alt="Échelle" width="12" height="12" style="filter: brightness(0) invert(1);">
+                    <span class="hidden sm:inline">Échelle</span>
+                </button>
+            </div>
+        </div>
+
+        <div style="border-bottom: 1px solid #3a3a3a; margin: 6px 8px 0 8px; flex-shrink: 0;"></div>
+
+        <!-- Zone scrollable des onglets -->
+        <div class="card-body p-2" style="flex: 1; min-width: 0; overflow-y: auto;">
+
+    <!-- ============ PANNEAU MODE OBJETS ============ -->
+    <div id="objects-panel">
+
+        <!-- Liste des objets -->
+        <div style="display: flex; flex-direction: row; align-items: center; justify-content: space-between; margin-bottom: 4px; padding: 0 4px; flex-wrap: nowrap;">
+            <span class="text-[10px] font-semibold" style="color: #999999 !important; white-space: nowrap;">Liste des objets</span>
+            <button id="add-folder-btn" title="Créer un dossier" style="background: none; border: none; cursor: pointer; padding: 2px; opacity: 0.7; transition: opacity 0.2s; flex-shrink: 0;">
+                <img src="icones/folder-plus.svg" alt="Nouveau dossier" width="14" height="14" style="filter: brightness(0) invert(0.8);">
+            </button>
+        </div>
+        <div id="objects-list" class="bg-base-200 rounded px-1 py-1 mb-2 max-h-[220px] overflow-y-auto text-[10px]">
+            <!-- Liste générée dynamiquement -->
+        </div>
+
+        <!-- Bouton Poser au sol -->
+        <button class="btn btn-xs btn-outline btn-primary w-full h-7 mb-2 flex items-center justify-center gap-1" id="snap-to-ground" title="Poser l'objet au niveau du sol">
+            <img src="icones/arrow-down-to-line.svg" alt="Poser au sol" width="14" height="14" style="filter: brightness(0) invert(0.7);">
+            <span>Poser au sol</span>
+        </button>
+
+    <!-- Score -->
+    <div id="score-display-editor" class="px-1 mb-2" style="display: none;">
+        <div class="flex items-center gap-2 px-2 py-1.5 bg-base-200 rounded">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffd700" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M21 9v3a9 9 0 0 1-18 0V9"/></svg>
+            <span class="text-[11px] font-semibold">Score: <span id="score-value">0</span> / 5</span>
+        </div>
+    </div>
+
+    <!-- Options des axes pour chaque mode -->
+    <div class="editor-accordion open" id="axis-controls">
+        <div class="editor-accordion-header" onclick="toggleAccordion(this)">
+            <span class="accordion-arrow">▾</span>
+            <span>Axes actifs</span>
+        </div>
+        <div class="editor-accordion-content" style="display: block;">
+            <p id="axis-help-text" class="text-[10px] text-base-content/60 mb-1">
+                Décochez les axes pour verrouiller
+            </p>
+            <div class="flex gap-3 justify-center py-1">
+                <label class="label cursor-pointer gap-1 p-0">
+                    <input type="checkbox" id="axis-x" checked class="checkbox checkbox-xs checkbox-error" />
+                    <span class="text-xs font-bold text-error">X</span>
+                </label>
+                <label class="label cursor-pointer gap-1 p-0">
+                    <input type="checkbox" id="axis-y" checked class="checkbox checkbox-xs checkbox-success" />
+                    <span class="text-xs font-bold text-success">Y</span>
+                </label>
+                <label class="label cursor-pointer gap-1 p-0">
+                    <input type="checkbox" id="axis-z" checked class="checkbox checkbox-xs checkbox-info" />
+                    <span class="text-xs font-bold text-info">Z</span>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <div class="editor-accordion open" id="object-info">
+        <div class="editor-accordion-header" onclick="toggleAccordion(this)">
+            <span class="accordion-arrow">▾</span>
+            <span>Position / Rotation / Échelle</span>
+        </div>
+        <div class="editor-accordion-content" style="display: block;">
+            <div class="mb-2">
+                <div class="text-[10px] font-semibold mb-1">Position</div>
+                <div class="grid grid-cols-3 gap-1">
+                    <div>
+                        <div class="text-[9px] font-bold text-error">X</div>
+                        <input type="number" id="manual-pos-x" step="0.1" class="input input-xs input-bordered input-error w-full h-6" />
+                    </div>
+                    <div>
+                        <div class="text-[9px] font-bold text-success">Y</div>
+                        <input type="number" id="manual-pos-y" step="0.1" class="input input-xs input-bordered input-success w-full h-6" />
+                    </div>
+                    <div>
+                        <div class="text-[9px] font-bold text-info">Z</div>
+                        <input type="number" id="manual-pos-z" step="0.1" class="input input-xs input-bordered input-info w-full h-6" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-2">
+                <div class="text-[10px] font-semibold mb-1">Rotation (°)</div>
+                <div class="grid grid-cols-3 gap-1">
+                    <div>
+                        <div class="text-[9px] font-bold text-error">X</div>
+                        <input type="number" id="manual-rot-x" step="1" class="input input-xs input-bordered input-error w-full h-6" />
+                    </div>
+                    <div>
+                        <div class="text-[9px] font-bold text-success">Y</div>
+                        <input type="number" id="manual-rot-y" step="1" class="input input-xs input-bordered input-success w-full h-6" />
+                    </div>
+                    <div>
+                        <div class="text-[9px] font-bold text-info">Z</div>
+                        <input type="number" id="manual-rot-z" step="1" class="input input-xs input-bordered input-info w-full h-6" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-2">
+                <div class="text-[10px] font-semibold mb-1">Échelle</div>
+                <div class="grid grid-cols-3 gap-1">
+                    <div>
+                        <div class="text-[9px] font-bold text-error">X</div>
+                        <input type="number" id="manual-scale-x" step="0.1" class="input input-xs input-bordered input-error w-full h-6" />
+                    </div>
+                    <div>
+                        <div class="text-[9px] font-bold text-success">Y</div>
+                        <input type="number" id="manual-scale-y" step="0.1" class="input input-xs input-bordered input-success w-full h-6" />
+                    </div>
+                    <div>
+                        <div class="text-[9px] font-bold text-info">Z</div>
+                        <input type="number" id="manual-scale-z" step="0.1" class="input input-xs input-bordered input-info w-full h-6" />
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn btn-xs btn-success w-full h-7" id="apply-manual-values">
+                ✓ Appliquer
+            </button>
+        </div>
+    </div>
+
+    <!-- Accordéon Matériau -->
+    <div class="editor-accordion" id="material-section">
+        <div class="editor-accordion-header" onclick="toggleAccordion(this)">
+            <span class="accordion-arrow">▸</span>
+            <span>Matériau</span>
+        </div>
+        <div class="editor-accordion-content" style="display: none;">
+            <div class="mb-2">
+                <div class="text-[9px] font-semibold mb-0.5 flex items-center justify-between">
+                    <span>Rugosité (Roughness): <span id="roughness-value">-</span></span>
+                    <span class="text-[8px] text-base-content/60">0=Brillant, 1=Mat</span>
+                </div>
+                <input type="range" id="roughness-slider" min="0" max="1" step="0.05" value="0.8" class="range range-xs range-primary" disabled />
+                <div class="flex justify-between text-[8px] text-base-content/60 mt-0.5">
+                    <span>Miroir</span>
+                    <span>Cuir: 0.4-0.6</span>
+                    <span>Tissu</span>
+                </div>
+            </div>
+            <div class="text-[8px] text-base-content/60 italic">
+                💡 Sélectionne un objet importé pour ajuster
+            </div>
+        </div>
+    </div>
+
+
+        <!-- Bouton d'import d'objets 3D -->
+        <div class="border border-dashed border-primary rounded px-2 py-1.5 my-1">
+            <div class="text-[10px] mb-1">
+                <span class="font-semibold">Importer objet 3D</span>
+                <span class="text-base-content/60"> (GLB, GLTF)</span>
+            </div>
+            <input type="file" id="model-file-input" accept=".glb,.gltf" style="display: none;">
+            <button class="btn btn-xs btn-secondary w-full h-7 flex items-center justify-center gap-1" id="import-model-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                Choisir fichier
+            </button>
+
+            <!-- Liste des objets importés -->
+            <div id="imported-objects-list" class="mt-1" style="display: none;">
+                <div class="divider my-0.5"></div>
+                <div class="text-[9px] font-semibold mb-0.5">
+                    Objets importés:
+                </div>
+                <div id="imported-objects-container" class="max-h-[100px] overflow-y-auto text-[9px]">
+                    <!-- Les objets importés apparaîtront ici -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Bouton d'import de personnages 3D -->
+        <div class="border border-dashed border-success rounded px-2 py-1.5 my-1">
+            <div class="text-[10px] mb-1">
+                <span class="font-semibold">Importer personnage 3D</span>
+                <span class="text-base-content/60"> (GLB, GLTF)</span>
+            </div>
+            <input type="file" id="character-file-input" accept=".glb,.gltf" style="display: none;">
+            <button class="btn btn-xs btn-accent w-full h-7 flex items-center justify-center gap-1" id="import-character-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                Choisir fichier
+            </button>
+
+            <!-- Liste des personnages importés -->
+            <div id="imported-characters-list" class="mt-1" style="display: none;">
+                <div class="divider my-0.5"></div>
+                <div class="text-[9px] font-semibold mb-0.5">
+                    Personnages importés:
+                </div>
+                <div id="imported-characters-container" class="max-h-[100px] overflow-y-auto text-[9px]">
+                </div>
+            </div>
+        </div>
+
+    </div>
+    <!-- FIN PANNEAU MODE OBJETS -->
+
+    <!-- ============ PANNEAU MODE CAMÉRA ============ -->
+    <div id="camera-panel" style="display: none;">
+        <div class="text-xs font-semibold mb-2">Contrôle Caméra</div>
+
+        <!-- Boutons cibles cachés (référencés par les boutons globaux du views-bar) -->
+        <div style="display:none;">
+            <button id="view-top"></button>
+            <button id="view-front"></button>
+            <button id="view-free"></button>
+            <button id="view-left"></button>
+            <button id="view-right"></button>
+            <button id="view-reset"></button>
+        </div>
+
+        <div class="form-control mb-2">
+            <label class="label py-0 pb-0.5">
+                <span class="label-text text-[10px] font-semibold">Type de caméra</span>
+            </label>
+            <div class="relative">
+                <select id="camera-type" class="select select-xs select-bordered w-full h-7 appearance-none pr-8">
+                    <option value="fps">1ère personne (FPS)</option>
+                    <option value="third">3ème personne (Orbite)</option>
+                    <option value="free">Libre</option>
+                </select>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                    <path d="m6 9 6 6 6-6"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="form-control mb-2">
+            <div class="text-[10px] font-semibold mb-1">Position</div>
+            <div class="grid grid-cols-3 gap-1">
+                <div>
+                    <div class="text-[9px] font-bold text-error">X</div>
+                    <input type="number" id="cam-pos-x" step="0.5" class="input input-xs input-bordered input-error w-full h-6" />
+                </div>
+                <div>
+                    <div class="text-[9px] font-bold text-success">Y</div>
+                    <input type="number" id="cam-pos-y" step="0.1" class="input input-xs input-bordered input-success w-full h-6" />
+                </div>
+                <div>
+                    <div class="text-[9px] font-bold text-info">Z</div>
+                    <input type="number" id="cam-pos-z" step="0.5" class="input input-xs input-bordered input-info w-full h-6" />
+                </div>
+            </div>
+        </div>
+
+        <div class="form-control mb-2">
+            <label class="label py-0 pb-0.5">
+                <span class="label-text text-[10px] font-semibold">FOV: <span id="fov-value" class="text-primary">75</span>°</span>
+            </label>
+            <input type="range" id="cam-fov" min="30" max="120" value="75" class="range range-xs range-primary" />
+        </div>
+
+        <button class="btn btn-xs btn-secondary w-full mb-1 h-7 flex items-center justify-center gap-1" id="capture-current-position">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+            Capturer position
+        </button>
+
+        <button class="btn btn-xs btn-success w-full mb-1 h-7 flex items-center justify-center gap-1" id="apply-camera">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            Appliquer
+        </button>
+
+        <button class="btn btn-xs btn-warning w-full h-7 flex items-center justify-center gap-1" id="reset-camera">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+            Réinitialiser
+        </button>
+    </div>
+    <!-- FIN PANNEAU MODE CAMÉRA -->
+
+    <!-- ============ PANNEAU MODE LUMIÈRES ============ -->
+    <div id="lights-panel" style="display: none;">
+        <div class="text-xs font-semibold mb-2">Gestion Lumières</div>
+
+        <button class="btn btn-xs btn-success w-full mb-2 h-7 flex items-center justify-center gap-1" id="add-light-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+            Ajouter lumière
+        </button>
+
+        <!-- Liste de toutes les lumières (y compris la lumière par défaut) -->
+        <div id="lights-list" class="max-h-[200px] overflow-y-auto mb-2">
+            <!-- La lumière par défaut et les lumières personnalisées seront affichées ici -->
+        </div>
+
+        <!-- Panneau d'édition de lumière (affiché quand une lumière est sélectionnée) -->
+        <div id="light-edit-panel" class="bg-base-200 rounded px-2 py-1.5 mt-1" style="display: none;">
+            <div class="text-[10px] font-semibold mb-1">Édition: <span id="light-edit-name">Lumière</span></div>
+
+            <div class="form-control mb-1">
+                <div class="text-[9px] font-semibold mb-0.5">Type</div>
+                <div class="relative">
+                    <select id="light-type" class="select select-xs select-bordered w-full h-6 appearance-none pr-8">
+                        <option value="ambient">Ambiante</option>
+                        <option value="point">Ponctuelle</option>
+                        <option value="directional">Directionnelle</option>
+                        <option value="spot">Spot</option>
+                    </select>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                        <path d="m6 9 6 6 6-6"/>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="form-control mb-1" id="light-position-controls">
+                <div class="text-[9px] font-semibold mb-0.5">Position</div>
+                <div class="grid grid-cols-3 gap-1">
+                    <div>
+                        <div class="text-[8px] font-bold text-error">X</div>
+                        <input type="number" id="light-pos-x" step="0.5" class="input input-xs input-bordered input-error w-full h-6" />
+                    </div>
+                    <div>
+                        <div class="text-[8px] font-bold text-success">Y</div>
+                        <input type="number" id="light-pos-y" step="0.5" class="input input-xs input-bordered input-success w-full h-6" />
+                    </div>
+                    <div>
+                        <div class="text-[8px] font-bold text-info">Z</div>
+                        <input type="number" id="light-pos-z" step="0.5" class="input input-xs input-bordered input-info w-full h-6" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-control mb-1" id="light-target-controls" style="display: none;">
+                <div class="text-[9px] font-semibold mb-0.5">Cible (vers où pointe la lumière)</div>
+                <div class="grid grid-cols-3 gap-1">
+                    <div>
+                        <div class="text-[8px] font-bold text-error">X</div>
+                        <input type="number" id="light-target-x" step="0.5" class="input input-xs input-bordered input-error w-full h-6" />
+                    </div>
+                    <div>
+                        <div class="text-[8px] font-bold text-success">Y</div>
+                        <input type="number" id="light-target-y" step="0.5" class="input input-xs input-bordered input-success w-full h-6" />
+                    </div>
+                    <div>
+                        <div class="text-[8px] font-bold text-info">Z</div>
+                        <input type="number" id="light-target-z" step="0.5" class="input input-xs input-bordered input-info w-full h-6" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-control mb-1">
+                <div class="text-[9px] font-semibold mb-0.5">Couleur</div>
+                <input type="color" id="light-color" value="#ffffff" class="w-full h-8 rounded cursor-pointer" />
+            </div>
+
+            <div class="form-control mb-1">
+                <div class="text-[9px] font-semibold mb-0.5">Intensité: <span id="light-intensity-value" class="text-primary">1.0</span></div>
+                <input type="range" id="light-intensity" min="0" max="5" step="0.1" value="1" class="range range-xs range-primary" />
+            </div>
+
+            <div class="form-control mb-1" id="light-angle-controls" style="display: none;">
+                <div class="text-[9px] font-semibold mb-0.5">Angle: <span id="light-angle-value" class="text-primary">60</span>°</div>
+                <input type="range" id="light-angle" min="10" max="180" value="60" class="range range-xs range-primary" />
+            </div>
+
+            <div class="form-control mb-1">
+                <div class="text-[9px] font-semibold mb-0.5">Distance: <span id="light-distance-value" class="text-primary">50</span></div>
+                <input type="range" id="light-distance" min="10" max="200" value="50" class="range range-xs range-primary" />
+            </div>
+
+            <button class="btn btn-xs btn-success w-full h-7 flex items-center justify-center gap-1" id="apply-light">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                Appliquer
+            </button>
+        </div>
+    </div>
+    <!-- FIN PANNEAU MODE LUMIÈRES -->
+
+    <!-- ============ PANNEAU MODE PLAN DE PIÈCE ============ -->
+    <div id="floor-plan-panel" style="display: none;">
+        <div class="text-xs font-semibold mb-2">Plan de Pièce</div>
+
+        <!-- Section 1: Éditeur de plan interactif (directement visible) -->
+        <div id="interactive-plan-section" style="margin-bottom: 4px;">
+            <div class="text-[10px] font-semibold mb-1 px-1" style="color: #b0b0b0;">📐 Éditeur de Plan Interactif</div>
+            <div style="padding: 0 2px;">
+                <div class="mb-2">
+                    <div class="text-[9px] font-semibold mb-1">Vue</div>
+                    <div class="join join-horizontal w-full">
+                        <button class="btn btn-xs join-item flex-1 h-6" id="plan-view-top">Vue Dessus</button>
+                        <button class="btn btn-xs join-item flex-1 h-6" id="plan-view-3d">Vue 3D</button>
+                    </div>
+                </div>
+
+                <div class="mb-2">
+                    <div class="text-[9px] font-semibold mb-1">🔨 Outils de construction</div>
+                    <div class="grid grid-cols-3 gap-1">
+                        <button class="btn btn-xs btn-outline w-full h-8 flex flex-col items-center justify-center gap-0" id="tool-draw-wall" title="Tracer un mur (perpendiculaire)">
+                            <img src="icones/brick-wall.svg" width="14" height="14" style="filter: brightness(0) invert(0.8);">
+                            <span class="text-[8px]">Mur</span>
+                        </button>
+                        <button class="btn btn-xs btn-outline w-full h-8 flex flex-col items-center justify-center gap-0" id="tool-draw-oblique" title="Tracer un mur oblique (angle libre)">
+                            <img src="icones/triangle-right.svg" width="14" height="14" style="filter: brightness(0) invert(0.8);">
+                            <span class="text-[8px]">Oblique</span>
+                        </button>
+                        <button class="btn btn-xs btn-outline w-full h-8 flex flex-col items-center justify-center gap-0" id="tool-draw-room" title="Tracer une pièce rectangulaire">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18"/></svg>
+                            <span class="text-[8px]">Pièce</span>
+                        </button>
+                        <button class="btn btn-xs btn-outline w-full h-8 flex flex-col items-center justify-center gap-0" id="tool-delete-wall" title="Supprimer un mur">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                            <span class="text-[8px]">Effacer</span>
+                        </button>
+                        <button class="btn btn-xs btn-outline w-full h-8 flex flex-col items-center justify-center gap-0" id="tool-select" title="Sélectionner et déplacer">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/></svg>
+                            <span class="text-[8px]">Sélect.</span>
+                        </button>
+                        <button class="btn btn-xs btn-outline w-full h-8 flex flex-col items-center justify-center gap-0" id="tool-texture" title="Appliquer une texture (Maj+clic = toute la pièce)">
+                            <img src="icones/paintbrush-vertical.svg" width="14" height="14" style="filter: brightness(0) invert(0.8);">
+                            <span class="text-[8px]">Texture</span>
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-1 mt-1">
+                        <button class="btn btn-xs btn-outline w-full h-8 flex flex-col items-center justify-center gap-0" id="btn-merge-walls" title="Fusionner les murs sélectionnés en un seul mesh (élimine le Z-fighting)" disabled>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="8" height="12" rx="1"/><rect x="14" y="6" width="8" height="12" rx="1"/><path d="M10 12h4"/><path d="M12 10v4"/></svg>
+                            <span class="text-[8px]">Fusionner</span>
+                        </button>
+                        <button class="btn btn-xs btn-outline w-full h-8 flex flex-col items-center justify-center gap-0" id="tool-measure" title="Outil de mesure (longueur, largeur, hauteur)">
+                            <img src="icones/ruler-dimension-line.svg" width="14" height="14" style="filter: brightness(0) invert(0.8);">
+                            <span class="text-[8px]">Mesure</span>
+                        </button>
+                    </div>
+                    <div class="text-[8px] text-base-content/60 mt-1">
+                        💡 <kbd class="kbd kbd-xs">B</kbd> (maintenir) = Tracer mur/oblique | <kbd class="kbd kbd-xs">Ctrl</kbd> + glisser = Effacer section<br>
+                        Relâchez <kbd class="kbd kbd-xs">B</kbd> pour fixer le mur et préparer le suivant
+                    </div>
+                </div>
+
+                <!-- Panneau réglages Texture (visible uniquement quand outil texture actif) -->
+                <div id="texture-tool-panel" class="mb-2" style="display: none; background: #242424; border: 1px solid #3a3a3a; border-radius: 4px; padding: 6px;">
+                    <div class="text-[9px] font-semibold mb-1" style="color: #ff8800;">🎨 Outil Texture</div>
+
+                    <!-- Upload texture -->
+                    <div class="mb-2">
+                        <div class="text-[9px] mb-1">Image (JPEG) :</div>
+                        <input type="file" id="texture-file-input" accept=".jpg,.jpeg" style="display: none;">
+                        <button class="btn btn-xs btn-outline w-full h-7 flex items-center justify-center gap-1" id="texture-upload-btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+                            Charger texture
+                        </button>
+                        <!-- Aperçu texture chargée -->
+                        <div id="texture-preview-container" style="display: none; margin-top: 4px;">
+                            <img id="texture-preview-img" style="width: 100%; height: 50px; object-fit: cover; border: 1px solid #3a3a3a; border-radius: 2px;">
+                            <div class="text-[8px] mt-0.5" style="color: #999;" id="texture-file-name">-</div>
+                        </div>
+                    </div>
+
+                    <!-- Type de texture -->
+                    <div class="mb-2">
+                        <div class="text-[9px] mb-1">Type :</div>
+                        <div class="flex gap-1">
+                            <button class="btn btn-xs btn-primary flex-1 h-6" id="texture-type-tile" title="Texture répétable (carrelage, brique...)">Tuile</button>
+                            <button class="btn btn-xs btn-outline flex-1 h-6" id="texture-type-panel" title="Panneau pleine hauteur (papier peint...)">Panneau</button>
+                        </div>
+                    </div>
+
+                    <!-- Taille de tuile (visible seulement en mode tile) -->
+                    <div id="texture-tile-size-container" class="mb-2">
+                        <div class="text-[9px] mb-0.5">Taille tuile : <span id="texture-tile-size-value">1</span>m</div>
+                        <input type="range" id="texture-tile-size" min="0.25" max="4" step="0.25" value="1" class="range range-xs range-warning" />
+                    </div>
+
+                    <!-- Surface cible -->
+                    <div class="mb-1">
+                        <div class="text-[9px] mb-1">Appliquer sur :</div>
+                        <div class="flex gap-1">
+                            <button class="btn btn-xs btn-primary flex-1 h-6" id="texture-target-wall">Murs</button>
+                            <button class="btn btn-xs btn-outline flex-1 h-6" id="texture-target-floor">Sol</button>
+                            <button class="btn btn-xs btn-outline flex-1 h-6" id="texture-target-ceiling">Plafond</button>
+                        </div>
+                    </div>
+
+                    <!-- Option tranches automatiques -->
+                    <div class="form-control mb-1" id="auto-edge-container">
+                        <label class="label cursor-pointer justify-start gap-2 py-0.5">
+                            <input type="checkbox" id="auto-apply-edges" class="checkbox checkbox-xs checkbox-warning" checked />
+                            <span class="label-text text-[8px]">Appliquer aussi aux tranches</span>
+                        </label>
+                    </div>
+
+                    <div class="text-[8px] text-base-content/60 mt-1">
+                        💡 Clic = 1 face | <kbd class="kbd kbd-xs">Maj</kbd>+Clic = toute la pièce | <kbd class="kbd kbd-xs">Ctrl</kbd>+Clic = supprimer
+                    </div>
+                </div>
+
+                <div class="mb-2">
+                    <div class="text-[9px] font-semibold mb-0.5 flex items-center justify-between">
+                        <span>Pas de grille: <span id="grid-size-value">100</span> cm</span>
+                        <span class="text-[8px] text-base-content/60">Chaque carré = <span id="grid-size-value-2">100</span> cm</span>
+                    </div>
+                    <input type="range" id="grid-size" min="0.25" max="5" step="0.25" value="1" class="range range-xs range-primary" />
+                    <div class="flex justify-between text-[8px] text-base-content/60 mt-0.5">
+                        <span>25 cm</span>
+                        <span>100 cm</span>
+                        <span>250 cm</span>
+                        <span>500 cm</span>
+                    </div>
+                    <div class="form-control">
+                        <label class="label cursor-pointer justify-start gap-2 py-1">
+                            <input type="checkbox" id="grid-snap" class="checkbox checkbox-xs checkbox-primary" checked />
+                            <span class="label-text text-[9px]">Aimant magnétique</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="mb-2">
+                    <div class="text-[9px] font-semibold mb-0.5">Hauteur murs: <span id="wall-height-value">250</span> cm</div>
+                    <input type="range" id="wall-height" min="2" max="5" step="0.1" value="2.5" class="range range-xs range-primary" />
+                </div>
+
+                <div class="mb-2">
+                    <div class="text-[9px] font-semibold mb-0.5">Épaisseur: <span id="wall-thickness-value">20</span> cm</div>
+                    <input type="range" id="wall-thickness" min="0.1" max="0.5" step="0.05" value="0.2" class="range range-xs range-primary" />
+                </div>
+
+                <div id="room-rounding-panel" class="mb-2" style="display:none; background:#242424; border:1px solid #3a3a3a; border-radius:4px; padding:6px;">
+                    <div class="text-[9px] font-semibold mb-0.5">⭕ Arrondi des coins: <span id="room-rounding-value">0</span>%</div>
+                    <input type="range" id="room-rounding" min="0" max="100" step="1" value="0" class="range range-xs range-primary" />
+                    <div class="flex justify-between text-[8px] text-base-content/60 mt-0.5">
+                        <span>Rect.</span><span>50%</span><span>Ovale</span>
+                    </div>
+                </div>
+
+                <div class="mb-2 mt-2">
+                    <div class="text-[9px] font-semibold mb-1">🔧 Opérations sur pièces</div>
+                    <div class="grid grid-cols-2 gap-1">
+                        <button class="btn btn-xs btn-outline w-full h-8 flex flex-col items-center justify-center gap-0" id="bool-union" title="Union - Fusionner les pièces sélectionnées" disabled>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="9" r="7"/><circle cx="15" cy="15" r="7"/></svg>
+                            <span class="text-[8px]">Union</span>
+                        </button>
+                        <button class="btn btn-xs btn-outline w-full h-8 flex flex-col items-center justify-center gap-0" id="bool-subtract" title="Soustraction - Retirer la 2e pièce de la 1ère" disabled>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="12" r="7"/><path d="M16 5v14"/></svg>
+                            <span class="text-[8px]">Soustr.</span>
+                        </button>
+                        <button class="btn btn-xs btn-outline w-full h-8 flex flex-col items-center justify-center gap-0" id="bool-intersect" title="Intersection - Garder la zone commune" disabled>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="12" r="7" opacity="0.3"/><circle cx="15" cy="12" r="7" opacity="0.3"/><path d="M12 7v10"/></svg>
+                            <span class="text-[8px]">Inters.</span>
+                        </button>
+                        <button class="btn btn-xs btn-outline w-full h-8 flex flex-col items-center justify-center gap-0" id="bool-exclude" title="Exclusion - Garder les zones non-communes" disabled>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="12" r="7"/><circle cx="15" cy="12" r="7"/><line x1="12" y1="7" x2="12" y2="17"/></svg>
+                            <span class="text-[8px]">Exclus.</span>
+                        </button>
+                    </div>
+                    <div class="text-[8px] text-base-content/60 mt-1">
+                        💡 Utilisez l'outil Sélect. et cliquez sur les pièces (Shift = multi-sélection)
+                    </div>
+                </div>
+
+                <button class="btn btn-xs btn-outline btn-error w-full h-7 mt-1 flex items-center justify-center gap-1" id="clear-all-walls" title="Tout effacer">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    Tout effacer
+                </button>
+
+                <div class="flex gap-1 mt-1">
+                    <button class="btn btn-xs btn-outline flex-1 h-6" id="save-plan">💾 Sauvegarder</button>
+                    <button class="btn btn-xs btn-outline flex-1 h-6" id="load-plan">📥 Charger</button>
+                </div>
+            </div>
+        </div>
+
+        <div style="border-top: 1px solid #3a3a3a; margin: 6px 0;"></div>
+
+        <!-- Section 2: Import SVG (directement visible) -->
+        <div id="svg-import-section" style="margin-bottom: 4px;">
+            <div class="text-[10px] font-semibold mb-1 px-1" style="color: #b0b0b0;">📥 Import Plan SVG</div>
+            <div style="padding: 0 2px;">
+                <div class="mb-2">
+                    <div class="text-[9px] font-semibold mb-1">Fichier SVG</div>
+                    <input type="file" id="svg-file-input" accept=".svg" style="display: none;">
+                    <button class="btn btn-xs btn-secondary w-full h-7 flex items-center justify-center gap-1" id="import-svg-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                        Choisir fichier SVG
+                    </button>
+                </div>
+
+                <div id="svg-preview-container" style="display: none;">
+                    <div class="text-[9px] font-semibold mb-1">Aperçu</div>
+                    <div id="svg-preview" class="border border-base-300 rounded p-1 mb-2" style="min-height: 100px; background: #2a2a2a;">
+                        <!-- L'aperçu SVG apparaîtra ici -->
+                    </div>
+
+                    <div class="mb-2">
+                        <div class="text-[9px] font-semibold mb-0.5">Échelle</div>
+                        <select id="svg-scale" class="select select-xs select-bordered w-full h-6">
+                            <option value="0.01">1:100</option>
+                            <option value="0.02">1:50</option>
+                            <option value="0.04">1:25</option>
+                            <option value="0.1" selected>1:10</option>
+                            <option value="1">1:1</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-2">
+                        <div class="text-[9px] font-semibold mb-0.5">Hauteur murs: <span id="svg-wall-height-value">250</span> cm</div>
+                        <input type="range" id="svg-wall-height" min="2" max="5" step="0.1" value="2.5" class="range range-xs range-primary" />
+                    </div>
+
+                    <button class="btn btn-xs btn-success w-full h-7 flex items-center justify-center gap-1" id="generate-walls-from-svg">
+                        🏗️ Générer depuis SVG
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-[8px] text-base-content/60 italic mt-2 px-1">
+            💡 Dessine ton plan ou importe un fichier SVG pour créer des pièces personnalisées
+        </div>
+    </div>
+    <!-- FIN PANNEAU MODE PLAN DE PIÈCE -->
+
+    <!-- ============ PANNEAU MODE ÉLÉMENTS DE JEU ============ -->
+    <div id="game-setup-panel" style="display: none;">
+
+        <!-- Section: Position de départ du joueur -->
+        <div class="text-[10px] font-semibold mb-1 px-1" style="color: #999999 !important;">Position de départ du joueur</div>
+
+        <div class="grid grid-cols-2 gap-1 mb-2 px-1">
+            <button class="btn btn-xs btn-outline w-full h-8 flex flex-col items-center justify-center gap-0" id="tool-spawn-player" title="Placer la position de départ du joueur">
+                <img src="icones/person-standing.svg" width="16" height="16" style="filter: brightness(0) invert(0.8);">
+                <span class="text-[8px]">Joueur</span>
+            </button>
+            <button class="btn btn-xs btn-outline w-full h-8 flex flex-col items-center justify-center gap-0" id="btn-save-spawn" title="Enregistrer la position de départ">
+                <img src="icones/pin.svg" width="14" height="14" style="filter: brightness(0) invert(0.8);">
+                <span class="text-[8px]">Fixer</span>
+            </button>
+        </div>
+
+        <!-- Info sur la position actuelle -->
+        <div id="spawn-info" class="text-[10px] px-2 py-1 mb-2" style="color: #888; display: none;">
+            <div>Position: <span id="spawn-pos-display">-</span></div>
+            <div>Orientation: <span id="spawn-rot-display">-</span></div>
+        </div>
+
+        <div class="text-[9px] px-2 mb-2" style="color: #666;">
+            1. Cliquez sur <b>Joueur</b> puis cliquez dans la scène pour placer la position de départ.<br>
+            2. Utilisez les flèches ← → pour orienter le regard.<br>
+            3. Cliquez sur <b>Fixer</b> pour enregistrer la position.
+        </div>
+
+        <!-- Séparateur -->
+        <div class="divider my-1" style="border-color: #3a3a3a;"></div>
+
+        <!-- Section: Zones d'interaction -->
+        <div class="text-[10px] font-semibold mb-1 px-1" style="color: #999999 !important;">Zones d'interaction</div>
+
+        <!-- Surface Mode Selector -->
+        <div class="flex gap-0.5 mb-2 px-1" id="zone-surface-mode-selector">
+            <button class="btn btn-xs flex-1 h-6 text-[8px] btn-primary" id="zone-mode-floor" title="Sol">Sol</button>
+            <button class="btn btn-xs flex-1 h-6 text-[8px] btn-outline" id="zone-mode-ceiling" title="Plafond">Plafond</button>
+            <button class="btn btn-xs flex-1 h-6 text-[8px] btn-outline" id="zone-mode-wall" title="Murs">Murs</button>
+            <button class="btn btn-xs flex-1 h-6 text-[8px] btn-outline" id="zone-mode-object" title="Objets">Objets</button>
+            <button class="btn btn-xs flex-1 h-6 text-[8px] btn-outline" id="zone-mode-character" title="Personnages">Perso.</button>
+        </div>
+
+        <div class="grid grid-cols-3 gap-1 mb-2 px-1" id="zone-shape-tools">
+            <button class="btn btn-xs btn-outline w-full h-8 flex flex-col items-center justify-center gap-0" id="tool-zone-rect" title="Dessiner une zone rectangulaire">
+                <img src="icones/grid-2x2.svg" width="14" height="14" style="filter: brightness(0) invert(0.8);">
+                <span class="text-[8px]">Rectangle</span>
+            </button>
+            <button class="btn btn-xs btn-outline w-full h-8 flex flex-col items-center justify-center gap-0" id="tool-zone-oval" title="Dessiner une zone ovale">
+                <img src="icones/loader-circle.svg" width="14" height="14" style="filter: brightness(0) invert(0.8);">
+                <span class="text-[8px]">Ovale</span>
+            </button>
+            <button class="btn btn-xs btn-outline w-full h-8 flex flex-col items-center justify-center gap-0" id="btn-save-zone" title="Enregistrer la zone" disabled>
+                <img src="icones/save.svg" width="14" height="14" style="filter: brightness(0) invert(0.8);">
+                <span class="text-[8px]">Sauver</span>
+            </button>
+        </div>
+
+        <!-- Configuration de l'action -->
+        <div id="zone-config-panel" class="px-1 mb-2" style="display: none;">
+            <div class="text-[9px] mb-1" style="color: #888;">Configuration de la zone :</div>
+            <div class="text-[8px] mb-0.5" style="color: #888;">Déclencheur :</div>
+            <select id="zone-trigger-type" class="select select-xs w-full mb-1" style="background: #2a2a2a; color: #d4d4d4; border: 1px solid #3a3a3a; font-size: 10px;">
+                <option value="click">Au clic</option>
+                <option value="double-click">Au double-clic</option>
+                <option value="right-click">Au clic droit</option>
+                <option value="hold">Au clic maintenu (1s)</option>
+                <option value="hover">Au survol (regard)</option>
+                <option value="proximity">À proximité (auto)</option>
+            </select>
+            <div class="text-[8px] mb-0.5" style="color: #888;">Action :</div>
+            <select id="zone-action-type" class="select select-xs w-full mb-1" style="background: #2a2a2a; color: #d4d4d4; border: 1px solid #3a3a3a; font-size: 10px;">
+                <optgroup label="Navigation">
+                    <option value="link">Lien (navigation)</option>
+                    <option value="teleport">Téléportation</option>
+                </optgroup>
+                <optgroup label="Contenu">
+                    <option value="message">Message</option>
+                    <option value="video">Vidéo</option>
+                    <option value="lightbox-image">Image (lightbox)</option>
+                    <option value="lightbox-text">Texte (lightbox)</option>
+                </optgroup>
+                <optgroup label="Mécanique (objets)">
+                    <option value="turn-button">Bouton rotatif</option>
+                    <option value="lever">Levier (haut/bas)</option>
+                    <option value="fader">Fader (gauche/droite)</option>
+                </optgroup>
+            </select>
+            <div id="zone-action-value-field">
+                <input type="text" id="zone-action-value" class="input input-xs w-full" placeholder="URL ex: ./room_2.html" style="background: #2a2a2a; color: #d4d4d4; border: 1px solid #3a3a3a; font-size: 10px;">
+            </div>
+            <div id="zone-video-field" style="display:none;" class="mt-1">
+                <input type="text" id="zone-video-url" class="input input-xs w-full" placeholder="URL vidéo (MP4 ou YouTube)" style="background: #2a2a2a; color: #d4d4d4; border: 1px solid #3a3a3a; font-size: 10px;">
+                <!-- Action de fin de vidéo -->
+                <div id="zone-video-end-action-field" style="margin-top:6px;">
+                    <label class="label" style="padding:2px 0;"><span class="label-text text-xs" style="color:#999;">Après la vidéo</span></label>
+                    <select id="zone-video-end-action" class="select select-xs w-full" style="background: #2a2a2a; color: #d4d4d4; border: 1px solid #3a3a3a; font-size: 10px; min-height:0; height:26px;">
+                        <option value="return">Retourner à la page de départ</option>
+                        <option value="navigate">Naviguer vers une autre page</option>
+                    </select>
+                    <div id="zone-video-end-url-field" style="display:none; margin-top:4px;">
+                        <input type="text" id="zone-video-end-url" class="input input-xs w-full" placeholder="URL de la page (ex: ./room_2.html)" style="background: #2a2a2a; color: #d4d4d4; border: 1px solid #3a3a3a; font-size: 10px;">
+                    </div>
+                </div>
+            </div>
+            <div id="zone-image-field" style="display:none;" class="mt-1">
+                <input type="text" id="zone-image-url" class="input input-xs w-full" placeholder="URL de l'image" style="background: #2a2a2a; color: #d4d4d4; border: 1px solid #3a3a3a; font-size: 10px;">
+            </div>
+            <div id="zone-text-field" style="display:none;" class="mt-1">
+                <textarea id="zone-lightbox-text" class="textarea textarea-xs w-full" rows="3" placeholder="Texte ou HTML à afficher" style="background: #2a2a2a; color: #d4d4d4; border: 1px solid #3a3a3a; font-size: 10px;"></textarea>
+            </div>
+            <div id="zone-mechanical-config" style="display:none;" class="mt-1">
+                <div class="text-[8px] mb-0.5" style="color: #888;">Axe :</div>
+                <select id="zone-mech-axis" class="select select-xs w-full mb-1" style="background: #2a2a2a; color: #d4d4d4; border: 1px solid #3a3a3a; font-size: 10px;">
+                    <option value="y">Y (vertical)</option>
+                    <option value="x">X (horizontal)</option>
+                    <option value="z">Z (profondeur)</option>
+                </select>
+                <div class="text-[8px] mb-0.5" style="color: #888;">Vitesse : <span id="zone-mech-speed-val">0.05</span></div>
+                <input type="range" id="zone-mech-speed" min="0.01" max="0.2" step="0.01" value="0.05" class="range range-xs range-primary">
+                <div class="text-[8px] mb-0.5 mt-1" style="color: #888;">Amplitude : <span id="zone-mech-range-val">1.0</span></div>
+                <input type="range" id="zone-mech-range" min="0.1" max="6.28" step="0.1" value="1.0" class="range range-xs range-primary">
+                <div class="divider my-1" style="border-color: #3a3a3a;"></div>
+                <div class="text-[8px] mb-0.5" style="color: #888;">Conséquence :</div>
+                <select id="zone-consequence-type" class="select select-xs w-full mb-1" style="background: #2a2a2a; color: #d4d4d4; border: 1px solid #3a3a3a; font-size: 10px;">
+                    <option value="">Aucune</option>
+                    <option value="link">Lien</option>
+                    <option value="message">Message</option>
+                    <option value="video">Vidéo</option>
+                    <option value="lightbox-image">Image (lightbox)</option>
+                    <option value="lightbox-text">Texte (lightbox)</option>
+                </select>
+                <input type="text" id="zone-consequence-value" class="input input-xs w-full" placeholder="Valeur de la conséquence" style="background: #2a2a2a; color: #d4d4d4; border: 1px solid #3a3a3a; font-size: 10px;">
+            </div>
+        </div>
+
+        <!-- Liste des zones d'interaction -->
+        <div class="text-[9px] font-semibold mb-1 px-1 mt-1" style="color: #888;">Liste des zones :</div>
+        <div id="interaction-zones-list" class="px-1" style="max-height: 200px; overflow-y: auto;">
+            <div class="text-[8px] px-1" style="color: #555;">Aucune zone.</div>
+        </div>
+
+        <div class="text-[9px] px-2 mt-2 mb-1" style="color: #666;">
+            1. Choisissez <b>Rectangle</b> ou <b>Ovale</b>.<br>
+            2. Dessinez la zone en maintenant le clic.<br>
+            3. Configurez l'action et cliquez <b>Sauver</b>.
+        </div>
+
+    </div>
+    <!-- FIN PANNEAU MODE ÉLÉMENTS DE JEU -->
+
+    <!-- ========== PANNEAU AUDIO ========== -->
+    <div id="audio-panel" style="display: none; overflow-y: auto; max-height: 100%;">
+        <div class="text-[11px] font-bold mb-1 px-1 pt-1" style="color: #ccc;">Audio</div>
+
+        <!-- Section Musique -->
+        <div class="audio-section">
+            <div class="audio-section-header" onclick="toggleAudioSection('musique')">
+                <img src="icones/music.svg" width="14" height="14" style="filter: brightness(0) invert(0.7);">
+                <span>Musique</span>
+                <img src="icones/chevron-down.svg" width="12" height="12" style="filter: brightness(0) invert(0.5); margin-left: auto;" id="audio-chevron-musique">
+            </div>
+            <div class="audio-section-body" id="audio-body-musique">
+                <div id="audio-list-musique"></div>
+                <button class="audio-import-btn" onclick="document.getElementById('audio-import-musique').click();">
+                    <img src="icones/plus.svg" width="12" height="12" style="filter: brightness(0) invert(0.5);">
+                    Importer un fichier audio (mp3/wav)
+                </button>
+                <input type="file" id="audio-import-musique" accept=".mp3,.wav" style="display:none;" onchange="handleAudioImport('musique', this)">
+                <button class="audio-save-btn" onclick="saveAudioSection('musique')">
+                    <img src="icones/save.svg" width="12" height="12" style="filter: brightness(0) invert(1);">
+                    Enregistrer
+                </button>
+            </div>
+        </div>
+
+        <!-- Section Sons ambiance -->
+        <div class="audio-section">
+            <div class="audio-section-header" onclick="toggleAudioSection('ambiance')">
+                <img src="icones/podcast.svg" width="14" height="14" style="filter: brightness(0) invert(0.7);">
+                <span>Sons ambiance</span>
+                <img src="icones/chevron-down.svg" width="12" height="12" style="filter: brightness(0) invert(0.5); margin-left: auto;" id="audio-chevron-ambiance">
+            </div>
+            <div class="audio-section-body" id="audio-body-ambiance">
+                <div id="audio-list-ambiance"></div>
+                <button class="audio-import-btn" onclick="document.getElementById('audio-import-ambiance').click();">
+                    <img src="icones/plus.svg" width="12" height="12" style="filter: brightness(0) invert(0.5);">
+                    Importer un fichier audio (mp3/wav)
+                </button>
+                <input type="file" id="audio-import-ambiance" accept=".mp3,.wav" style="display:none;" onchange="handleAudioImport('ambiance', this)">
+                <button class="audio-save-btn" onclick="saveAudioSection('ambiance')">
+                    <img src="icones/save.svg" width="12" height="12" style="filter: brightness(0) invert(1);">
+                    Enregistrer
+                </button>
+            </div>
+        </div>
+
+        <!-- Section Bruitage -->
+        <div class="audio-section">
+            <div class="audio-section-header" onclick="toggleAudioSection('bruitage')">
+                <img src="icones/drum.svg" width="14" height="14" style="filter: brightness(0) invert(0.7);">
+                <span>Bruitage</span>
+                <img src="icones/chevron-down.svg" width="12" height="12" style="filter: brightness(0) invert(0.5); margin-left: auto;" id="audio-chevron-bruitage">
+            </div>
+            <div class="audio-section-body" id="audio-body-bruitage">
+                <div id="audio-list-bruitage"></div>
+                <button class="audio-import-btn" onclick="document.getElementById('audio-import-bruitage').click();">
+                    <img src="icones/plus.svg" width="12" height="12" style="filter: brightness(0) invert(0.5);">
+                    Importer un fichier audio (mp3/wav)
+                </button>
+                <input type="file" id="audio-import-bruitage" accept=".mp3,.wav" style="display:none;" onchange="handleAudioImport('bruitage', this)">
+                <button class="audio-save-btn" onclick="saveAudioSection('bruitage')">
+                    <img src="icones/save.svg" width="12" height="12" style="filter: brightness(0) invert(1);">
+                    Enregistrer
+                </button>
+            </div>
+        </div>
+
+        <!-- Section Mouvement -->
+        <div class="audio-section">
+            <div class="audio-section-header" onclick="toggleAudioSection('mouvement')">
+                <img src="icones/footprints.svg" width="14" height="14" style="filter: brightness(0) invert(0.7);">
+                <span>Mouvement</span>
+                <img src="icones/chevron-down.svg" width="12" height="12" style="filter: brightness(0) invert(0.5); margin-left: auto;" id="audio-chevron-mouvement">
+            </div>
+            <div class="audio-section-body" id="audio-body-mouvement">
+                <div id="audio-list-mouvement"></div>
+                <button class="audio-import-btn" onclick="document.getElementById('audio-import-mouvement').click();">
+                    <img src="icones/plus.svg" width="12" height="12" style="filter: brightness(0) invert(0.5);">
+                    Importer un fichier audio (mp3/wav)
+                </button>
+                <input type="file" id="audio-import-mouvement" accept=".mp3,.wav" style="display:none;" onchange="handleAudioImport('mouvement', this)">
+                <button class="audio-save-btn" onclick="saveAudioSection('mouvement')">
+                    <img src="icones/save.svg" width="12" height="12" style="filter: brightness(0) invert(1);">
+                    Enregistrer
+                </button>
+            </div>
+        </div>
+    </div>
+    <!-- FIN PANNEAU AUDIO -->
+
+    </div><!-- fin card-body scrollable -->
+    </div><!-- fin flex column container -->
+</div><!-- fin editor-panel -->
+
+<!-- ========== TRIGGER SETTINGS MODAL ========== -->
+<div id="audio-trigger-modal" class="audio-trigger-modal">
+    <div class="audio-trigger-modal-content">
+        <h3><img src="icones/settings.svg" width="16" height="16" style="filter: brightness(0) invert(1); vertical-align: middle; margin-right: 6px;">Déclencheur audio</h3>
+
+        <!-- Champs standard (musique/ambiance/bruitage) -->
+        <div id="trigger-standard-fields">
+            <label>Action de déclenchement :</label>
+            <select id="audio-trigger-action">
+                <option value="none">Aucun déclencheur</option>
+                <option value="load">Quand la page est chargée</option>
+                <option value="click">Au click</option>
+                <option value="hover">Au survol</option>
+            </select>
+            <label>Objet cible :</label>
+            <select id="audio-trigger-object">
+                <option value="">(Global - aucun objet)</option>
+            </select>
+        </div>
+
+        <!-- Champs mouvement (section mouvement uniquement) -->
+        <div id="trigger-mouvement-fields" style="display:none;">
+            <label>Action du joueur :</label>
+            <select id="audio-movement-action">
+                <option value="">Aucune action</option>
+                <option value="forward">Avancer (touche Z/W)</option>
+                <option value="backward">Reculer (touche S)</option>
+                <option value="left">Aller à gauche (touche Q/A)</option>
+                <option value="right">Aller à droite (touche D)</option>
+                <option value="jump">Sauter (touche Espace)</option>
+                <option value="crouch">S'accroupir (touche Ctrl)</option>
+                <option value="run">Courir (touche Shift)</option>
+                <option value="grab">Saisir/Relâcher un objet (touche E)</option>
+                <option value="door">Ouvrir/Fermer une porte (touche F)</option>
+                <option value="camera">Tourner la caméra (mouvement souris)</option>
+            </select>
+            <label>Mode de lecture du son :</label>
+            <select id="audio-movement-playmode">
+                <option value="while-held">Tant que la touche est appuyée</option>
+                <option value="once-per-action">Une fois en entier à chaque action</option>
+                <option value="loop-during">En boucle pendant l'action</option>
+            </select>
+        </div>
+
+        <div style="display:flex; gap:8px; margin-top:16px;">
+            <button onclick="saveTriggerSettings()" style="flex:1; display:flex; align-items:center; justify-content:center; gap:4px; padding:6px 12px; background:#1a3a3a; border:1px solid #00CED1; color:#00CED1; border-radius:6px; cursor:pointer; font-size:11px;">
+                <img src="icones/save.svg" width="14" height="14" style="filter: brightness(0) invert(1);">
+                Sauvegarder
+            </button>
+            <button onclick="closeTriggerModal()" style="flex:1; padding:6px 12px; background:#3a3a3a; border:1px solid #555; color:#ccc; border-radius:6px; cursor:pointer; font-size:11px;">
+                Annuler
+            </button>
+        </div>
+    </div>
+</div>
