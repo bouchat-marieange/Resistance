@@ -290,6 +290,7 @@
         <div><span style="font-size:10px; color:#666;">Total: </span><span id="total-score-val" style="color:#39ff14; font-size:13px; font-weight:600;">0</span></div>
     </div>
 </div>
+<script src="game/score-manager.js"></script>
 
 <!-- ========== VISEUR MODE JEU ========== -->
 <div id="game-crosshair" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:500; pointer-events:none;">
@@ -340,9 +341,6 @@
 <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/controls/TransformControls.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/utils/BufferGeometryUtils.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/polygon-clipping@0.15.7/dist/polygon-clipping.umd.min.js"></script>
-
-<!-- Score Manager (cross-rooms) -->
-<script src="game/score-manager.js"></script>
 
 <!-- Variables d'état éditeur (doit être chargé après THREE.js, avant le script inline) -->
 <script src="editor/editor-state.js"></script>
@@ -1097,6 +1095,8 @@ function successFit(shapeObj, target) {
     shapeObj.isCorrect = true;
     score++;
     document.getElementById('score-val').innerText = score;
+    // Synchroniser avec le ScoreManager cross-rooms
+    if (typeof ScoreManager !== 'undefined') ScoreManager.addToRoomScore(null, 1);
     shapeObj.mesh.position.set(target.x, 4.2, target.z);
     shapeObj.body.position.copy(shapeObj.mesh.position);
     setTimeout(() => {
@@ -1127,6 +1127,8 @@ function goToRoom1() {
 function resetGame() {
     score = 0;
     document.getElementById('score-val').innerText = score;
+    // Remettre le score de la pièce à 0 dans le profil
+    if (typeof ScoreManager !== 'undefined') ScoreManager.setRoomScore(null, 0);
     shapes.forEach((s, index) => {
         const angle = Math.PI * 0.25 + (index / (shapes.length - 1)) * (Math.PI * 0.6);
         const dist = s.type === SHAPE_TYPES.PURPLE_CUBE ? 12 : 9.5;
