@@ -4,6 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Résistance</title>
+    <script>
+        // Mettre à jour le titre dès que possible
+        (function() {
+            var p = new URLSearchParams(window.location.search);
+            var t = p.get('title');
+            if (t) document.title = 'Résistance - ' + t;
+        })();
+    </script>
 
     <!-- Tailwind CSS + DaisyUI (requis par l'éditeur si chargé) -->
     <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.14/dist/full.min.css" rel="stylesheet" type="text/css" />
@@ -156,8 +164,15 @@
     </div>
 </div>
 
-<!-- Score -->
-<div id="game-score">Score: <span id="total-score-val">0</span></div>
+<!-- Score & Profil joueur -->
+<div id="game-score" style="position:fixed; bottom:16px; left:16px; z-index:100; background:rgba(30,30,30,0.8); border:1px solid #333; border-radius:8px; padding:8px 14px; display:none;">
+    <div style="font-size:10px; color:#666; letter-spacing:1px; text-transform:uppercase;">Résistant</div>
+    <div id="player-pseudo-display" style="color:#39ff14; font-size:14px; font-weight:700; font-family:monospace;">???</div>
+    <div style="display:flex; gap:12px; margin-top:4px;">
+        <div><span style="font-size:10px; color:#666;">Pièce: </span><span id="room-score-val" style="color:#eee; font-size:13px; font-weight:600;">0</span></div>
+        <div><span style="font-size:10px; color:#666;">Total: </span><span id="total-score-val" style="color:#39ff14; font-size:13px; font-weight:600;">0</span></div>
+    </div>
+</div>
 
 <!-- Conteneur éditeur (vide, rempli dynamiquement si éditeur chargé) -->
 <div id="editor-container"></div>
@@ -211,6 +226,9 @@
 <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/utils/BufferGeometryUtils.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/polygon-clipping@0.15.7/dist/polygon-clipping.umd.min.js"></script>
 
+<!-- Score Manager (cross-rooms) -->
+<script src="game/score-manager.js"></script>
+
 <!-- PAS de editor-state.js ici : l'éditeur est chargé dynamiquement via Ctrl+Shift+C -->
 
 <script>
@@ -220,9 +238,11 @@
  * ============================================
  * Chaque pièce doit avoir un nom unique pour l'isolation des données.
  */
+// Lire les paramètres URL (?room=nom&title=Titre)
+const urlParams = new URLSearchParams(window.location.search);
 const ROOM_CONFIG = {
-    name: 'room_model',
-    title: 'Nouvelle Pièce'
+    name: urlParams.get('room') || 'room_model',
+    title: urlParams.get('title') || 'Nouvelle Pièce'
 };
 
 /**
@@ -261,6 +281,17 @@ function createCharacterCollisionProxy() {}
 function removeCharacterCollisionProxy() {}
 function updateCharacterCollisionProxy() {}
 function loadPermanentObjects() {}
+
+// Enregistrer cette pièce dans la liste des pièces (pour le dialogue "Nouvelle pièce")
+(function() {
+    try {
+        var rooms = JSON.parse(localStorage.getItem('resistance_rooms_list') || '[]');
+        if (!rooms.find(function(r) { return r.name === ROOM_CONFIG.name; })) {
+            rooms.push({ name: ROOM_CONFIG.name, title: ROOM_CONFIG.title, createdAt: new Date().toISOString() });
+            localStorage.setItem('resistance_rooms_list', JSON.stringify(rooms));
+        }
+    } catch(e) {}
+})();
 
 // Navigation
 const keysPressed = {};
@@ -567,7 +598,10 @@ function addEditorUIElements() {
     }
 }
 
-window.onload = init;
+window.onload = function() {
+    init();
+    ScoreManager.init(ROOM_CONFIG.name);
+};
 </script>
 
 </body>

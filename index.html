@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Résistance - Connexion</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0a0a0a;
+            color: #eee;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        /* Fond animé avec particules */
+        #bg-canvas {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 0; pointer-events: none;
+        }
+
+        /* Container principal */
+        .login-container {
+            position: relative; z-index: 10;
+            display: flex; flex-direction: column; align-items: center;
+            max-width: 440px; width: 90%;
+        }
+
+        /* Logo */
+        .logo-container {
+            margin-bottom: 12px;
+            animation: logoFloat 3s ease-in-out infinite;
+        }
+        .logo-container img {
+            width: 120px; height: auto;
+            filter: drop-shadow(0 4px 24px rgba(57,255,20,0.3));
+        }
+        @keyframes logoFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        /* Titre */
+        .game-title {
+            font-size: 42px; font-weight: 800; letter-spacing: 4px;
+            color: #39ff14;
+            text-shadow: 0 0 20px rgba(57,255,20,0.4), 0 0 40px rgba(57,255,20,0.2);
+            margin-bottom: 4px;
+        }
+        .game-subtitle {
+            font-size: 13px; color: #555; letter-spacing: 6px;
+            text-transform: uppercase; margin-bottom: 32px;
+        }
+
+        /* Card principale */
+        .login-card {
+            background: rgba(18,18,22,0.95);
+            border: 1px solid #222;
+            border-radius: 16px;
+            padding: 28px 32px;
+            width: 100%;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex; gap: 0; margin-bottom: 24px;
+            border-bottom: 1px solid #2a2a2a;
+        }
+        .tab-btn {
+            flex: 1; padding: 10px 0; background: none; border: none;
+            color: #666; font-size: 13px; font-weight: 600; cursor: pointer;
+            border-bottom: 2px solid transparent; transition: all 0.2s;
+            letter-spacing: 1px;
+        }
+        .tab-btn.active { color: #39ff14; border-bottom-color: #39ff14; }
+        .tab-btn:hover { color: #aaa; }
+
+        /* Vues */
+        .tab-view { display: none; }
+        .tab-view.active { display: block; }
+
+        /* Labels et inputs */
+        .field-label {
+            font-size: 11px; color: #888; letter-spacing: 1px;
+            text-transform: uppercase; margin-bottom: 6px; display: block;
+        }
+        .input-row {
+            display: flex; gap: 8px; margin-bottom: 16px;
+        }
+        .pseudo-input {
+            flex: 1; background: #111; color: #39ff14;
+            border: 1px solid #2a2a2a; padding: 12px 16px;
+            border-radius: 8px; font-size: 18px; font-family: monospace;
+            outline: none; transition: border-color 0.2s;
+        }
+        .pseudo-input:focus { border-color: #39ff14; }
+        .pseudo-input::placeholder { color: #333; }
+
+        /* Bouton dé */
+        .dice-btn {
+            background: #1a1a2a; border: 1px solid #333;
+            border-radius: 8px; width: 48px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s; font-size: 22px;
+        }
+        .dice-btn:hover { background: #2a2a3a; border-color: #39ff14; transform: rotate(15deg); }
+        .dice-btn:hover img { filter: brightness(0) invert(0.4) sepia(1) saturate(20) hue-rotate(80deg) !important; }
+
+        /* Bouton principal */
+        .main-btn {
+            width: 100%; padding: 14px; background: #39ff14; color: #000;
+            border: none; border-radius: 10px; font-size: 16px;
+            font-weight: 700; letter-spacing: 2px; cursor: pointer;
+            transition: all 0.2s; text-transform: uppercase;
+        }
+        .main-btn:hover { background: #4dff33; transform: translateY(-1px); box-shadow: 0 4px 20px rgba(57,255,20,0.3); }
+        .main-btn:disabled { background: #333; color: #666; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        /* Lien récupérer pseudo */
+        .recover-link {
+            display: block; text-align: center; margin-top: 14px;
+            color: #555; font-size: 11px; cursor: pointer;
+            text-decoration: none; transition: color 0.2s;
+        }
+        .recover-link:hover { color: #39ff14; }
+
+        /* Liste de profils (récupération) */
+        .profiles-list {
+            max-height: 240px; overflow-y: auto; margin-top: 8px;
+        }
+        .profile-item {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 14px; margin-bottom: 4px;
+            background: #111; border: 1px solid #222; border-radius: 8px;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .profile-item:hover { border-color: #39ff14; background: #151520; }
+        .profile-name { color: #39ff14; font-family: monospace; font-size: 15px; font-weight: 600; }
+        .profile-score { color: #888; font-size: 12px; }
+        .profile-date { color: #444; font-size: 10px; }
+
+        .empty-msg {
+            text-align: center; color: #444; font-size: 13px; padding: 24px 0;
+            font-style: italic;
+        }
+
+        /* Score preview */
+        .score-preview {
+            display: none; margin-top: 16px; padding: 12px 16px;
+            background: #0d1a0d; border: 1px solid #1a3a1a; border-radius: 8px;
+            text-align: center;
+        }
+        .score-preview .score-label { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+        .score-preview .score-value { font-size: 28px; color: #39ff14; font-weight: 800; }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .game-title { font-size: 30px; }
+            .login-card { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+
+<div class="login-container">
+    <!-- Logo -->
+    <div class="logo-container">
+        <img src="images/lapin fond transpa.png" alt="Résistance">
+    </div>
+
+    <!-- Titre -->
+    <div class="game-title">RESISTANCE</div>
+    <div class="game-subtitle">Infiltration</div>
+
+    <!-- Card -->
+    <div class="login-card">
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="new">Nouveau joueur</button>
+            <button class="tab-btn" data-tab="existing">Reprendre</button>
+        </div>
+
+        <!-- Vue: Nouveau joueur -->
+        <div class="tab-view active" id="tab-new">
+            <label class="field-label">Choisis ton identifiant de résistant</label>
+            <div class="input-row">
+                <input type="text" id="pseudo-input" class="pseudo-input" placeholder="Ton pseudo..." maxlength="24" autocomplete="off">
+                <button class="dice-btn" id="dice-btn" title="Générer un pseudo aléatoire">
+                    <img src="icones/dices.svg" alt="Dés" width="24" height="24" style="filter: brightness(0) invert(0.7); transition: filter 0.2s;">
+                </button>
+            </div>
+            <button class="main-btn" id="start-btn" disabled>Infiltrer</button>
+            <a class="recover-link" id="show-recover">Pseudo oublié ? Retrouve ton profil</a>
+        </div>
+
+        <!-- Vue: Reprendre une partie -->
+        <div class="tab-view" id="tab-existing">
+            <label class="field-label">Sélectionne ton profil</label>
+            <div class="profiles-list" id="profiles-list">
+                <!-- rempli dynamiquement -->
+            </div>
+        </div>
+
+        <!-- Score preview (affiché quand un profil existant est sélectionné) -->
+        <div class="score-preview" id="score-preview">
+            <div class="score-label">Score total</div>
+            <div class="score-value" id="preview-score">0</div>
+        </div>
+    </div>
+</div>
+
+<script>
+/**
+ * ============================================
+ * FOND ANIMÉ - Particules flottantes
+ * ============================================
+ */
+(function() {
+    const canvas = document.getElementById('bg-canvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+    const PARTICLE_COUNT = 50;
+
+    function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+        particles.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            vx: (Math.random() - 0.5) * 0.3,
+            vy: (Math.random() - 0.5) * 0.3,
+            r: Math.random() * 2 + 0.5,
+            a: Math.random() * 0.3 + 0.05
+        });
+    }
+
+    function animateBg() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        particles.forEach(function(p) {
+            p.x += p.vx;
+            p.y += p.vy;
+            if (p.x < 0) p.x = canvas.width;
+            if (p.x > canvas.width) p.x = 0;
+            if (p.y < 0) p.y = canvas.height;
+            if (p.y > canvas.height) p.y = 0;
+
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(57, 255, 20, ' + p.a + ')';
+            ctx.fill();
+        });
+        requestAnimationFrame(animateBg);
+    }
+    animateBg();
+})();
+
+/**
+ * ============================================
+ * GÉNÉRATEUR DE PSEUDO DYSTOPIQUE
+ * ============================================
+ */
+const PSEUDO_PREFIXES = [
+    'Ombre', 'Spectre', 'Echo', 'Nexus', 'Cipher', 'Ghost', 'Volt', 'Rogue',
+    'Nyx', 'Helix', 'Vortex', 'Zenith', 'Flux', 'Onyx', 'Prism', 'Cobalt',
+    'Raven', 'Pulse', 'Nova', 'Dusk', 'Ember', 'Frost', 'Wraith', 'Storm',
+    'Ash', 'Blade', 'Chrome', 'Drift', 'Fang', 'Haze', 'Iron', 'Jade',
+    'Karma', 'Lynx', 'Mist', 'Orion', 'Pike', 'Quasar', 'Rex', 'Sable',
+    'Talon', 'Umbra', 'Viper', 'Wire', 'Xenon', 'Zephyr', 'Arc', 'Bolt'
+];
+
+const PSEUDO_SUFFIXES = [
+    'X7', '13', 'Zero', 'Null', 'Prime', '99', 'Omega', 'Alpha',
+    'Noir', 'Hex', 'Core', 'Byte', 'Node', 'Edge', 'Root', 'Void',
+    'Code', 'Cell', 'Key', 'Lock', 'Mask', 'Link', 'Shard', 'Sync',
+    'Wave', 'Glitch', 'Static', 'Pixel', 'Data', 'Loop', 'Stack', 'Port',
+    '42', '404', '101', '88', '77', 'V2', 'MK3', 'XR', 'Z1', 'K9'
+];
+
+const PSEUDO_SEPARATORS = ['-', '_', '.', ''];
+
+function generateDystopianPseudo() {
+    var prefix = PSEUDO_PREFIXES[Math.floor(Math.random() * PSEUDO_PREFIXES.length)];
+    var suffix = PSEUDO_SUFFIXES[Math.floor(Math.random() * PSEUDO_SUFFIXES.length)];
+    var sep = PSEUDO_SEPARATORS[Math.floor(Math.random() * PSEUDO_SEPARATORS.length)];
+    return prefix + sep + suffix;
+}
+
+/**
+ * ============================================
+ * GESTION DES PROFILS (localStorage)
+ * ============================================
+ */
+function getAllProfiles() {
+    try {
+        return JSON.parse(localStorage.getItem('resistance_profiles') || '[]');
+    } catch(e) { return []; }
+}
+
+function saveProfile(pseudo) {
+    var profiles = getAllProfiles();
+    var existing = profiles.find(function(p) { return p.pseudo === pseudo; });
+    if (existing) {
+        existing.lastLogin = new Date().toISOString();
+    } else {
+        profiles.push({
+            pseudo: pseudo,
+            createdAt: new Date().toISOString(),
+            lastLogin: new Date().toISOString(),
+            totalScore: 0,
+            roomScores: {}
+        });
+    }
+    localStorage.setItem('resistance_profiles', JSON.stringify(profiles));
+}
+
+function getProfile(pseudo) {
+    var profiles = getAllProfiles();
+    return profiles.find(function(p) { return p.pseudo === pseudo; }) || null;
+}
+
+function setActiveProfile(pseudo) {
+    localStorage.setItem('resistance_active_pseudo', pseudo);
+}
+
+function getActiveProfile() {
+    var pseudo = localStorage.getItem('resistance_active_pseudo');
+    return pseudo ? getProfile(pseudo) : null;
+}
+
+/**
+ * ============================================
+ * UI LOGIC
+ * ============================================
+ */
+var pseudoInput = document.getElementById('pseudo-input');
+var startBtn = document.getElementById('start-btn');
+var diceBtn = document.getElementById('dice-btn');
+var scorePreview = document.getElementById('score-preview');
+var previewScore = document.getElementById('preview-score');
+
+// Tabs
+document.querySelectorAll('.tab-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+        document.querySelectorAll('.tab-view').forEach(function(v) { v.classList.remove('active'); });
+        btn.classList.add('active');
+        document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+        scorePreview.style.display = 'none';
+        if (btn.dataset.tab === 'existing') {
+            renderProfilesList();
+        }
+    });
+});
+
+// Input pseudo
+pseudoInput.addEventListener('input', function() {
+    var val = pseudoInput.value.trim();
+    startBtn.disabled = val.length < 2;
+
+    // Vérifier si le pseudo existe déjà
+    var profile = getProfile(val);
+    if (profile) {
+        scorePreview.style.display = 'block';
+        previewScore.textContent = profile.totalScore || 0;
+        startBtn.textContent = 'Reprendre';
+    } else {
+        scorePreview.style.display = 'none';
+        startBtn.textContent = 'Infiltrer';
+    }
+});
+
+// Bouton dé
+diceBtn.addEventListener('click', function() {
+    // Animation de rotation du dé
+    diceBtn.style.transform = 'rotate(' + (Math.random() * 720 + 360) + 'deg)';
+    setTimeout(function() { diceBtn.style.transform = ''; }, 400);
+
+    pseudoInput.value = generateDystopianPseudo();
+    pseudoInput.dispatchEvent(new Event('input'));
+});
+
+// Entrée pour valider
+pseudoInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !startBtn.disabled) {
+        startGame();
+    }
+});
+
+// Bouton démarrer
+startBtn.addEventListener('click', startGame);
+
+// Lien récupérer pseudo
+document.getElementById('show-recover').addEventListener('click', function(e) {
+    e.preventDefault();
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.querySelectorAll('.tab-view').forEach(function(v) { v.classList.remove('active'); });
+    document.querySelectorAll('.tab-btn')[1].classList.add('active');
+    document.getElementById('tab-existing').classList.add('active');
+    renderProfilesList();
+});
+
+function renderProfilesList() {
+    var profiles = getAllProfiles();
+    var container = document.getElementById('profiles-list');
+
+    if (profiles.length === 0) {
+        container.innerHTML = '<div class="empty-msg">Aucun profil sauvegardé.<br>Crée ton premier résistant !</div>';
+        return;
+    }
+
+    // Trier par dernière connexion (plus récent en premier)
+    profiles.sort(function(a, b) {
+        return new Date(b.lastLogin || b.createdAt) - new Date(a.lastLogin || a.createdAt);
+    });
+
+    container.innerHTML = profiles.map(function(p) {
+        var dateStr = '';
+        try {
+            var d = new Date(p.lastLogin || p.createdAt);
+            dateStr = d.toLocaleDateString('fr-FR') + ' ' + d.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+        } catch(e) {}
+        return '<div class="profile-item" data-pseudo="' + p.pseudo + '">' +
+            '<div>' +
+                '<div class="profile-name">' + p.pseudo + '</div>' +
+                '<div class="profile-date">Dernière session : ' + dateStr + '</div>' +
+            '</div>' +
+            '<div class="profile-score">Score: ' + (p.totalScore || 0) + '</div>' +
+        '</div>';
+    }).join('');
+
+    // Click sur un profil
+    container.querySelectorAll('.profile-item').forEach(function(item) {
+        item.addEventListener('click', function() {
+            var pseudo = item.dataset.pseudo;
+            setActiveProfile(pseudo);
+            saveProfile(pseudo); // Met à jour lastLogin
+            launchGame();
+        });
+    });
+}
+
+function startGame() {
+    var pseudo = pseudoInput.value.trim();
+    if (pseudo.length < 2) return;
+
+    saveProfile(pseudo);
+    setActiveProfile(pseudo);
+    launchGame();
+}
+
+function launchGame() {
+    // Animation de transition
+    document.body.style.transition = 'opacity 0.5s ease';
+    document.body.style.opacity = '0';
+    setTimeout(function() {
+        window.location.href = 'room_1.html';
+    }, 500);
+}
+
+// Au chargement : préremplir si profil actif
+(function() {
+    var active = getActiveProfile();
+    if (active) {
+        pseudoInput.value = active.pseudo;
+        pseudoInput.dispatchEvent(new Event('input'));
+    }
+})();
+</script>
+
+</body>
+</html>

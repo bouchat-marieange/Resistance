@@ -88,6 +88,10 @@ function initEditor() {
     // Bouton de sauvegarde
     document.getElementById('save-project-btn').onclick = saveProject;
 
+    // Bouton Nouvelle Pièce
+    const newRoomBtn = document.getElementById('new-room-btn');
+    if (newRoomBtn) newRoomBtn.onclick = openNewRoomDialog;
+
     // Boutons de mode de transformation
     document.getElementById('mode-translate').onclick = () => setTransformMode('translate');
     document.getElementById('mode-rotate').onclick = () => setTransformMode('rotate');
@@ -926,5 +930,138 @@ function toggleInteractionMode() {
             console.log(`  🛡️ Proxy #${i} "${name}": scene=${inScene}, collision=${inList}, visible=${entry.proxy.visible}, pos=(${pos.x.toFixed(2)}, ${pos.y.toFixed(2)}, ${pos.z.toFixed(2)}), h=${entry.height.toFixed(2)}m, r=${entry.radius.toFixed(2)}m`);
         });
     }
+}
+
+/**
+ * ============================================
+ * NOUVELLE PIÈCE - Création de pièces
+ * ============================================
+ */
+
+// Liste des pièces créées (stockée dans localStorage)
+function getRoomsList() {
+    try {
+        return JSON.parse(localStorage.getItem('resistance_rooms_list') || '[]');
+    } catch (e) {
+        return [];
+    }
+}
+
+function saveRoomToList(roomName, roomTitle) {
+    const rooms = getRoomsList();
+    if (!rooms.find(r => r.name === roomName)) {
+        rooms.push({
+            name: roomName,
+            title: roomTitle,
+            createdAt: new Date().toISOString()
+        });
+        localStorage.setItem('resistance_rooms_list', JSON.stringify(rooms));
+    }
+}
+
+function openNewRoomDialog() {
+    if (document.getElementById('new-room-overlay')) return;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'new-room-overlay';
+    overlay.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.75); z-index:10001; display:flex; align-items:center; justify-content:center;';
+
+    const existingRooms = getRoomsList();
+    var roomsListHTML = '';
+    if (existingRooms.length > 0) {
+        roomsListHTML = '<div style="margin-top:16px; padding-top:12px; border-top:1px solid #333;">' +
+            '<div style="font-size:11px; color:#888; margin-bottom:8px;">Pièces existantes :</div>' +
+            '<div style="max-height:120px; overflow-y:auto;">' +
+            existingRooms.map(function(r) {
+                return '<div style="display:flex; align-items:center; justify-content:space-between; padding:4px 8px; margin-bottom:2px; background:#1a1a1a; border-radius:4px; font-size:11px;">' +
+                    '<span style="color:#ccc;">' + (r.title || r.name) + '</span>' +
+                    '<button onclick="navigateToRoom(\'' + r.name + '\')" style="background:#1a3a3a; border:1px solid #00CED1; color:#00CED1; padding:2px 8px; border-radius:4px; cursor:pointer; font-size:10px;">Ouvrir</button>' +
+                '</div>';
+            }).join('') +
+            '</div></div>';
+    }
+
+    overlay.innerHTML =
+        '<div style="background:#1e1e1e; border:1px solid #39ff14; border-radius:12px; padding:24px 28px; min-width:340px; max-width:420px; box-shadow:0 8px 32px rgba(0,0,0,0.6);">' +
+            '<div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">' +
+                '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#39ff14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>' +
+                '<span style="font-size:18px; font-weight:700; color:#39ff14;">Nouvelle Pièce</span>' +
+            '</div>' +
+            '<label style="font-size:12px; color:#aaa; display:block; margin-bottom:6px;">Titre affiché :</label>' +
+            '<input type="text" id="new-room-title-input" placeholder="ex: Salle de Contrôle" style="width:100%; background:#111; color:#eee; border:1px solid #333; padding:10px 14px; border-radius:6px; font-size:15px; outline:none; box-sizing:border-box;" autofocus>' +
+            '<label style="font-size:12px; color:#aaa; display:block; margin-top:12px; margin-bottom:6px;">Identifiant technique (auto-généré) :</label>' +
+            '<input type="text" id="new-room-name-input" placeholder="salle_controle" style="width:100%; background:#111; color:#39ff14; border:1px solid #333; padding:10px 14px; border-radius:6px; font-size:15px; font-family:monospace; outline:none; box-sizing:border-box;">' +
+            '<div id="new-room-error" style="color:#ff4444; font-size:11px; margin-top:6px; display:none;"></div>' +
+            '<div style="display:flex; gap:10px; margin-top:18px;">' +
+                '<button id="new-room-create-btn" style="flex:1; background:#1a3a1a; border:1px solid #39ff14; color:#39ff14; padding:10px; border-radius:8px; cursor:pointer; font-size:14px; font-weight:600; transition:all 0.2s;">Créer la pièce</button>' +
+                '<button id="new-room-cancel-btn" style="padding:10px 18px; background:#2a2a2a; border:1px solid #555; color:#ccc; border-radius:8px; cursor:pointer; font-size:14px; transition:all 0.2s;">Annuler</button>' +
+            '</div>' +
+            roomsListHTML +
+        '</div>';
+
+    document.body.appendChild(overlay);
+
+    var nameInput = document.getElementById('new-room-name-input');
+    var titleInput = document.getElementById('new-room-title-input');
+    var errorDiv = document.getElementById('new-room-error');
+    titleInput.focus();
+
+    // Auto-génération du nom technique à partir du titre
+    titleInput.addEventListener('input', function() {
+        if (!nameInput.dataset.manualEdit) {
+            nameInput.value = titleInput.value
+                .toLowerCase()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^a-z0-9]+/g, '_')
+                .replace(/^_+|_+$/g, '');
+        }
+    });
+    nameInput.addEventListener('input', function() { nameInput.dataset.manualEdit = 'true'; });
+
+    function validateAndCreate() {
+        var name = nameInput.value.trim();
+        var title = titleInput.value.trim() || name;
+
+        if (!name) {
+            errorDiv.textContent = 'Le nom est obligatoire.';
+            errorDiv.style.display = 'block';
+            return;
+        }
+        if (!/^[a-z0-9_]+$/.test(name)) {
+            errorDiv.textContent = 'Uniquement lettres minuscules, chiffres et underscores.';
+            errorDiv.style.display = 'block';
+            return;
+        }
+        if (name.length < 2 || name.length > 40) {
+            errorDiv.textContent = 'Le nom doit faire entre 2 et 40 caractères.';
+            errorDiv.style.display = 'block';
+            return;
+        }
+        var existing = getRoomsList();
+        if (existing.find(function(r) { return r.name === name; })) {
+            errorDiv.textContent = 'Ce nom de pièce existe déjà.';
+            errorDiv.style.display = 'block';
+            return;
+        }
+
+        saveRoomToList(name, title);
+        overlay.remove();
+        window.location.href = 'room_model.html?room=' + encodeURIComponent(name) + '&title=' + encodeURIComponent(title);
+    }
+
+    document.getElementById('new-room-create-btn').onclick = validateAndCreate;
+    document.getElementById('new-room-cancel-btn').onclick = function() { overlay.remove(); };
+
+    nameInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') validateAndCreate(); });
+    titleInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') validateAndCreate(); });
+    overlay.addEventListener('keydown', function(e) { if (e.key === 'Escape') overlay.remove(); });
+    overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+}
+
+function navigateToRoom(roomName) {
+    var rooms = getRoomsList();
+    var room = rooms.find(function(r) { return r.name === roomName; });
+    var title = room ? room.title : roomName;
+    window.location.href = 'room_model.html?room=' + encodeURIComponent(roomName) + '&title=' + encodeURIComponent(title);
 }
 
