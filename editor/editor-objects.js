@@ -1,10 +1,10 @@
 // ==================== IMPORT D'OBJETS 3D ====================
 
 // Compteur pour les objets importés
-let importedObjectCounter = 0;
-let importedObjects = []; // Liste des objets importés
-let importedCharacterCounter = 0;
-let importedCharacters = []; // Liste des personnages importés
+var importedObjectCounter = (typeof importedObjectCounter !== 'undefined') ? importedObjectCounter : 0;
+var importedObjects = (typeof importedObjects !== 'undefined') ? importedObjects : [];
+var importedCharacterCounter = (typeof importedCharacterCounter !== 'undefined') ? importedCharacterCounter : 0;
+var importedCharacters = (typeof importedCharacters !== 'undefined') ? importedCharacters : [];
 
 // Initialisation des event listeners DOM de l'éditeur objets
 // (appelée après le chargement dynamique du panel HTML)

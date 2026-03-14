@@ -9,8 +9,7 @@
     <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.14/dist/full.min.css" rel="stylesheet" type="text/css" />
     <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- CSS éditeur autonome (extrait dans fichier séparé) -->
-    <link rel="stylesheet" href="editor/editor.css">
+    <!-- CSS éditeur chargé dynamiquement via Ctrl+Shift+C -->
 
     <style>
         /* ========== LOADING SCREEN ========== */
@@ -470,25 +469,7 @@
     </div>
 </div>
 
-<!-- Bouton discret pour activer le mode éditeur (style icône info) -->
-<button id="toggle-editor-btn" title="Mode Éditeur">
-    <img src="icones/wrench.svg" alt="Éditeur" width="20" height="20" style="filter: brightness(0) invert(1);">
-</button>
-
-<!-- Bouton pour plier/déplier le panneau éditeur -->
-<button id="toggle-panel-collapse" title="Plier/Déplier le panneau">
-    <img src="icones/circle-chevron-right.svg" alt="Déplier" width="24" height="24" style="filter: brightness(0) invert(1);">
-</button>
-
-<!-- Étiquette dimensions objet sélectionné -->
-<div id="object-dimensions-label">
-    <div class="dim-title" id="dim-label-name">Objet</div>
-    <div class="dim-row">
-        <span>L: <span class="dim-val" id="dim-label-w">-</span><span class="dim-unit"> cm</span></span>
-        <span>l: <span class="dim-val" id="dim-label-d">-</span><span class="dim-unit"> cm</span></span>
-        <span>H: <span class="dim-val" id="dim-label-h">-</span><span class="dim-unit"> cm</span></span>
-    </div>
-</div>
+<!-- Éléments UI éditeur créés dynamiquement via Ctrl+Shift+C -->
 
 <!-- Panneau éditeur chargé dynamiquement depuis editor/editor-panel.html -->
 <div id="editor-container"></div>
@@ -502,7 +483,6 @@
         <div><span style="font-size:10px; color:#666;">Total: </span><span id="total-score-val" style="color:#39ff14; font-size:13px; font-weight:600;">0</span></div>
     </div>
 </div>
-<script src="game/score-manager.js"></script>
 
 <!-- ========== VISEUR MODE JEU ========== -->
 <div id="game-crosshair" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:500; pointer-events:none;">
@@ -560,13 +540,44 @@
 <!-- Score Manager (cross-rooms) -->
 <script src="game/score-manager.js"></script>
 
-<!-- Variables d'état éditeur (doit être chargé après THREE.js, avant le script inline) -->
-<script src="editor/editor-state.js"></script>
-
 <script>
 /**
  * CONFIGURATION ET ÉTAT DU JEU
  */
+
+// Variables éditeur minimales pour le mode jeu (l'éditeur complet est chargé via Ctrl+Shift+C)
+var interactionMode = 'game';
+var editorMode = false;
+var currentEditorMode = 'objects';
+var selectableObjects = [];
+var importedObjects = [];
+var importedCharacters = [];
+var customLights = [];
+var audioTracks = { musique: [], ambiance: [], bruitage: [], mouvement: [] };
+var AUDIO_CATEGORIES = ['musique', 'ambiance', 'bruitage', 'mouvement'];
+var activeAudioElements = [];
+var activeMovementAudio = {};
+var MOVEMENT_ACTION_KEYS = { 'forward':['z','w'],'backward':['s'],'left':['q','a'],'right':['d'],'jump':[' '],'crouch':['control'],'run':['shift'],'grab':['e'],'door':['f'] };
+var floorPlanWalls = [];
+var selectedWalls = [];
+var selectedEditorObject = null;
+var loadingScreenDismissed = false;
+var isPanelCollapsed = false;
+var wallHeight = 2.5;
+var PLAYER_EYE_HEIGHT = 1.50;
+var spawnPosition = null;
+var spawnRotationY = 0;
+var currentRoomName = 'room_1';
+var interactionZones = [];
+var hoveredZones = new Set();
+var proximityTriggeredZones = new Set();
+var heldZone = null;
+var holdStartTime = 0;
+var lastClickTime = 0;
+var lastClickZone = null;
+var _cinematicPlaying = false;
+var _currentCinematicZone = null;
+var initialCameraSettings = { position: new THREE.Vector3(), fov: 75 };
 let scene, camera, renderer, world, controls;
 let rug, babyModel, babyBody, groundMesh;
 let savedNabyTransform = null; // Transform sauvegardé pour Naby (restauré au chargement du projet)
@@ -1813,86 +1824,265 @@ function getMasterVolume(category) {
     return parseInt(document.getElementById('vol-bruitages').value) / 100;
 }
 
-// Toggle du panneau éditeur (plier/déplier)
-document.getElementById('toggle-panel-collapse').addEventListener('click', function() {
-    const panel = document.getElementById('editor-panel');
-    const btn = document.getElementById('toggle-panel-collapse');
-
-    isPanelCollapsed = !isPanelCollapsed;
-
-    const btnImg = btn.querySelector('img');
-
-    if (isPanelCollapsed) {
-        panel.classList.add('collapsed');
-        btn.classList.add('collapsed');
-        btnImg.src = 'icones/circle-chevron-left.svg'; // Flèche vers la gauche quand plié
-        btn.title = 'Déplier le panneau';
-    } else {
-        panel.classList.remove('collapsed');
-        btn.classList.remove('collapsed');
-        btnImg.src = 'icones/circle-chevron-right.svg'; // Flèche vers la droite quand déplié
-        btn.title = 'Plier le panneau';
-    }
-});
-
-// Nom de la pièce pour la sauvegarde (override de la valeur par défaut dans editor-state.js)
-currentRoomName = 'room_1';
-
 // Initialiser le ScoreManager
 ScoreManager.init('room_1');
 
-// Charger le HTML de l'éditeur puis initialiser
+/**
+ * ============================================
+ * CHARGEMENT DU JEU (sans éditeur)
+ * ============================================
+ * Charge les scripts de sauvegarde pour reconstruire la scène
+ * (murs, objets, lumières) sans charger l'UI de l'éditeur.
+ */
 setTimeout(async () => {
-    // Chargement dynamique du panneau éditeur
-    try {
-        const editorResp = await fetch('editor/editor-panel.html');
-        if (editorResp.ok) {
-            const editorHTML = await editorResp.text();
-            document.getElementById('editor-container').innerHTML = editorHTML;
-        } else {
-            console.warn('⚠️ Impossible de charger editor/editor-panel.html:', editorResp.status);
-        }
-    } catch (e) {
-        console.warn('⚠️ Chargement éditeur échoué:', e.message);
-    }
-    initEditor();
-    if (typeof initEditorObjectsListeners === 'function') initEditorObjectsListeners();
-    initAccordions();
-    // Bootstrap: si aucune donnée dans le navigateur, charger depuis scene_data/
+    // Charger les scripts nécessaires pour reconstruire la scène
+    await loadScript('editor/editor-state.js');
+    currentRoomName = 'room_1';
+    await loadScript('editor/editor-utils.js');
+    await loadScript('editor/editor-objects.js');
+    await loadScript('editor/editor-camera-lights.js');
+    await loadScript('editor/editor-audio.js');
+    await loadScript('editor/editor-save.js');
+    await loadScript('editor/editor-floorplan.js');
+
+    // Bootstrap: charger les données de scène depuis fichiers/IndexedDB
     await bootstrapFromFiles();
-    // Charger le projet sauvegardé (murs, textures, objets, lumières)
-    // Cela charge aussi savedNabyTransform depuis les données de projet
+    // Reconstruire la scène (murs, objets, lumières, zones)
     await loadProjectOnStartup();
 
-    // En mode jeu au démarrage, masquer tous les helpers de lumière
-    if (interactionMode === 'game') {
-        hideAllLightHelpers();
-    }
-
-    // Charger Naby APRÈS le projet pour que savedNabyTransform soit déjà disponible
+    // Charger Naby
     try {
         await loadAnimatedCharacter();
     } catch (e) {
         console.warn("Échec chargement nabydance.glb:", e);
     }
 
-    // En mode jeu, positionner la caméra au spawn sauvegardé
-    applySpawnToCamera();
+    // Positionner la caméra au spawn sauvegardé
+    if (typeof applySpawnToCamera === 'function') applySpawnToCamera();
 
-    // Masquer l'écran de chargement et déclencher l'audio
+    // Masquer l'écran de chargement
     hideLoadingScreen();
-}, 2000);
+}, 500);
+
+/**
+ * ============================================
+ * SECRET EDITOR LOADING (Ctrl+Shift+C)
+ * ============================================
+ */
+var editorLoaded = false;
+var editorActive = false;
+var secretDialogOpen = false;
+
+document.addEventListener('keydown', function(e) {
+    if (e.ctrlKey && e.shiftKey && e.code === 'KeyC') {
+        e.preventDefault();
+        if (!secretDialogOpen) openSecretDialog();
+    }
+});
+
+function openSecretDialog() {
+    secretDialogOpen = true;
+    var overlay = document.createElement('div');
+    overlay.id = 'secret-overlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:99999;display:flex;align-items:center;justify-content:center;';
+
+    if (editorLoaded && editorActive) {
+        overlay.innerHTML = '<div style="background:rgba(18,18,22,0.95);border:1px solid #333;border-radius:12px;padding:20px 28px;text-align:center;">' +
+            '<div style="color:#39ff14;font-size:13px;margin-bottom:12px;font-family:monospace;">Éditeur actif</div>' +
+            '<button id="secret-deactivate-btn" style="background:#e74c3c;color:#fff;border:none;border-radius:8px;padding:10px 24px;font-size:14px;font-weight:600;cursor:pointer;margin-right:8px;">Désactiver l\'éditeur</button>' +
+            '<button id="secret-cancel-btn" style="background:#333;color:#aaa;border:1px solid #444;border-radius:8px;padding:10px 16px;font-size:14px;cursor:pointer;">Annuler</button>' +
+            '</div>';
+    } else {
+        overlay.innerHTML = '<input type="password" id="secret-input" placeholder="Code..." autofocus style="background:#111;color:#39ff14;border:1px solid #333;padding:12px 20px;border-radius:8px;font-size:18px;font-family:monospace;outline:none;text-align:center;width:200px;">';
+    }
+    document.body.appendChild(overlay);
+
+    if (editorLoaded && editorActive) {
+        document.getElementById('secret-deactivate-btn').addEventListener('click', function() {
+            overlay.remove(); secretDialogOpen = false;
+            deactivateEditor();
+        });
+        document.getElementById('secret-cancel-btn').addEventListener('click', function() {
+            overlay.remove(); secretDialogOpen = false;
+        });
+        overlay.addEventListener('click', function(e) {
+            if (e.target === overlay) { overlay.remove(); secretDialogOpen = false; }
+        });
+    } else {
+        var input = document.getElementById('secret-input');
+        input.focus();
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                if (input.value.toLowerCase() === 'editor') {
+                    overlay.remove(); secretDialogOpen = false;
+                    if (editorLoaded && !editorActive) { reactivateEditor(); }
+                    else { loadEditor(); }
+                } else {
+                    overlay.remove(); secretDialogOpen = false;
+                }
+            }
+            if (e.key === 'Escape') { overlay.remove(); secretDialogOpen = false; }
+        });
+        overlay.addEventListener('click', function(e) {
+            if (e.target === overlay) { overlay.remove(); secretDialogOpen = false; }
+        });
+    }
+}
+
+function loadScript(src) {
+    return new Promise(function(resolve, reject) {
+        var script = document.createElement('script');
+        script.src = src;
+        script.onload = resolve;
+        script.onerror = function() { console.warn('Failed to load:', src); reject(new Error('Script load failed: ' + src)); };
+        document.body.appendChild(script);
+    });
+}
+
+async function loadEditor() {
+    if (editorLoaded) return;
+    console.log('🔧 Activation de l\'éditeur...');
+
+    // 1. CSS éditeur
+    if (!document.querySelector('link[href="editor/editor.css"]')) {
+        var cssLink = document.createElement('link');
+        cssLink.rel = 'stylesheet';
+        cssLink.href = 'editor/editor.css';
+        document.head.appendChild(cssLink);
+    }
+
+    // 2. Panneau HTML de l'éditeur
+    try {
+        var resp = await fetch('editor/editor-panel.html');
+        if (resp.ok) {
+            document.getElementById('editor-container').innerHTML = await resp.text();
+        }
+    } catch (e) {
+        console.warn('Chargement editor-panel.html échoué:', e);
+    }
+
+    // 3. Ajouter les éléments UI de l'éditeur
+    addEditorUIElements();
+
+    // 4. Charger editor-core.js (seul script pas encore chargé au démarrage jeu)
+    await loadScript('editor/editor-core.js');
+
+    // 5. Initialiser l'éditeur
+    initEditor();
+    if (typeof initEditorObjectsListeners === 'function') initEditorObjectsListeners();
+    initAccordions();
+
+    // En mode jeu au démarrage, masquer les helpers
+    if (interactionMode === 'game') {
+        if (typeof hideAllLightHelpers === 'function') hideAllLightHelpers();
+    }
+
+    editorLoaded = true;
+    editorActive = true;
+    console.log('✅ Éditeur activé avec succès');
+}
+
+function addEditorUIElements() {
+    // Bouton toggle éditeur
+    if (!document.getElementById('toggle-editor-btn')) {
+        var btn = document.createElement('button');
+        btn.id = 'toggle-editor-btn';
+        btn.title = 'Mode Éditeur';
+        btn.style.cssText = 'position:fixed; top:16px; right:16px; z-index:100; background:rgba(30,30,30,0.7); border:none; border-radius:50%; width:36px; height:36px; cursor:pointer; display:flex; align-items:center; justify-content:center;';
+        btn.innerHTML = '<img src="icones/wrench.svg" alt="Éditeur" width="20" height="20" style="filter: brightness(0) invert(1);">';
+        document.body.appendChild(btn);
+    }
+
+    // Bouton plier/déplier panneau
+    if (!document.getElementById('toggle-panel-collapse')) {
+        var colBtn = document.createElement('button');
+        colBtn.id = 'toggle-panel-collapse';
+        colBtn.title = 'Plier/Déplier le panneau';
+        colBtn.innerHTML = '<img src="icones/circle-chevron-right.svg" alt="Déplier" width="24" height="24" style="filter: brightness(0) invert(1);">';
+        document.body.appendChild(colBtn);
+        colBtn.addEventListener('click', function() {
+            var panel = document.getElementById('editor-panel');
+            var btnEl = document.getElementById('toggle-panel-collapse');
+            isPanelCollapsed = !isPanelCollapsed;
+            var btnImg = btnEl.querySelector('img');
+            if (isPanelCollapsed) {
+                panel.classList.add('collapsed');
+                btnEl.classList.add('collapsed');
+                btnImg.src = 'icones/circle-chevron-left.svg';
+            } else {
+                panel.classList.remove('collapsed');
+                btnEl.classList.remove('collapsed');
+                btnImg.src = 'icones/circle-chevron-right.svg';
+            }
+        });
+    }
+
+    // Switch Mode Jeu/Développeur
+    if (!document.getElementById('floating-mode-switch')) {
+        var sw = document.createElement('button');
+        sw.id = 'floating-mode-switch';
+        sw.title = 'Mode Jeu / Développeur';
+        sw.style.cssText = 'position:fixed; bottom:20px; right:20px; background:#2a2a2a; border:1px solid #3a3a3a; border-radius:20px; width:40px; height:80px; padding:4px; cursor:pointer; z-index:100; display:flex; flex-direction:column; align-items:center; justify-content:center; transition:all 0.3s;';
+        sw.innerHTML = '<div id="floating-switch-indicator" style="position:absolute; top:4px; width:32px; height:36px; background:#ff6b35; border-radius:16px; transition:all 0.3s; display:flex; align-items:center; justify-content:center;">' +
+            '<img src="icones/gamepad-2.svg" width="20" height="20" style="filter: brightness(0) invert(1);">' +
+            '</div>' +
+            '<div style="width:32px; height:36px; display:flex; align-items:center; justify-content:center; z-index:1;"></div>' +
+            '<div style="width:32px; height:36px; display:flex; align-items:center; justify-content:center; z-index:1;">' +
+            '<img src="icones/code-xml.svg" width="20" height="20" style="filter: brightness(0) invert(1);">' +
+            '</div>';
+        document.body.appendChild(sw);
+    }
+
+    // Étiquette dimensions (masquée, pour l'éditeur)
+    if (!document.getElementById('object-dimensions-label')) {
+        var label = document.createElement('div');
+        label.id = 'object-dimensions-label';
+        label.style.display = 'none';
+        label.innerHTML = '<div class="dim-title" id="dim-label-name">Objet</div><div class="dim-row"><span>L: <span class="dim-val" id="dim-label-w">-</span><span class="dim-unit"> cm</span></span><span>l: <span class="dim-val" id="dim-label-d">-</span><span class="dim-unit"> cm</span></span><span>H: <span class="dim-val" id="dim-label-h">-</span><span class="dim-unit"> cm</span></span></div>';
+        document.body.appendChild(label);
+    }
+}
+
+function deactivateEditor() {
+    editorActive = false;
+    interactionMode = 'game';
+    editorMode = false;
+    // Masquer tous les éléments UI de l'éditeur
+    ['editor-panel', 'toggle-editor-btn', 'toggle-panel-collapse', 'floating-mode-switch', 'object-dimensions-label'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+    });
+    if (typeof hideAllLightHelpers === 'function') hideAllLightHelpers();
+    if (typeof floorPlanGrid !== 'undefined' && floorPlanGrid) floorPlanGrid.visible = false;
+    if (typeof updateControlsForMode === 'function') updateControlsForMode();
+    console.log('🔒 Éditeur désactivé');
+}
+
+function reactivateEditor() {
+    editorActive = true;
+    ['toggle-editor-btn', 'floating-mode-switch'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.style.display = '';
+    });
+    console.log('🔓 Éditeur réactivé');
+}
+
+// Fonction hideLoadingScreen (nécessaire avant le chargement de editor-utils.js)
+function hideLoadingScreen() {
+    var loadingScreen = document.getElementById('loading-screen');
+    if (!loadingScreen) return;
+    var bar = document.getElementById('loading-bar');
+    if (bar) { bar.style.animation = 'none'; bar.style.width = '100%'; }
+    setTimeout(function() {
+        loadingScreen.classList.add('fade-out');
+        setTimeout(function() { loadingScreen.style.display = 'none'; }, 600);
+    }, 400);
+    loadingScreenDismissed = true;
+}
 
 </script>
 
-<!-- Scripts éditeur autonome (extraits en fichiers séparés) -->
-<script src="editor/editor-utils.js"></script>
-<script src="editor/editor-core.js"></script>
-<script src="editor/editor-objects.js"></script>
-<script src="editor/editor-camera-lights.js"></script>
-<script src="editor/editor-audio.js"></script>
-<script src="editor/editor-save.js"></script>
-<script src="editor/editor-floorplan.js"></script>
+<!-- Éditeur chargé dynamiquement via Ctrl+Shift+C -->
 
 </body>
 </html>
