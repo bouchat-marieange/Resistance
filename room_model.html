@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Résistance</title>
+
+    <!-- Tailwind CSS + DaisyUI (requis par l'éditeur si chargé) -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.14/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #111;
+            user-select: none;
+            touch-action: none;
+        }
+        canvas { display: block; outline: none; }
+
+        /* ========== LOADING SCREEN ========== */
+        #loading-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #111; z-index: 10000;
+            display: flex; align-items: center; justify-content: center;
+            transition: opacity 0.6s ease;
+        }
+        #loading-screen.fade-out { opacity: 0; pointer-events: none; }
+        .loading-title { color: #39ff14; font-size: 28px; font-weight: 700; letter-spacing: 2px; margin-bottom: 6px; }
+        .loading-subtitle { color: #888; font-size: 14px; margin-bottom: 18px; }
+        .loading-bar-container { width: 220px; height: 4px; background: #333; border-radius: 2px; overflow: hidden; }
+        .loading-bar { width: 0; height: 100%; background: #39ff14; animation: loadBar 2s ease-in-out forwards; }
+        @keyframes loadBar { 0% { width: 0; } 100% { width: 90%; } }
+
+        /* ========== GAME UI ========== */
+        #info-icon {
+            position: fixed; top: 16px; left: 16px; z-index: 100; cursor: pointer;
+            background: rgba(30,30,30,0.7); border-radius: 50%; padding: 6px;
+            width: 32px; height: 32px;
+            display: flex; align-items: center; justify-content: center;
+            transition: background 0.2s;
+        }
+        #info-icon:hover { background: rgba(60,60,60,0.9); }
+
+        #volume-icon {
+            position: fixed; top: 56px; left: 16px; z-index: 100; cursor: pointer;
+            background: rgba(30,30,30,0.7); border-radius: 50%; padding: 6px;
+            width: 40px; height: 40px;
+            display: flex; align-items: center; justify-content: center;
+            transition: background 0.2s;
+        }
+        #volume-icon:hover { background: rgba(60,60,60,0.9); }
+
+        #controls-info {
+            display: none; position: fixed; top: 50px; left: 16px;
+            background: rgba(30,30,30,0.95); border: 1px solid #444; border-radius: 10px;
+            padding: 16px; z-index: 120; color: #eee; font-size: 13px; min-width: 220px;
+        }
+
+        #volume-popup {
+            display: none; position: fixed; bottom: 70px; left: 20px;
+            background: rgba(30,30,30,0.95); border: 1px solid #444; border-radius: 10px;
+            padding: 16px 18px; z-index: 120; min-width: 210px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5); color: #eee; font-size: 13px;
+        }
+        #volume-popup h4 { margin: 0 0 10px 0; font-size: 14px; color: #aaa; text-align: center; }
+        .volume-slider-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+        .volume-slider-row label { width: 70px; font-size: 12px; color: #ccc; }
+        .volume-slider-row input[type=range] { flex: 1; accent-color: #39ff14; }
+        .volume-value { width: 28px; text-align: right; font-size: 12px; color: #aaa; }
+        #volume-popup-close { position: absolute; top: 4px; right: 8px; background: none; border: none; color: #888; font-size: 16px; cursor: pointer; }
+
+        /* Score indicator */
+        #game-score {
+            position: fixed; bottom: 16px; left: 16px; z-index: 100;
+            background: rgba(30,30,30,0.8); border: 1px solid #333; border-radius: 8px;
+            padding: 6px 14px; color: #39ff14; font-size: 14px; font-weight: 600;
+        }
+
+        /* Secret dialog */
+        #secret-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); z-index: 10000;
+            display: flex; align-items: flex-start; justify-content: flex-start;
+            padding: 20px;
+        }
+        #secret-overlay input {
+            background: #111; color: #39ff14; border: 1px solid #333;
+            padding: 8px 16px; border-radius: 6px; font-size: 16px;
+            outline: none; font-family: monospace; width: 180px;
+        }
+        #secret-overlay input::placeholder { color: #555; }
+
+        /* Crosshair */
+        #game-crosshair {
+            display: none; position: fixed; top: 50%; left: 50%;
+            transform: translate(-50%,-50%); z-index: 500; pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ========== LOADING SCREEN ========== -->
+<div id="loading-screen">
+    <div style="text-align: center; display: flex; flex-direction: column; align-items: center;">
+        <img src="images/lapin fond transpa.png" alt="Logo" style="width: 140px; height: auto; margin-bottom: 20px; filter: drop-shadow(0 4px 16px rgba(57,255,20,0.3));">
+        <div class="loading-title">Résistance</div>
+        <div class="loading-subtitle">Chargement en cours...</div>
+        <div class="loading-bar-container">
+            <div class="loading-bar" id="loading-bar"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ========== GAME UI ========== -->
+
+<!-- Icône info -->
+<div id="info-icon" title="Afficher/Masquer les contrôles">
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+</div>
+
+<!-- Panneau d'informations -->
+<div id="controls-info">
+    <strong>Navigation :</strong><br>
+    Z/Q/S/D : Déplacement<br>
+    Clic droit : Tourner la vue<br>
+    Molette : Zoomer / Dézoomer<br>
+    Espace : Sauter
+</div>
+
+<!-- Icône volume -->
+<div id="volume-icon" title="Réglage du volume">
+    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+</div>
+
+<!-- Popup de réglage du volume -->
+<div id="volume-popup">
+    <button id="volume-popup-close" onclick="document.getElementById('volume-popup').style.display='none';">&#10005;</button>
+    <h4>Volume</h4>
+    <div class="volume-slider-row">
+        <label>Dialogues</label>
+        <input type="range" min="0" max="100" value="80" id="vol-dialogues" oninput="updateGameVolume()">
+        <span class="volume-value" id="vol-dialogues-val">80</span>
+    </div>
+    <div class="volume-slider-row">
+        <label>Musique</label>
+        <input type="range" min="0" max="100" value="80" id="vol-musique" oninput="updateGameVolume()">
+        <span class="volume-value" id="vol-musique-val">80</span>
+    </div>
+    <div class="volume-slider-row">
+        <label>Bruitages</label>
+        <input type="range" min="0" max="100" value="80" id="vol-bruitages" oninput="updateGameVolume()">
+        <span class="volume-value" id="vol-bruitages-val">80</span>
+    </div>
+</div>
+
+<!-- Score -->
+<div id="game-score">Score: <span id="total-score-val">0</span></div>
+
+<!-- Conteneur éditeur (vide, rempli dynamiquement si éditeur chargé) -->
+<div id="editor-container"></div>
+
+<!-- Crosshair mode jeu -->
+<div id="game-crosshair">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="12" cy="12" r="3" stroke="rgba(255,255,255,0.6)" stroke-width="1.5" fill="none"/>
+        <line x1="12" y1="2" x2="12" y2="8" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
+        <line x1="12" y1="16" x2="12" y2="22" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
+        <line x1="2" y1="12" x2="8" y2="12" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
+        <line x1="16" y1="12" x2="22" y2="12" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
+    </svg>
+</div>
+
+<!-- ========== OVERLAY SYSTEM (requis par l'éditeur) ========== -->
+<div id="video-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:9999; cursor:none;">
+    <div id="video-player-container" style="position:absolute; top:0; left:0; width:100%; height:100%; display:flex; align-items:center; justify-content:center;">
+        <video id="overlay-video-player" preload="auto" style="width:100%; height:100%; object-fit:contain; background:#000;"></video>
+        <iframe id="video-iframe" style="display:none; width:100%; height:100%; border:none;" allowfullscreen></iframe>
+        <div id="video-skip-hint" style="position:absolute; bottom:40px; left:50%; transform:translateX(-50%); color:rgba(255,255,255,0.5); font-size:13px; pointer-events:none; transition:opacity 1s ease; opacity:0;">Appuyez sur Echap ou cliquez pour passer</div>
+        <div id="video-controls" style="display:none;">
+            <span id="video-time-current">0:00</span>
+            <input type="range" id="video-progress" min="0" max="100" value="0" step="0.1">
+            <span id="video-time-total">0:00</span>
+            <button id="video-btn-back5"></button>
+            <button id="video-btn-play"></button>
+            <button id="video-btn-fwd5"></button>
+            <button id="video-btn-mute"></button>
+            <input type="range" id="video-volume" min="0" max="1" step="0.05" value="1">
+            <button id="video-btn-fullscreen"></button>
+            <button id="video-close-btn"></button>
+        </div>
+    </div>
+</div>
+<div id="lightbox-image-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.92); z-index:9999;">
+    <img id="lightbox-image" style="max-width:90%; max-height:85%; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); border-radius:8px; object-fit:contain;">
+    <button id="lightbox-image-close" style="position:absolute; top:20px; right:30px; background:rgba(255,255,255,0.15); border:none; color:#fff; font-size:28px; cursor:pointer; width:48px; height:48px; border-radius:50%; display:flex; align-items:center; justify-content:center;">&#10005;</button>
+</div>
+<div id="lightbox-text-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.92); z-index:9999;">
+    <div id="lightbox-text-content" style="max-width:700px; max-height:80%; overflow-y:auto; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:#1a1a1a; color:#e0e0e0; padding:32px 40px; border-radius:12px; font-size:16px; line-height:1.7;"></div>
+    <button id="lightbox-text-close" style="position:absolute; top:20px; right:30px; background:rgba(255,255,255,0.15); border:none; color:#fff; font-size:28px; cursor:pointer; width:48px; height:48px; border-radius:50%; display:flex; align-items:center; justify-content:center;">&#10005;</button>
+</div>
+
+<!-- ========== CDN SCRIPTS ========== -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/controls/TransformControls.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/utils/BufferGeometryUtils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/polygon-clipping@0.15.7/dist/polygon-clipping.umd.min.js"></script>
+
+<!-- PAS de editor-state.js ici : l'éditeur est chargé dynamiquement via Ctrl+Shift+C -->
+
+<script>
+/**
+ * ============================================
+ * ROOM CONFIGURATION
+ * ============================================
+ * Chaque pièce doit avoir un nom unique pour l'isolation des données.
+ */
+const ROOM_CONFIG = {
+    name: 'room_model',
+    title: 'Nouvelle Pièce'
+};
+
+/**
+ * VARIABLES DE LA SCENE
+ */
+let scene, camera, renderer, controls;
+let groundMesh;
+
+// Variables bridge pour compatibilité éditeur (déclarées ici, peuplées par l'éditeur si chargé)
+let walls = [];
+let characterCollisionProxies = [];
+let savedNabyTransform = null;
+let nabyRawHeight = null;
+let babyModel = null;
+let _cinematicPlaying = false;
+let _currentCinematicZone = null;
+let mixer;
+let isMoving = false;
+let collisionCacheCounter = 0;
+let isPanelCollapsed = false;
+
+// Stubs pour fonctions attendues par l'éditeur
+function getMasterVolume(category) {
+    const el = document.getElementById(
+        category === 'musique' ? 'vol-musique' :
+        category === 'ambiance' ? 'vol-dialogues' : 'vol-bruitages'
+    );
+    return el ? parseInt(el.value) / 100 : 1.0;
+}
+function updateGameVolume() {
+    document.getElementById('vol-dialogues-val').textContent = document.getElementById('vol-dialogues').value;
+    document.getElementById('vol-musique-val').textContent = document.getElementById('vol-musique').value;
+    document.getElementById('vol-bruitages-val').textContent = document.getElementById('vol-bruitages').value;
+}
+function createCharacterCollisionProxy() {}
+function removeCharacterCollisionProxy() {}
+function updateCharacterCollisionProxy() {}
+function loadPermanentObjects() {}
+
+// Navigation
+const keysPressed = {};
+const ROOM_LIMIT = 98;
+const baseEyeHeight = 1.60;
+
+/**
+ * INITIALISATION DE LA SCENE 3D
+ */
+function init() {
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x1a1a2e);
+
+    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, baseEyeHeight, 5);
+
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    document.body.appendChild(renderer.domElement);
+
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.screenSpacePanning = false;
+    controls.minDistance = 0.5;
+    controls.maxDistance = 150;
+    controls.maxPolarAngle = Math.PI / 2.1;
+    controls.mouseButtons = {
+        LEFT: null,
+        MIDDLE: THREE.MOUSE.DOLLY,
+        RIGHT: THREE.MOUSE.ROTATE
+    };
+
+    // Sol
+    const floorGeo = new THREE.PlaneGeometry(200, 200);
+    const floorMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
+    groundMesh = new THREE.Mesh(floorGeo, floorMat);
+    groundMesh.rotation.x = -Math.PI / 2;
+    groundMesh.receiveShadow = true;
+    groundMesh.name = 'ground';
+    scene.add(groundMesh);
+
+    // Lumière ambiante
+    const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambient);
+
+    // Lumière directionnelle
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.4);
+    dirLight.position.set(10, 20, 10);
+    dirLight.castShadow = true;
+    scene.add(dirLight);
+
+    animate();
+
+    // Event listeners
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    window.addEventListener('keydown', (e) => { keysPressed[e.key.toLowerCase()] = true; });
+    window.addEventListener('keyup', (e) => { keysPressed[e.key.toLowerCase()] = false; });
+
+    // Masquer l'écran de chargement
+    setTimeout(() => {
+        const loadingScreen = document.getElementById('loading-screen');
+        if (loadingScreen) {
+            const bar = document.getElementById('loading-bar');
+            if (bar) { bar.style.animation = 'none'; bar.style.width = '100%'; }
+            setTimeout(() => {
+                loadingScreen.classList.add('fade-out');
+                setTimeout(() => { loadingScreen.style.display = 'none'; }, 600);
+            }, 400);
+        }
+    }, 2000);
+}
+
+/**
+ * MOUVEMENT CLAVIER (ZQSD)
+ */
+function handleMovement() {
+    const moveSpeed = 0.08;
+    const direction = new THREE.Vector3();
+    const side = new THREE.Vector3();
+
+    camera.getWorldDirection(direction);
+    direction.y = 0;
+    direction.normalize();
+    side.crossVectors(direction, camera.up).normalize();
+
+    let moveX = 0, moveZ = 0;
+    if (keysPressed['z'] || keysPressed['w']) { moveX += direction.x * moveSpeed; moveZ += direction.z * moveSpeed; }
+    if (keysPressed['s']) { moveX -= direction.x * moveSpeed; moveZ -= direction.z * moveSpeed; }
+    if (keysPressed['q'] || keysPressed['a']) { moveX -= side.x * moveSpeed; moveZ -= side.z * moveSpeed; }
+    if (keysPressed['d']) { moveX += side.x * moveSpeed; moveZ += side.z * moveSpeed; }
+
+    const nextX = camera.position.x + moveX;
+    const nextZ = camera.position.z + moveZ;
+    if (Math.abs(nextX) < ROOM_LIMIT) { camera.position.x = nextX; controls.target.x += moveX; }
+    if (Math.abs(nextZ) < ROOM_LIMIT) { camera.position.z = nextZ; controls.target.z += moveZ; }
+}
+
+/**
+ * BOUCLE D'ANIMATION
+ */
+function animate() {
+    requestAnimationFrame(animate);
+    handleMovement();
+    controls.update();
+    renderer.render(scene, camera);
+}
+
+/**
+ * UI - Icônes info et volume
+ */
+document.getElementById('info-icon').addEventListener('click', function() {
+    const info = document.getElementById('controls-info');
+    info.style.display = info.style.display === 'none' ? 'block' : 'none';
+});
+
+document.getElementById('volume-icon').addEventListener('click', function() {
+    const popup = document.getElementById('volume-popup');
+    popup.style.display = popup.style.display === 'none' ? 'block' : 'none';
+});
+
+/**
+ * ============================================
+ * SECRET EDITOR LOADING (Ctrl+Shift+C)
+ * ============================================
+ */
+let editorLoaded = false;
+let secretDialogOpen = false;
+
+document.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.shiftKey && e.code === 'KeyC') {
+        e.preventDefault();
+        if (!secretDialogOpen && !editorLoaded) openSecretDialog();
+    }
+});
+
+function openSecretDialog() {
+    secretDialogOpen = true;
+    const overlay = document.createElement('div');
+    overlay.id = 'secret-overlay';
+    overlay.innerHTML = '<input type="password" id="secret-input" placeholder="Code..." autofocus>';
+    document.body.appendChild(overlay);
+
+    const input = document.getElementById('secret-input');
+    input.focus();
+
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            if (input.value.toLowerCase() === 'editor') {
+                overlay.remove();
+                secretDialogOpen = false;
+                loadEditor();
+            } else {
+                overlay.remove();
+                secretDialogOpen = false;
+            }
+        }
+        if (e.key === 'Escape') {
+            overlay.remove();
+            secretDialogOpen = false;
+        }
+    });
+
+    // Fermer si clic en dehors de l'input
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+            overlay.remove();
+            secretDialogOpen = false;
+        }
+    });
+}
+
+function loadScript(src) {
+    return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = src;
+        script.onload = resolve;
+        script.onerror = () => {
+            console.warn('Failed to load:', src);
+            reject(new Error('Script load failed: ' + src));
+        };
+        document.body.appendChild(script);
+    });
+}
+
+async function loadEditor() {
+    if (editorLoaded) return;
+    console.log('Chargement de l\'éditeur...');
+
+    // 1. CSS éditeur
+    const cssLink = document.createElement('link');
+    cssLink.rel = 'stylesheet';
+    cssLink.href = 'editor/editor.css';
+    document.head.appendChild(cssLink);
+
+    // 2. editor-state.js (variables globales éditeur)
+    await loadScript('editor/editor-state.js');
+    currentRoomName = ROOM_CONFIG.name;
+
+    // 3. Panneau HTML de l'éditeur
+    try {
+        const resp = await fetch('editor/editor-panel.html');
+        if (resp.ok) {
+            document.getElementById('editor-container').innerHTML = await resp.text();
+        }
+    } catch (e) {
+        console.warn('Chargement editor-panel.html échoué:', e);
+    }
+
+    // 4. Ajouter les éléments UI de l'éditeur (toggle, mode switch, etc.)
+    addEditorUIElements();
+
+    // 5. Scripts éditeur (ordre important)
+    const editorScripts = [
+        'editor/editor-utils.js',
+        'editor/editor-core.js',
+        'editor/editor-objects.js',
+        'editor/editor-camera-lights.js',
+        'editor/editor-audio.js',
+        'editor/editor-save.js',
+        'editor/editor-floorplan.js'
+    ];
+    for (const src of editorScripts) {
+        await loadScript(src);
+    }
+
+    // 6. Initialiser l'éditeur
+    initEditor();
+    if (typeof initEditorObjectsListeners === 'function') initEditorObjectsListeners();
+    initAccordions();
+    await bootstrapFromFiles();
+    await loadProjectOnStartup();
+
+    editorLoaded = true;
+    console.log('Éditeur chargé avec succès');
+}
+
+function addEditorUIElements() {
+    // Bouton toggle éditeur
+    if (!document.getElementById('toggle-editor-btn')) {
+        const btn = document.createElement('button');
+        btn.id = 'toggle-editor-btn';
+        btn.title = 'Mode Éditeur';
+        btn.style.cssText = 'position:fixed; top:16px; right:16px; z-index:100; background:rgba(30,30,30,0.7); border:none; border-radius:50%; width:36px; height:36px; cursor:pointer; display:flex; align-items:center; justify-content:center;';
+        btn.innerHTML = '<img src="icones/wrench.svg" alt="Éditeur" width="20" height="20" style="filter: brightness(0) invert(1);">';
+        document.body.appendChild(btn);
+    }
+
+    // Bouton plier/déplier panneau
+    if (!document.getElementById('toggle-panel-collapse')) {
+        const btn = document.createElement('button');
+        btn.id = 'toggle-panel-collapse';
+        btn.title = 'Plier/Déplier le panneau';
+        btn.innerHTML = '<img src="icones/circle-chevron-right.svg" alt="Déplier" width="24" height="24" style="filter: brightness(0) invert(1);">';
+        document.body.appendChild(btn);
+        btn.addEventListener('click', function() {
+            const panel = document.getElementById('editor-panel');
+            const btnEl = document.getElementById('toggle-panel-collapse');
+            isPanelCollapsed = !isPanelCollapsed;
+            const btnImg = btnEl.querySelector('img');
+            if (isPanelCollapsed) {
+                panel.classList.add('collapsed');
+                btnEl.classList.add('collapsed');
+                btnImg.src = 'icones/circle-chevron-left.svg';
+            } else {
+                panel.classList.remove('collapsed');
+                btnEl.classList.remove('collapsed');
+                btnImg.src = 'icones/circle-chevron-right.svg';
+            }
+        });
+    }
+
+    // Switch Mode Jeu/Développeur
+    if (!document.getElementById('floating-mode-switch')) {
+        const sw = document.createElement('button');
+        sw.id = 'floating-mode-switch';
+        sw.title = 'Mode Jeu / Développeur';
+        sw.style.cssText = 'position:fixed; bottom:20px; right:20px; background:#2a2a2a; border:1px solid #3a3a3a; border-radius:20px; width:40px; height:80px; padding:4px; cursor:pointer; z-index:100; display:flex; flex-direction:column; align-items:center; justify-content:center; transition:all 0.3s;';
+        sw.innerHTML = `
+            <div id="floating-switch-indicator" style="position:absolute; top:4px; width:32px; height:36px; background:#ff6b35; border-radius:16px; transition:all 0.3s; display:flex; align-items:center; justify-content:center;">
+                <img src="icones/gamepad-2.svg" width="20" height="20" style="filter: brightness(0) invert(1);">
+            </div>
+            <div style="width:32px; height:36px; display:flex; align-items:center; justify-content:center; z-index:1;"></div>
+            <div style="width:32px; height:36px; display:flex; align-items:center; justify-content:center; z-index:1;">
+                <img src="icones/code-xml.svg" width="20" height="20" style="filter: brightness(0) invert(1);">
+            </div>`;
+        document.body.appendChild(sw);
+    }
+
+    // Étiquette dimensions (masquée, pour l'éditeur)
+    if (!document.getElementById('object-dimensions-label')) {
+        const label = document.createElement('div');
+        label.id = 'object-dimensions-label';
+        label.style.display = 'none';
+        label.innerHTML = '<div class="dim-title" id="dim-label-name">Objet</div><div class="dim-row"><span>L: <span class="dim-val" id="dim-label-w">-</span><span class="dim-unit"> cm</span></span><span>l: <span class="dim-val" id="dim-label-d">-</span><span class="dim-unit"> cm</span></span><span>H: <span class="dim-val" id="dim-label-h">-</span><span class="dim-unit"> cm</span></span></div>';
+        document.body.appendChild(label);
+    }
+}
+
+window.onload = init;
+</script>
+
+</body>
+</html>

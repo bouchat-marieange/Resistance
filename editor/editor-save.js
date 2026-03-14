@@ -382,6 +382,18 @@ async function saveProject() {
     }
 }
 
+// Migration : anciens clés room1_ → room_1_
+(function migrateOldKeys() {
+    if (localStorage.getItem('room1_importedObjects') && !localStorage.getItem('room_1_importedObjects')) {
+        localStorage.setItem('room_1_importedObjects', localStorage.getItem('room1_importedObjects'));
+        localStorage.removeItem('room1_importedObjects');
+    }
+    if (localStorage.getItem('room1_customLights') && !localStorage.getItem('room_1_customLights')) {
+        localStorage.setItem('room_1_customLights', localStorage.getItem('room1_customLights'));
+        localStorage.removeItem('room1_customLights');
+    }
+})();
+
 // Charger le projet au démarrage
 async function loadProjectOnStartup() {
     console.log('🚀 loadProjectOnStartup() appelé');
@@ -469,8 +481,8 @@ async function bootstrapFromFiles() {
 
     // Nettoyer le localStorage potentiellement corrompu aussi
     localStorage.removeItem('floorPlan_' + currentRoomName);
-    localStorage.removeItem('room1_importedObjects');
-    localStorage.removeItem('room1_customLights');
+    localStorage.removeItem(currentRoomName + '_importedObjects');
+    localStorage.removeItem(currentRoomName + '_customLights');
 
     // Charger le manifeste depuis les fichiers
     console.log('🔄 Bootstrap depuis scene_data/...');
@@ -1733,7 +1745,7 @@ function saveImportedObjectsToStorage() {
     });
 
     try {
-        localStorage.setItem('room1_importedObjects', JSON.stringify(objectsData));
+        localStorage.setItem(currentRoomName + '_importedObjects', JSON.stringify(objectsData));
         console.log(`💾 ${objectsData.length} objet(s) sauvegardé(s)`);
     } catch (e) {
         if (e.name === 'QuotaExceededError') {
@@ -1775,7 +1787,7 @@ function saveCustomLightsToStorage() {
             return data;
         });
 
-    localStorage.setItem('room1_customLights', JSON.stringify(lightsData));
+    localStorage.setItem(currentRoomName + '_customLights', JSON.stringify(lightsData));
     console.log(`💾 ${lightsData.length} lumière(s) personnalisée(s) sauvegardée(s)`);
 }
 
@@ -1783,7 +1795,7 @@ function saveCustomLightsToStorage() {
  * Charger les objets importés depuis localStorage
  */
 function loadImportedObjectsFromStorage() {
-    const savedData = localStorage.getItem('room1_importedObjects');
+    const savedData = localStorage.getItem(currentRoomName + '_importedObjects');
     if (!savedData) {
         console.log('Aucun objet sauvegardé trouvé');
         return;
@@ -1819,7 +1831,7 @@ function loadImportedObjectsFromStorage() {
  * Charger les lumières personnalisées depuis localStorage
  */
 function loadCustomLightsFromStorage() {
-    const savedData = localStorage.getItem('room1_customLights');
+    const savedData = localStorage.getItem(currentRoomName + '_customLights');
     if (!savedData) {
         console.log('Aucune lumière sauvegardée trouvée');
         return;
