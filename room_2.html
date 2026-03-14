@@ -1,9 +1,17 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shape Sorter 3D - Expert WebGL</title>
+
+    <!-- Tailwind CSS + DaisyUI -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.14/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- CSS éditeur autonome -->
+    <link rel="stylesheet" href="editor/editor.css">
+
     <style>
         body {
             margin: 0;
@@ -93,23 +101,134 @@
             z-index: 6;
             text-shadow: 3px 3px 0px rgba(0,0,0,0.2);
         }
+
+        /* ========== LOADING SCREEN ========== */
+        #loading-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #111; z-index: 10000;
+            display: flex; align-items: center; justify-content: center;
+            transition: opacity 0.6s ease;
+        }
+        #loading-screen.fade-out { opacity: 0; pointer-events: none; }
+        .loading-title { color: #39ff14; font-size: 28px; font-weight: 700; letter-spacing: 2px; margin-bottom: 6px; }
+        .loading-subtitle { color: #888; font-size: 14px; margin-bottom: 18px; }
+        .loading-bar-container { width: 220px; height: 4px; background: #333; border-radius: 2px; overflow: hidden; }
+        .loading-bar { width: 0; height: 100%; background: #39ff14; animation: loadBar 2s ease-in-out forwards; }
+        @keyframes loadBar { 0% { width: 0; } 100% { width: 90%; } }
+
+        /* Volume popup */
+        #volume-popup {
+            display: none; position: fixed; bottom: 70px; left: 20px;
+            background: rgba(30,30,30,0.95); border: 1px solid #444; border-radius: 10px;
+            padding: 16px 18px; z-index: 120; min-width: 210px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5); color: #eee; font-size: 13px;
+        }
+        #volume-popup h4 { margin: 0 0 10px 0; font-size: 14px; color: #aaa; text-align: center; }
+        .volume-slider-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+        .volume-slider-row label { width: 70px; font-size: 12px; color: #ccc; }
+        .volume-slider-row input[type=range] { flex: 1; accent-color: #39ff14; }
+        .volume-value { width: 28px; text-align: right; font-size: 12px; color: #aaa; }
+        #volume-popup-close { position: absolute; top: 4px; right: 8px; background: none; border: none; color: #888; font-size: 16px; cursor: pointer; }
+
+        /* Info/Volume icons */
+        #info-icon, #volume-icon {
+            position: fixed; left: 16px; z-index: 100; cursor: pointer;
+            background: rgba(30,30,30,0.7); border-radius: 50%; padding: 6px;
+            display: flex; align-items: center; justify-content: center;
+            transition: background 0.2s;
+        }
+        #info-icon { top: 16px; width: 32px; height: 32px; }
+        #volume-icon { top: 56px; width: 40px; height: 40px; }
+        #info-icon:hover, #volume-icon:hover { background: rgba(60,60,60,0.9); }
+
+        /* Toggle editor button */
+        #toggle-editor-btn {
+            position: fixed; top: 16px; right: 16px; z-index: 100;
+            background: rgba(30,30,30,0.7); border: none; border-radius: 50%;
+            width: 36px; height: 36px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: background 0.2s;
+        }
+        #toggle-editor-btn:hover { background: rgba(60,60,60,0.9); }
     </style>
 </head>
 <body>
+
+<!-- ========== LOADING SCREEN ========== -->
+<div id="loading-screen">
+    <div style="text-align: center; display: flex; flex-direction: column; align-items: center;">
+        <div class="loading-title">Shape Sorter 3D</div>
+        <div class="loading-subtitle">Chargement en cours...</div>
+        <div class="loading-bar-container">
+            <div class="loading-bar" id="loading-bar"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Icône volume cliquable -->
+<div id="volume-icon" title="Réglage du volume">
+    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+</div>
+
+<!-- Popup de réglage du volume -->
+<div id="volume-popup">
+    <button id="volume-popup-close" onclick="document.getElementById('volume-popup').style.display='none';">&#10005;</button>
+    <h4>Volume</h4>
+    <div class="volume-slider-row">
+        <label>Dialogues</label>
+        <input type="range" min="0" max="100" value="80" id="vol-dialogues" oninput="updateGameVolume()">
+        <span class="volume-value" id="vol-dialogues-val">80</span>
+    </div>
+    <div class="volume-slider-row">
+        <label>Musique</label>
+        <input type="range" min="0" max="100" value="80" id="vol-musique" oninput="updateGameVolume()">
+        <span class="volume-value" id="vol-musique-val">80</span>
+    </div>
+    <div class="volume-slider-row">
+        <label>Bruitages</label>
+        <input type="range" min="0" max="100" value="80" id="vol-bruitages" oninput="updateGameVolume()">
+        <span class="volume-value" id="vol-bruitages-val">80</span>
+    </div>
+</div>
+
+<!-- Switch Mode Jeu/Développeur FLOTTANT -->
+<button id="floating-mode-switch" title="Basculer entre mode Jeu et mode Développeur" style="position: fixed; bottom: 20px; right: 20px; background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 20px; width: 40px; height: 80px; padding: 4px; cursor: pointer; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.3s;">
+    <div id="floating-switch-indicator" style="position: absolute; top: 4px; width: 32px; height: 36px; background: #ff6b35; border-radius: 16px; transition: all 0.3s; display: flex; align-items: center; justify-content: center;">
+        <img src="icones/gamepad-2.svg" width="20" height="20" style="filter: brightness(0) invert(1);">
+    </div>
+    <div style="width: 32px; height: 36px; display: flex; align-items: center; justify-content: center; z-index: 1;"></div>
+    <div style="width: 32px; height: 36px; display: flex; align-items: center; justify-content: center; z-index: 1;">
+        <img src="icones/code-xml.svg" width="20" height="20" style="filter: brightness(0) invert(1);">
+    </div>
+</button>
+
+<!-- Bouton pour plier/déplier le panneau éditeur -->
+<button id="toggle-panel-collapse" title="Plier/Déplier le panneau">
+    <img src="icones/circle-chevron-right.svg" alt="Déplier" width="24" height="24" style="filter: brightness(0) invert(1);">
+</button>
+
+<!-- Étiquette dimensions objet sélectionné -->
+<div id="object-dimensions-label">
+    <div class="dim-title" id="dim-label-name">Objet</div>
+    <div class="dim-row">
+        <span>L: <span class="dim-val" id="dim-label-w">-</span><span class="dim-unit"> cm</span></span>
+        <span>l: <span class="dim-val" id="dim-label-d">-</span><span class="dim-unit"> cm</span></span>
+        <span>H: <span class="dim-val" id="dim-label-h">-</span><span class="dim-unit"> cm</span></span>
+    </div>
+</div>
 
 <div id="ui-container">
     <div id="score-display">Score: <span id="score-val">0</span> / 5</div>
     <div id="controls-info">
         <strong>Navigation :</strong><br>
-        - 🖱️ <strong>Clic Droit</strong> : Tourner la vue<br>
-        - 🖱️ <strong>Molette</strong> : Zoomer / Dézoomer<br>
-        - ⌨️ <strong>Z / S</strong> : Avancer / Reculer<br>
-        - ⌨️ <strong>Q / D</strong> : Gauche / Droite<br>
+        - Clic Droit : Tourner la vue<br>
+        - Molette : Zoomer / Dézoomer<br>
+        - Z / S : Avancer / Reculer<br>
+        - Q / D : Gauche / Droite<br>
         <hr>
         <strong>Jeu :</strong><br>
-        - 🖱️ <strong>Clic Gauche</strong> : Déplacer / Frapper la porte<br>
-        - ⌨️ <strong>Flèches</strong> : Orienter la pièce tenue<br>
-        - 📦 <strong>Cube Mauve</strong> : Test de collision haute<br>
+        - Clic Gauche : Déplacer / Frapper la porte<br>
+        - Flèches : Orienter la pièce tenue<br>
         <button id="reset-btn">Réinitialiser le jeu</button>
     </div>
 </div>
@@ -117,10 +236,61 @@
 <div id="feedback-msg">BRAVO !</div>
 <div id="door-msg">TOC TOC !</div>
 
+<!-- Panneau éditeur chargé dynamiquement -->
+<div id="editor-container"></div>
+
+<!-- ========== VISEUR MODE JEU ========== -->
+<div id="game-crosshair" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:500; pointer-events:none;">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="12" cy="12" r="3" stroke="rgba(255,255,255,0.6)" stroke-width="1.5" fill="none"/>
+        <line x1="12" y1="2" x2="12" y2="8" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
+        <line x1="12" y1="16" x2="12" y2="22" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
+        <line x1="2" y1="12" x2="8" y2="12" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
+        <line x1="16" y1="12" x2="22" y2="12" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
+    </svg>
+</div>
+
+<!-- ========== OVERLAY SYSTEM ========== -->
+<div id="video-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:9999; cursor:none;">
+    <div id="video-player-container" style="position:absolute; top:0; left:0; width:100%; height:100%; display:flex; align-items:center; justify-content:center;">
+        <video id="overlay-video-player" preload="auto" style="width:100%; height:100%; object-fit:contain; background:#000;"></video>
+        <iframe id="video-iframe" style="display:none; width:100%; height:100%; border:none;" allowfullscreen></iframe>
+        <div id="video-skip-hint" style="position:absolute; bottom:40px; left:50%; transform:translateX(-50%); color:rgba(255,255,255,0.5); font-size:13px; font-family:sans-serif; pointer-events:none; transition:opacity 1s ease; opacity:0;">Appuyez sur Echap ou cliquez pour passer</div>
+        <div id="video-controls" style="display:none;">
+            <span id="video-time-current">0:00</span>
+            <input type="range" id="video-progress" min="0" max="100" value="0" step="0.1">
+            <span id="video-time-total">0:00</span>
+            <button id="video-btn-back5"></button>
+            <button id="video-btn-play"></button>
+            <button id="video-btn-fwd5"></button>
+            <button id="video-btn-mute"></button>
+            <input type="range" id="video-volume" min="0" max="1" step="0.05" value="1">
+            <button id="video-btn-fullscreen"></button>
+            <button id="video-close-btn"></button>
+        </div>
+    </div>
+</div>
+
+<div id="lightbox-image-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.92); z-index:9999;">
+    <img id="lightbox-image" style="max-width:90%; max-height:85%; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); border-radius:8px; object-fit:contain;">
+    <button id="lightbox-image-close" style="position:absolute; top:20px; right:30px; background:rgba(255,255,255,0.15); border:none; color:#fff; font-size:28px; cursor:pointer; width:48px; height:48px; border-radius:50%; display:flex; align-items:center; justify-content:center;">&#10005;</button>
+</div>
+
+<div id="lightbox-text-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.92); z-index:9999;">
+    <div id="lightbox-text-content" style="max-width:700px; max-height:80%; overflow-y:auto; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:#1a1a1a; color:#e0e0e0; padding:32px 40px; border-radius:12px; font-size:16px; line-height:1.7;"></div>
+    <button id="lightbox-text-close" style="position:absolute; top:20px; right:30px; background:rgba(255,255,255,0.15); border:none; color:#fff; font-size:28px; cursor:pointer; width:48px; height:48px; border-radius:50%; display:flex; align-items:center; justify-content:center;">&#10005;</button>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/loaders/GLTFLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/controls/TransformControls.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/utils/BufferGeometryUtils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/polygon-clipping@0.15.7/dist/polygon-clipping.umd.min.js"></script>
+
+<!-- Variables d'état éditeur (doit être chargé après THREE.js, avant le script inline) -->
+<script src="editor/editor-state.js"></script>
 
 <script>
 /**
@@ -129,12 +299,27 @@
 let scene, camera, renderer, world, controls;
 let shapes = [];
 let box, boxTop, rug, babyModel, babyBody, doorMesh, doorMesh2;
+let groundMesh; // Référence au sol pour l'éditeur
 let selectedShape = null;
 let isDragging = false;
 let score = 0;
 let raycaster = new THREE.Raycaster();
 let mouse = new THREE.Vector2();
 let offset = new THREE.Vector3();
+
+// Variables bridge pour l'éditeur (non utilisées par le jeu mais nécessaires aux scripts éditeur)
+let walls = [];
+let characterCollisionProxies = [];
+let savedNabyTransform = null;
+let nabyRawHeight = null;
+let _cinematicPlaying = false;
+let _currentCinematicZone = null;
+let mixer; // Animation mixer (non utilisé dans room_2 mais référencé par l'éditeur)
+let isMoving = false;
+let collisionCacheCounter = 0;
+
+// Nom de la pièce pour la sauvegarde
+currentRoomName = 'room_2';
 
 // Limites de la pièce pour le blocage caméra
 const ROOM_LIMIT = 98;
@@ -143,9 +328,9 @@ const ROOM_LIMIT = 98;
 let verticalVelocity = 0;
 const gravityConst = 0.015;
 const jumpStrength = 0.45;
-const baseEyeHeight = 50; // Hauteur des yeux d'un adulte (environ à mi-hauteur du mur de 60 unités)
+const baseEyeHeight = 50;
 
-// Matériaux physiques - Réduction du rebond pour l'effet "bois"
+// Matériaux physiques
 const shapePhysMaterial = new CANNON.Material("shapeMaterial");
 const obstaclePhysMaterial = new CANNON.Material("obstacleMaterial");
 
@@ -179,11 +364,73 @@ function resolveURL(path) {
 }
 
 /**
+ * FONCTIONS BRIDGE POUR L'ÉDITEUR
+ * Stubs pour les fonctions page-spécifiques appelées par les scripts éditeur
+ */
+function getMasterVolume(category) {
+    const el = document.getElementById(
+        category === 'musique' ? 'vol-musique' :
+        category === 'ambiance' ? 'vol-dialogues' : 'vol-bruitages'
+    );
+    return el ? parseInt(el.value) / 100 : 1.0;
+}
+
+function updateGameVolume() {
+    const volDialogues = parseInt(document.getElementById('vol-dialogues').value);
+    const volMusique = parseInt(document.getElementById('vol-musique').value);
+    const volBruitages = parseInt(document.getElementById('vol-bruitages').value);
+    document.getElementById('vol-dialogues-val').textContent = volDialogues;
+    document.getElementById('vol-musique-val').textContent = volMusique;
+    document.getElementById('vol-bruitages-val').textContent = volBruitages;
+    // Mise à jour du volume des éléments audio actifs
+    if (typeof activeAudioElements !== 'undefined') {
+        activeAudioElements.forEach(entry => {
+            if (entry.audio && entry.track) {
+                const master = getMasterVolume(entry.track.category);
+                entry.audio.volume = (entry.track.volume / 100) * master;
+            }
+        });
+    }
+}
+
+function createCharacterCollisionProxy(character) { /* stub - pas de collision proxy dans room_2 */ }
+function removeCharacterCollisionProxy(character) { /* stub */ }
+function updateCharacterCollisionProxy(entry) { /* stub */ }
+
+// Toggle du panneau éditeur (plier/déplier)
+document.getElementById('toggle-panel-collapse').addEventListener('click', function() {
+    const panel = document.getElementById('editor-panel');
+    const btn = document.getElementById('toggle-panel-collapse');
+
+    isPanelCollapsed = !isPanelCollapsed;
+
+    const btnImg = btn.querySelector('img');
+
+    if (isPanelCollapsed) {
+        panel.classList.add('collapsed');
+        btn.classList.add('collapsed');
+        btnImg.src = 'icones/circle-chevron-left.svg';
+        btn.title = 'Déplier le panneau';
+    } else {
+        panel.classList.remove('collapsed');
+        btn.classList.remove('collapsed');
+        btnImg.src = 'icones/circle-chevron-right.svg';
+        btn.title = 'Plier le panneau';
+    }
+});
+
+// Toggle volume popup
+document.getElementById('volume-icon').addEventListener('click', function() {
+    const popup = document.getElementById('volume-popup');
+    popup.style.display = popup.style.display === 'none' ? 'block' : 'none';
+});
+
+/**
  * TRACÉS DE FORMES
  */
 function getTriangleShape() {
     const shape = new THREE.Shape();
-    const r = 0.8; 
+    const r = 0.8;
     shape.moveTo(0, r);
     shape.lineTo(r * Math.cos(7 * Math.PI / 6), r * Math.sin(7 * Math.PI / 6));
     shape.lineTo(r * Math.cos(11 * Math.PI / 6), r * Math.sin(11 * Math.PI / 6));
@@ -226,19 +473,15 @@ function init() {
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0xb3e5fc);
 
-    // Récupérer le paramètre d'entrée depuis l'URL
     const urlParams = new URLSearchParams(window.location.search);
     const entryWall = urlParams.get('wall');
 
     camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 2000);
 
-    // Configurer la position et orientation de la caméra selon le mur d'entrée
     if (entryWall === '1') {
-        // Arrivée depuis room_1 mur 1 → Face au mur 1 de room_2 (mur nord)
         camera.position.set(0, baseEyeHeight, 25);
         camera.lookAt(0, 2, -100);
     } else {
-        // Position par défaut (face au mur 1 - nord)
         camera.position.set(0, baseEyeHeight, 25);
         camera.lookAt(0, 2, 0);
     }
@@ -255,10 +498,10 @@ function init() {
     controls.screenSpacePanning = false;
     controls.minDistance = 2;
     controls.maxDistance = 150;
-    controls.maxPolarAngle = Math.PI / 2.1; 
-    
+    controls.maxPolarAngle = Math.PI / 2.1;
+
     controls.mouseButtons = {
-        LEFT: null, 
+        LEFT: null,
         MIDDLE: THREE.MOUSE.DOLLY,
         RIGHT: THREE.MOUSE.ROTATE
     };
@@ -267,13 +510,13 @@ function init() {
     world.gravity.set(0, -20, 0);
 
     const contactMaterial = new CANNON.ContactMaterial(
-        shapePhysMaterial, 
-        obstaclePhysMaterial, 
-        { friction: 0.4, restitution: 0.2 } 
+        shapePhysMaterial,
+        obstaclePhysMaterial,
+        { friction: 0.4, restitution: 0.2 }
     );
     world.addContactMaterial(contactMaterial);
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); 
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
     scene.add(ambientLight);
 
     const dirLight = new THREE.DirectionalLight(0xffffff, 0.4);
@@ -283,7 +526,7 @@ function init() {
     scene.add(dirLight);
 
     const babyLight = new THREE.PointLight(0xffffff, 1.5, 35);
-    babyLight.position.set(0, 7, -2); 
+    babyLight.position.set(0, 7, -2);
     scene.add(babyLight);
 
     const babyRimLight = new THREE.PointLight(0x00aaff, 0.5, 20);
@@ -296,12 +539,12 @@ function init() {
     scene.cameraLight = cameraLight;
 
     createFloor();
-    createRoomWalls(); 
-    createDoor(); 
-    createRug(); 
+    createRoomWalls();
+    createDoor();
+    createRug();
     createSortBox();
     createPieces();
-    
+
     animate();
 
     try {
@@ -314,7 +557,7 @@ function init() {
     window.addEventListener('pointerdown', onPointerDown);
     window.addEventListener('pointermove', onPointerMove);
     window.addEventListener('pointerup', onPointerUp);
-    
+
     window.addEventListener('keydown', (e) => {
         keysPressed[e.key.toLowerCase()] = true;
         onKeyDown(e);
@@ -322,22 +565,23 @@ function init() {
     window.addEventListener('keyup', (e) => {
         keysPressed[e.key.toLowerCase()] = false;
     });
-    
+
     document.getElementById('reset-btn').addEventListener('click', resetGame);
 }
 
 function createFloor() {
     const floorGeo = new THREE.PlaneGeometry(200, 200);
     const floorMat = new THREE.MeshStandardMaterial({ color: 0xcccccc });
-    const floorMesh = new THREE.Mesh(floorGeo, floorMat);
-    floorMesh.rotation.x = -Math.PI / 2;
-    floorMesh.receiveShadow = true;
-    scene.add(floorMesh);
+    groundMesh = new THREE.Mesh(floorGeo, floorMat);
+    groundMesh.rotation.x = -Math.PI / 2;
+    groundMesh.receiveShadow = true;
+    groundMesh.name = 'ground';
+    scene.add(groundMesh);
 
-    const groundBody = new CANNON.Body({ 
-        mass: 0, 
+    const groundBody = new CANNON.Body({
+        mass: 0,
         shape: new CANNON.Plane(),
-        material: obstaclePhysMaterial 
+        material: obstaclePhysMaterial
     });
     groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
     world.addBody(groundBody);
@@ -346,18 +590,18 @@ function createFloor() {
 function createRoomWalls() {
     const wallHeight = 60;
     const halfSize = 100;
-    const wallColor = 0xe8eaf6; 
+    const wallColor = 0xe8eaf6;
 
-    const wallMat = new THREE.MeshStandardMaterial({ 
-        color: wallColor, 
+    const wallMat = new THREE.MeshStandardMaterial({
+        color: wallColor,
         side: THREE.DoubleSide,
         roughness: 0.9
     });
 
     new THREE.TextureLoader().load(resolveURL('images/wall2.jpg'), (tex) => {
         tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-        tex.repeat.set(4, 1.2); 
-        wallMat.color.set(0xffffff); 
+        tex.repeat.set(4, 1.2);
+        wallMat.color.set(0xffffff);
         wallMat.map = tex;
         wallMat.needsUpdate = true;
     }, undefined, (err) => {
@@ -370,7 +614,7 @@ function createRoomWalls() {
         wallBody.position.set(posX, wallHeight, posZ);
         if (rotY) wallBody.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), rotY);
         world.addBody(wallBody);
-        
+
         const wallGeo = new THREE.PlaneGeometry(halfSize * 2, wallHeight * 2);
         const wallMesh = new THREE.Mesh(wallGeo, wallMat);
         wallMesh.position.set(posX, wallHeight, posZ);
@@ -384,34 +628,27 @@ function createRoomWalls() {
     createWall(-halfSize, 0, Math.PI / 2);
     createWall(halfSize, 0, Math.PI / 2);
 
-    // Ajouter les numéros sur chaque mur
     createWallNumbers();
 }
 
 function createWallNumbers() {
-    // Fonction pour créer une texture avec un numéro (canvas unique pour chaque)
     const createNumberTexture = (number) => {
         const canvas = document.createElement('canvas');
         canvas.width = 512;
         canvas.height = 512;
         const ctx = canvas.getContext('2d');
-
-        // Configuration du texte
         ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
         ctx.font = 'bold 400px Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
         ctx.lineWidth = 10;
-
         ctx.strokeText(number, 256, 256);
         ctx.fillText(number, 256, 256);
-
         const texture = new THREE.CanvasTexture(canvas);
         return texture;
     };
 
-    // Créer les sprites pour chaque mur
     const createWallNumber = (number, position) => {
         const spriteMaterial = new THREE.SpriteMaterial({
             map: createNumberTexture(number),
@@ -423,17 +660,9 @@ function createWallNumbers() {
         scene.add(sprite);
     };
 
-    // Numérotation en partant de la caméra (face au mur nord) dans le sens horaire
-    // Mur 1: Face à l'utilisateur - Mur Nord (z = -100)
     createWallNumber('1', new THREE.Vector3(0, 30, -95));
-
-    // Mur 2: À droite - Mur Est (x = 100)
     createWallNumber('2', new THREE.Vector3(95, 30, 0));
-
-    // Mur 3: Derrière - Mur Sud (z = 100)
     createWallNumber('3', new THREE.Vector3(0, 30, 95));
-
-    // Mur 4: À gauche - Mur Ouest (x = -100)
     createWallNumber('4', new THREE.Vector3(-95, 30, 0));
 }
 
@@ -447,19 +676,17 @@ function createDoor() {
         metalness: 0.1
     });
 
-    // Porte 1 - Mur Nord (z = -99.8) - Affiche "Toc Toc !"
     doorMesh = new THREE.Mesh(doorGeo, doorMat);
     doorMesh.position.set(0, doorHeight / 2 + 0.08, -99.8);
     doorMesh.receiveShadow = true;
     doorMesh.name = "door_knock";
     scene.add(doorMesh);
 
-    // Porte 2 - Mur Sud (z = 99.8) - Redirige vers room_1.html
     const doorGeo2 = new THREE.PlaneGeometry(doorWidth, doorHeight);
     const doorMat2 = doorMat.clone();
     doorMesh2 = new THREE.Mesh(doorGeo2, doorMat2);
     doorMesh2.position.set(0, doorHeight / 2 + 0.08, 99.8);
-    doorMesh2.rotation.y = Math.PI; // Rotation pour faire face à l'intérieur
+    doorMesh2.rotation.y = Math.PI;
     doorMesh2.receiveShadow = true;
     doorMesh2.name = "door_exit";
     scene.add(doorMesh2);
@@ -468,18 +695,18 @@ function createDoor() {
 function loadBabyModel() {
     const loader = new THREE.GLTFLoader();
     const url = resolveURL('3D/perso/baby.glb');
-    
-    loader.load(url, 
+
+    loader.load(url,
         (gltf) => {
             babyModel = gltf.scene;
-            babyModel.scale.set(13, 13, 13); 
+            babyModel.scale.set(13, 13, 13);
             babyModel.updateMatrixWorld(true);
             const boundingBox = new THREE.Box3().setFromObject(babyModel);
             const size = boundingBox.getSize(new THREE.Vector3());
             const heightOffset = -boundingBox.min.y;
-            
+
             const modelPos = new THREE.Vector3(0, 0.08 + heightOffset, -7.5);
-            babyModel.position.copy(modelPos); 
+            babyModel.position.copy(modelPos);
 
             babyModel.traverse((child) => {
                 if (child.isMesh) {
@@ -494,21 +721,21 @@ function loadBabyModel() {
             });
             scene.add(babyModel);
 
-            babyBody = new CANNON.Body({ 
-                mass: 0, 
+            babyBody = new CANNON.Body({
+                mass: 0,
                 material: obstaclePhysMaterial,
                 position: new CANNON.Vec3(modelPos.x, modelPos.y, modelPos.z)
-            }); 
-            
+            });
+
             const baseShape = new CANNON.Box(new CANNON.Vec3(size.x * 0.35, size.y * 0.1, size.z * 0.4));
             babyBody.addShape(baseShape, new CANNON.Vec3(0, size.y * 0.1, 0.3));
-            
+
             const torsoShape = new CANNON.Box(new CANNON.Vec3(size.x * 0.22, size.y * 0.2, size.z * 0.22));
             babyBody.addShape(torsoShape, new CANNON.Vec3(0, size.y * 0.4, 0));
-            
+
             const headShape = new CANNON.Sphere(size.x * 0.28);
             babyBody.addShape(headShape, new CANNON.Vec3(0, size.y * 0.78, 0.1));
-            
+
             babyBody.updateBoundingRadius();
             world.addBody(babyBody);
         },
@@ -530,7 +757,7 @@ function createRug() {
 
     rug = new THREE.Mesh(rugGeo, rugMat);
     rug.rotation.x = -Math.PI / 2;
-    rug.position.set(0, 0.08, 0); 
+    rug.position.set(0, 0.08, 0);
     rug.receiveShadow = true;
     scene.add(rug);
 }
@@ -541,7 +768,7 @@ function createSortBox() {
 
     const topMat = new THREE.MeshStandardMaterial({ color: 0xc62828 });
     box = new THREE.Group();
-    
+
     const baseMesh = new THREE.Mesh(new THREE.BoxGeometry(boxSize, 0.2, boxSize), woodMat);
     baseMesh.position.y = 0.1;
     baseMesh.receiveShadow = true;
@@ -591,7 +818,7 @@ function createSortBox() {
             case SHAPE_TYPES.SQUARE: holeGeo = new THREE.PlaneGeometry(0.9, 0.9); break;
             case SHAPE_TYPES.TRIANGLE: holeGeo = new THREE.ShapeGeometry(getTriangleShape()); break;
             case SHAPE_TYPES.STAR: holeGeo = new THREE.ShapeGeometry(getStarShape()); break;
-            case SHAPE_TYPES.HEART: 
+            case SHAPE_TYPES.HEART:
                 holeGeo = new THREE.ShapeGeometry(getHeartShape());
                 holeGeo.scale(0.35, 0.35, 0.35); break;
         }
@@ -607,20 +834,20 @@ function createSortBox() {
 function createPieces() {
     const types = Object.values(SHAPE_TYPES);
     const colors = [0x1e88e5, 0xfb8c00, 0x43a047, 0xfdd835, 0xd81b60, 0x800080];
-    
+
     types.forEach((type, index) => {
         const geometry = getGeometryForType(type);
         const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color: colors[index], roughness: 0.5 }));
         mesh.castShadow = true; mesh.receiveShadow = true;
-        
+
         const angle = Math.PI * 0.25 + (index / (types.length - 1)) * (Math.PI * 0.6);
         const dist = type === SHAPE_TYPES.PURPLE_CUBE ? 12 : 9.5;
         mesh.position.set(Math.cos(angle) * dist, 1.5, Math.sin(angle) * dist);
         mesh.rotation.y = Math.random() * Math.PI * 2;
         scene.add(mesh);
-        
-        const body = new CANNON.Body({ 
-            mass: 1, 
+
+        const body = new CANNON.Body({
+            mass: 1,
             material: shapePhysMaterial
         });
 
@@ -633,7 +860,7 @@ function createPieces() {
             body.addShape(physShape);
         }
 
-        body.position.copy(mesh.position); 
+        body.position.copy(mesh.position);
         body.quaternion.copy(mesh.quaternion);
         world.addBody(body);
         shapes.push({ type, mesh, body, isCorrect: false });
@@ -660,7 +887,7 @@ function getPhysicsShapeForType(type) {
         case SHAPE_TYPES.SQUARE: return new CANNON.Box(new CANNON.Vec3(0.45, 0.7, 0.45));
         case SHAPE_TYPES.TRIANGLE: return new CANNON.Box(new CANNON.Vec3(0.4, 0.7, 0.4));
         case SHAPE_TYPES.PURPLE_CUBE: return new CANNON.Box(new CANNON.Vec3(0.6, 0.6, 0.6));
-        default: return new CANNON.Sphere(0.75); 
+        default: return new CANNON.Sphere(0.75);
     }
 }
 
@@ -683,24 +910,22 @@ function onPointerDown(event) {
         selectedShape.body.updateMassProperties();
         selectedShape.body.velocity.set(0, 0, 0);
         selectedShape.body.angularVelocity.set(0, 0, 0);
-        
+
         const dragY = (selectedShape.type === SHAPE_TYPES.PURPLE_CUBE) ? 15.0 : 6.0;
         const dragPlaneTemp = new THREE.Plane(new THREE.Vector3(0, 1, 0), -dragY);
-        
+
         const intersection = new THREE.Vector3();
         if (raycaster.ray.intersectPlane(dragPlaneTemp, intersection)) {
             offset.copy(selectedShape.mesh.position).sub(intersection);
         }
         controls.enabled = false;
     } else {
-        // Vérifier clic sur porte 1 (Toc Toc)
         const doorIntersects = raycaster.intersectObject(doorMesh);
         if (doorIntersects.length > 0) {
             showDoorKnock();
             return;
         }
 
-        // Vérifier clic sur porte 2 (Redirection vers room_1)
         const door2Intersects = raycaster.intersectObject(doorMesh2);
         if (door2Intersects.length > 0) {
             goToRoom1();
@@ -714,10 +939,10 @@ function onPointerMove(event) {
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
     raycaster.setFromCamera(mouse, camera);
-    
+
     const dragY = (selectedShape.type === SHAPE_TYPES.PURPLE_CUBE) ? 15.0 : 6.0;
     const dragPlaneTemp = new THREE.Plane(new THREE.Vector3(0, 1, 0), -dragY);
-    
+
     const intersection = new THREE.Vector3();
     if (raycaster.ray.intersectPlane(dragPlaneTemp, intersection)) {
         const newPos = intersection.add(offset);
@@ -732,7 +957,7 @@ function onPointerUp() {
         if (selectedShape.type !== SHAPE_TYPES.PURPLE_CUBE) {
             checkFit(selectedShape);
         }
-        
+
         if (!selectedShape.isCorrect) {
             selectedShape.body.mass = 1;
             selectedShape.body.updateMassProperties();
@@ -754,47 +979,28 @@ function onKeyDown(event) {
     selectedShape.body.quaternion.copy(selectedShape.mesh.quaternion);
 }
 
-/**
- * LOGIQUE DE DÉPLACEMENT CLAVIER DANS LA SCÈNE (ZSQD + ESPACE)
- * Avec blocage aux murs de la pièce.
- */
 function handleSceneMovement() {
     const moveSpeed = 0.4;
     const direction = new THREE.Vector3();
     const side = new THREE.Vector3();
-    
+
     camera.getWorldDirection(direction);
     direction.y = 0;
     direction.normalize();
-    
-    // side pointe vers la droite (direction x up)
+
     side.crossVectors(direction, camera.up).normalize();
 
     let moveX = 0;
     let moveZ = 0;
 
-    if (keysPressed['z']) { // Avancer
-        moveX += direction.x * moveSpeed;
-        moveZ += direction.z * moveSpeed;
-    }
-    if (keysPressed['s']) { // Reculer
-        moveX -= direction.x * moveSpeed;
-        moveZ -= direction.z * moveSpeed;
-    }
-    if (keysPressed['q']) { // Gauche : On soustrait le vecteur latéral (droite)
-        moveX -= side.x * moveSpeed;
-        moveZ -= side.z * moveSpeed;
-    }
-    if (keysPressed['d']) { // Droite : On ajoute le vecteur latéral (droite)
-        moveX += side.x * moveSpeed;
-        moveZ += side.z * moveSpeed;
-    }
+    if (keysPressed['z']) { moveX += direction.x * moveSpeed; moveZ += direction.z * moveSpeed; }
+    if (keysPressed['s']) { moveX -= direction.x * moveSpeed; moveZ -= direction.z * moveSpeed; }
+    if (keysPressed['q']) { moveX -= side.x * moveSpeed; moveZ -= side.z * moveSpeed; }
+    if (keysPressed['d']) { moveX += side.x * moveSpeed; moveZ += side.z * moveSpeed; }
 
-    // Calcul de la nouvelle position théorique
     const nextX = camera.position.x + moveX;
     const nextZ = camera.position.z + moveZ;
 
-    // Blocage au murs : on n'applique le mouvement que si on est dans les limites
     if (Math.abs(nextX) < ROOM_LIMIT) {
         camera.position.x = nextX;
         controls.target.x += moveX;
@@ -845,9 +1051,6 @@ function successFit(shapeObj, target) {
     setTimeout(() => { msg.style.opacity = '0'; }, 800);
 }
 
-/**
- * ANIMATION DU TOC TOC
- */
 function showDoorKnock() {
     const msg = document.getElementById('door-msg');
     msg.style.opacity = '1';
@@ -858,11 +1061,7 @@ function showDoorKnock() {
     }, 800);
 }
 
-/**
- * REDIRECTION VERS ROOM 1
- */
 function goToRoom1() {
-    // Redirection vers room_1 avec le paramètre wall=3 (arrivée face au mur 3)
     window.location.href = 'room_1.html?wall=3';
 }
 
@@ -891,11 +1090,10 @@ function animate() {
     world.step(1 / 60);
     handleSceneMovement();
     controls.update();
-    
-    // SÉCURITÉ : Empêcher la caméra de sortir lors de la rotation avec OrbitControls
+
     camera.position.x = Math.max(-ROOM_LIMIT, Math.min(ROOM_LIMIT, camera.position.x));
     camera.position.z = Math.max(-ROOM_LIMIT, Math.min(ROOM_LIMIT, camera.position.z));
-    
+
     if (scene.cameraLight) {
         scene.cameraLight.position.copy(camera.position);
     }
@@ -909,7 +1107,44 @@ function animate() {
     renderer.render(scene, camera);
 }
 
+// Charger le HTML de l'éditeur puis initialiser
+setTimeout(async () => {
+    // Chargement dynamique du panneau éditeur
+    try {
+        const editorResp = await fetch('editor/editor-panel.html');
+        if (editorResp.ok) {
+            const editorHTML = await editorResp.text();
+            document.getElementById('editor-container').innerHTML = editorHTML;
+        } else {
+            console.warn('Impossible de charger editor/editor-panel.html:', editorResp.status);
+        }
+    } catch (e) {
+        console.warn('Chargement éditeur échoué:', e.message);
+    }
+    initEditor();
+    if (typeof initEditorObjectsListeners === 'function') initEditorObjectsListeners();
+    initAccordions();
+    await bootstrapFromFiles();
+    await loadProjectOnStartup();
+
+    if (interactionMode === 'game') {
+        hideAllLightHelpers();
+    }
+
+    hideLoadingScreen();
+}, 2000);
+
 window.onload = init;
 </script>
+
+<!-- Scripts éditeur autonome -->
+<script src="editor/editor-utils.js"></script>
+<script src="editor/editor-core.js"></script>
+<script src="editor/editor-objects.js"></script>
+<script src="editor/editor-camera-lights.js"></script>
+<script src="editor/editor-audio.js"></script>
+<script src="editor/editor-save.js"></script>
+<script src="editor/editor-floorplan.js"></script>
+
 </body>
 </html>

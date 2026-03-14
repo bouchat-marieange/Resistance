@@ -1,4 +1,61 @@
 
+// Debounce pour updateObjectsList (évite les appels répétés lors du chargement)
+var _updateObjectsListTimer = null;
+function scheduleUpdateObjectsList() {
+    if (_updateObjectsListTimer) clearTimeout(_updateObjectsListTimer);
+    _updateObjectsListTimer = setTimeout(() => {
+        updateObjectsList();
+        _updateObjectsListTimer = null;
+    }, 300);
+}
+
+/**
+ * Mesure la hauteur visuelle d'un personnage 3D en utilisant les positions mondiales des os (bones).
+ * Box3.setFromObject() ne capture PAS les transformations du squelette (skinning)
+ * car celles-ci sont appliquées uniquement dans le shader GPU.
+ * Les positions mondiales des os incluent TOUTES les transformations parentes (y compris l'Armature scale).
+ * @param {THREE.Object3D} model - Le modèle 3D à mesurer
+ * @returns {{ height: number, width: number, depth: number, method: string } | null}
+ */
+function measureCharacterByBones(model) {
+    model.updateMatrixWorld(true);
+
+    // Forcer la mise à jour du squelette
+    model.traverse(child => {
+        if (child.isSkinnedMesh && child.skeleton) {
+            child.skeleton.update();
+        }
+    });
+
+    let minX = Infinity, maxX = -Infinity;
+    let minY = Infinity, maxY = -Infinity;
+    let minZ = Infinity, maxZ = -Infinity;
+    let boneCount = 0;
+    const worldPos = new THREE.Vector3();
+
+    model.traverse(child => {
+        if (child.isBone) {
+            child.getWorldPosition(worldPos);
+            if (worldPos.x < minX) minX = worldPos.x;
+            if (worldPos.x > maxX) maxX = worldPos.x;
+            if (worldPos.y < minY) minY = worldPos.y;
+            if (worldPos.y > maxY) maxY = worldPos.y;
+            if (worldPos.z < minZ) minZ = worldPos.z;
+            if (worldPos.z > maxZ) maxZ = worldPos.z;
+            boneCount++;
+        }
+    });
+
+    if (boneCount >= 5 && maxY > minY) {
+        const boneHeight = (maxY - minY) * 1.10;
+        const boneWidth = Math.max((maxX - minX) * 1.15, boneHeight * 0.25);
+        const boneDepth = Math.max((maxZ - minZ) * 1.15, boneHeight * 0.15);
+        return { height: boneHeight, width: boneWidth, depth: boneDepth, method: 'bones', boneCount };
+    }
+
+    return null;
+}
+
 // Initialiser les accordéons au chargement
 function initAccordions() {
     const accordions = document.querySelectorAll('.editor-accordion');
