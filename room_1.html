@@ -758,9 +758,12 @@ function init() {
     createRug();
 
     // Initialiser la grille du plan (invisible au départ)
-    createFloorPlanGrid();
-    if (floorPlanGrid) {
-        floorPlanGrid.visible = false;
+    // Note: createFloorPlanGrid est définie dans editor-floorplan.js, chargé dynamiquement après init()
+    if (typeof createFloorPlanGrid === 'function') {
+        createFloorPlanGrid();
+        if (floorPlanGrid) {
+            floorPlanGrid.visible = false;
+        }
     }
 
     animate();
