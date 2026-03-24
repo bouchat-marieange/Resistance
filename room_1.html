@@ -1838,33 +1838,40 @@ ScoreManager.init('room_1');
  * (murs, objets, lumières) sans charger l'UI de l'éditeur.
  */
 setTimeout(async () => {
-    // Charger les scripts nécessaires pour reconstruire la scène
-    await loadScript('editor/editor-state.js');
-    currentRoomName = 'room_1';
-    await loadScript('editor/editor-utils.js');
-    await loadScript('editor/editor-objects.js');
-    await loadScript('editor/editor-camera-lights.js');
-    await loadScript('editor/editor-audio.js');
-    await loadScript('editor/editor-save.js');
-    await loadScript('editor/editor-floorplan.js');
-
-    // Bootstrap: charger les données de scène depuis fichiers/IndexedDB
-    await bootstrapFromFiles();
-    // Reconstruire la scène (murs, objets, lumières, zones)
-    await loadProjectOnStartup();
-
-    // Charger Naby
     try {
-        await loadAnimatedCharacter();
+        // Charger les scripts nécessaires pour reconstruire la scène
+        await loadScript('editor/editor-state.js');
+        currentRoomName = 'room_1';
+        await loadScript('editor/editor-utils.js');
+        await loadScript('editor/editor-objects.js');
+        await loadScript('editor/editor-camera-lights.js');
+        await loadScript('editor/editor-audio.js');
+        await loadScript('editor/editor-save.js');
+        await loadScript('editor/editor-floorplan.js');
+
+        // Bootstrap: charger les données de scène depuis fichiers/IndexedDB
+        await bootstrapFromFiles();
+        // Reconstruire la scène (murs, objets, lumières, zones)
+        await loadProjectOnStartup();
+
+        // Charger Naby
+        try {
+            await loadAnimatedCharacter();
+        } catch (e) {
+            console.warn("Échec chargement nabydance.glb:", e);
+        }
+
+        // Positionner la caméra au spawn sauvegardé
+        if (typeof applySpawnToCamera === 'function') applySpawnToCamera();
+
+        // Initialiser l'audio de pas si disponible
+        if (typeof initFootstepAudio === 'function') initFootstepAudio();
     } catch (e) {
-        console.warn("Échec chargement nabydance.glb:", e);
+        console.warn("⚠️ Erreur lors du chargement de la scène:", e);
+    } finally {
+        // Masquer l'écran de chargement DANS TOUS LES CAS
+        hideLoadingScreen();
     }
-
-    // Positionner la caméra au spawn sauvegardé
-    if (typeof applySpawnToCamera === 'function') applySpawnToCamera();
-
-    // Masquer l'écran de chargement
-    hideLoadingScreen();
 }, 500);
 
 /**
