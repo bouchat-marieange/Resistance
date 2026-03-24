@@ -1239,7 +1239,7 @@ function getCollisionMeshes() {
         if (child.userData.isFloorPlanPoint) return;
         if (child.userData.isFloorPlanLine) return;
         if (child.userData.isPreview) return;
-        if (child === floorPlanGrid) return;
+        if (typeof floorPlanGrid !== 'undefined' && child === floorPlanGrid) return;
         // Exclure les meshes des personnages - seul le proxy cylindrique gère leur collision.
         // Sinon la caméra entre dans le volume du SkinnedMesh et est repoussée violemment,
         // ce qui fait "disparaître" le personnage.
@@ -1687,10 +1687,10 @@ function animate() {
         updateHeadBob(delta);
         enforceGameHeight();
         enforceCameraCollisions();
-        updateFootstepAudio(delta);
-        checkZoneProximity();
-        checkHoldTrigger();
-        checkHoverAndProximityTriggers();
+        if (typeof updateFootstepAudio === 'function') updateFootstepAudio(delta);
+        if (typeof checkZoneProximity === 'function') checkZoneProximity();
+        if (typeof checkHoldTrigger === 'function') checkHoldTrigger();
+        if (typeof checkHoverAndProximityTriggers === 'function') checkHoverAndProximityTriggers();
     }
 
     // MISE À JOUR DE L'ANIMATION AVEC LE DELTA
@@ -1725,8 +1725,11 @@ function animate() {
     // Mettre à jour l'étiquette de dimensions
     if (editorMode && (selectedEditorObject || (selectedWalls && selectedWalls.length > 0))) {
         updateDimensionsLabelPosition();
-    } else if (document.getElementById('object-dimensions-label').style.display !== 'none') {
-        hideDimensionsLabel();
+    } else {
+        const dimLabel = document.getElementById('object-dimensions-label');
+        if (dimLabel && dimLabel.style.display !== 'none' && typeof hideDimensionsLabel === 'function') {
+            hideDimensionsLabel();
+        }
     }
 
     renderer.render(scene, camera);
