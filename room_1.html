@@ -1659,9 +1659,6 @@ function onWindowResize() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-let _cinematicPlaying = false; // True quand une cinématique vidéo est en cours
-let _currentCinematicZone = null; // Zone en cours de lecture vidéo (pour action de fin)
-
 function animate() {
     requestAnimationFrame(animate);
 
