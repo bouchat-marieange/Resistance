@@ -1407,7 +1407,8 @@ function toggleAccordion(header) {
 function updateObjectsList() {
     const listEl = document.getElementById('objects-list');
     if (!listEl) {
-        console.error('❌ Élément objects-list non trouvé !');
+        // En mode jeu, le DOM éditeur n'existe pas encore — c'est normal
+        // console.warn('⚠️ Élément objects-list non trouvé (mode jeu ?)');
         return;
     }
 

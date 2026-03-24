@@ -697,6 +697,7 @@ function addNewLight() {
 
 function updateLightsList() {
     const listEl = document.getElementById('lights-list');
+    if (!listEl) return;
     listEl.innerHTML = '';
 
     console.log('📋 updateLightsList - Nombre de lumières:', customLights.length);

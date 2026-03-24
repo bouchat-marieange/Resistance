@@ -767,7 +767,7 @@ function init() {
     }
 
     animate();
-    initFootstepAudio();
+    if (typeof initFootstepAudio === 'function') initFootstepAudio();
 
     // Note: loadAnimatedCharacter() est maintenant appelé APRÈS loadProjectOnStartup()
     // pour que savedNabyTransform soit déjà chargé quand le GLB finit de se charger
