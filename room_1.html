@@ -674,7 +674,7 @@ function init() {
     renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.type = THREE.PCFShadowMap;
     renderer.physicallyCorrectLights = true; // Éclairage physiquement correct (atténuation réaliste)
     document.body.appendChild(renderer.domElement);
 
@@ -747,8 +747,8 @@ function init() {
     directionalLight.shadow.camera.right = 100;
     directionalLight.shadow.camera.top = 100;
     directionalLight.shadow.camera.bottom = -100;
-    directionalLight.shadow.mapSize.width = 2048;
-    directionalLight.shadow.mapSize.height = 2048;
+    directionalLight.shadow.mapSize.width = 1024;
+    directionalLight.shadow.mapSize.height = 1024;
     directionalLight.shadow.bias = -0.002;
     directionalLight.shadow.normalBias = 0.02;
     scene.add(directionalLight);
@@ -1161,6 +1161,16 @@ function createRug() {
 /**
  * INTERACTIONS
  */
+// Cache des meshes audio (invalidé quand importedObjects change)
+let _cachedAudioMeshes = [];
+let _audioMeshesDirty = true;
+function _rebuildAudioMeshes() {
+    _cachedAudioMeshes = [];
+    importedObjects.forEach(obj => { obj.traverse(child => { if (child.isMesh) _cachedAudioMeshes.push(child); }); });
+    _audioMeshesDirty = false;
+}
+function invalidateAudioMeshCache() { _audioMeshesDirty = true; }
+
 function onPointerDown(event) {
     if (event.button !== 0) return;
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -1194,10 +1204,9 @@ function onPointerDown(event) {
                     break;
                 }
             }
-            // Vérifier les déclencheurs audio au clic
-            const audioMeshes = [];
-            importedObjects.forEach(obj => { obj.traverse(child => { if (child.isMesh) audioMeshes.push(child); }); });
-            const audioHits = raycaster.intersectObjects(audioMeshes, false);
+            // Vérifier les déclencheurs audio au clic (cache mis à jour à chaque ajout d'objet)
+            if (_audioMeshesDirty) { _rebuildAudioMeshes(); }
+            const audioHits = raycaster.intersectObjects(_cachedAudioMeshes, false);
             if (audioHits.length > 0) {
                 let hit = audioHits[0].object;
                 while (hit) {
@@ -1225,38 +1234,38 @@ const CAMERA_COLLISION_MARGIN = 0.35;  // Marge de sécurité (rayon joueur)
 const CAMERA_COLLISION_RAYCASTER = new THREE.Raycaster();
 let gamePlayerY = null;    // Hauteur Y verrouillée du joueur en mode jeu
 let cachedCollisionMeshes = null;
-let collisionCacheCounter = 0;
-let lastCollisionCacheFrame = -1;
+let _collisionCacheDirty = true;
 
-// Cache les meshes de collision (recalculé une seule fois par frame)
+// Invalider le cache de collision quand la scène change (appeler depuis editor-save, etc.)
+function invalidateCollisionCache() { _collisionCacheDirty = true; }
+
+// Cache les meshes de collision — recalculé uniquement quand la scène change
 function getCollisionMeshes() {
-    if (lastCollisionCacheFrame === collisionCacheCounter && cachedCollisionMeshes) return cachedCollisionMeshes;
+    if (!_collisionCacheDirty && cachedCollisionMeshes) return cachedCollisionMeshes;
 
     const collisionMeshes = [];
     scene.traverse(child => {
         if (!child.isMesh || !child.visible) return;
         if (child.userData.isGizmo && !child.userData.isCollisionProxy) return;
-        if (child.userData.isFloorPlanPoint) return;
-        if (child.userData.isFloorPlanLine) return;
-        if (child.userData.isPreview) return;
+        if (child.userData.isFloorPlanPoint || child.userData.isFloorPlanLine || child.userData.isPreview) return;
         if (typeof floorPlanGrid !== 'undefined' && child === floorPlanGrid) return;
-        // Exclure les meshes des personnages - seul le proxy cylindrique gère leur collision.
-        // Sinon la caméra entre dans le volume du SkinnedMesh et est repoussée violemment,
-        // ce qui fait "disparaître" le personnage.
         if (child.userData.isCharacter) return;
-        let isCharChild = false;
+        // Exclure les enfants de personnages via layers (fallback: parent walk)
+        if (child.layers && child.layers.test(_charLayer)) return;
         let p = child.parent;
         while (p) {
-            if (p.userData.isCharacter) { isCharChild = true; break; }
+            if (p.userData.isCharacter) return;
             p = p.parent;
         }
-        if (isCharChild) return;
         collisionMeshes.push(child);
     });
     cachedCollisionMeshes = collisionMeshes;
-    lastCollisionCacheFrame = collisionCacheCounter;
+    _collisionCacheDirty = false;
     return collisionMeshes;
 }
+// Layer réservé aux personnages (pour filtrage rapide)
+const _charLayer = new THREE.Layers();
+_charLayer.set(1);
 
 // Lance un rayon et retourne la distance au premier obstacle (Infinity si rien)
 function raycastDistance(origin, direction, maxDist) {
@@ -1332,7 +1341,14 @@ function computeAllowedMovement(origin, moveVec) {
     return resultVec;
 }
 
-// Repousse la caméra hors des murs si elle est trop proche (12 directions + diagonales)
+// Directions de collision pré-allouées (4 cardinales + haut/bas = 6 raycasts)
+const _collisionDirs = [
+    new THREE.Vector3(1, 0, 0), new THREE.Vector3(-1, 0, 0),
+    new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, -1),
+    new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, -1, 0)
+];
+
+// Repousse la caméra hors des murs si elle est trop proche (6 directions)
 function enforceCameraCollisions() {
     if (interactionMode !== 'game') return;
 
@@ -1340,16 +1356,8 @@ function enforceCameraCollisions() {
     const margin = CAMERA_COLLISION_MARGIN;
     const meshes = getCollisionMeshes();
 
-    // 8 directions horizontales + 2 verticales = 10 rayons
-    const dirs = [
-        new THREE.Vector3(1, 0, 0), new THREE.Vector3(-1, 0, 0),
-        new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, -1),
-        new THREE.Vector3(0.707, 0, 0.707), new THREE.Vector3(-0.707, 0, 0.707),
-        new THREE.Vector3(0.707, 0, -0.707), new THREE.Vector3(-0.707, 0, -0.707),
-        new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, -1, 0)
-    ];
-
-    for (const dir of dirs) {
+    for (let i = 0; i < 6; i++) {
+        const dir = _collisionDirs[i];
         CAMERA_COLLISION_RAYCASTER.set(pos, dir);
         CAMERA_COLLISION_RAYCASTER.far = margin;
         CAMERA_COLLISION_RAYCASTER.near = 0;
@@ -1357,14 +1365,11 @@ function enforceCameraCollisions() {
         const hits = CAMERA_COLLISION_RAYCASTER.intersectObjects(meshes, false);
         if (hits.length > 0) {
             const pushBack = margin - hits[0].distance;
-            if (pushBack > 0.001) {
-                // Repousser horizontalement seulement (Y géré séparément)
-                if (Math.abs(dir.y) < 0.5) {
-                    pos.x -= dir.x * pushBack;
-                    pos.z -= dir.z * pushBack;
-                    controls.target.x -= dir.x * pushBack;
-                    controls.target.z -= dir.z * pushBack;
-                }
+            if (pushBack > 0.001 && Math.abs(dir.y) < 0.5) {
+                pos.x -= dir.x * pushBack;
+                pos.z -= dir.z * pushBack;
+                controls.target.x -= dir.x * pushBack;
+                controls.target.z -= dir.z * pushBack;
             }
         }
     }
@@ -1429,7 +1434,7 @@ function createCharacterCollisionProxy(character) {
     proxy.updateMatrixWorld(true);
 
     characterCollisionProxies.push({ character, proxy, radius, height });
-    collisionCacheCounter++;
+    invalidateCollisionCache();
     console.log(`🛡️ Proxy collision créé pour "${character.userData.editorName || character.name || 'personnage'}" - h:${height.toFixed(2)}m box:${side.toFixed(2)}x${side.toFixed(2)}m pos:(${proxy.position.x.toFixed(2)}, ${proxy.position.y.toFixed(2)}, ${proxy.position.z.toFixed(2)})`);
 }
 
@@ -1441,7 +1446,7 @@ function removeCharacterCollisionProxy(character) {
     entry.proxy.geometry.dispose();
     entry.proxy.material.dispose();
     characterCollisionProxies.splice(idx, 1);
-    collisionCacheCounter++;
+    invalidateCollisionCache();
 }
 
 function updateCharacterCollisionProxy(entry) {
@@ -1636,23 +1641,24 @@ function handleGameMovement(delta) {
     camera.position.z = Math.max(-ROOM_LIMIT, Math.min(ROOM_LIMIT, camera.position.z));
 }
 
+// Vecteur pré-alloué pour enforceGameHeight (évite 1 allocation par frame)
+const _lookDir = new THREE.Vector3();
+
 // Force la hauteur Y de la caméra et du target en mode jeu
 function enforceGameHeight() {
     if (interactionMode !== 'game' || gamePlayerY === null) return;
 
     // Capturer la direction du regard AVANT de corriger la hauteur
-    // (inclut la composante verticale pour regarder en haut/bas)
-    const lookDir = new THREE.Vector3();
-    camera.getWorldDirection(lookDir);
+    camera.getWorldDirection(_lookDir);
 
     // Verrouiller la hauteur Y du joueur (pieds au sol) + head bob
     camera.position.y = gamePlayerY + headBobOffset;
 
     // Repositionner le target à 0.01 devant la caméra en préservant la direction du regard
     controls.target.set(
-        camera.position.x + lookDir.x * 0.01,
-        camera.position.y + lookDir.y * 0.01,
-        camera.position.z + lookDir.z * 0.01
+        camera.position.x + _lookDir.x * 0.01,
+        camera.position.y + _lookDir.y * 0.01,
+        camera.position.z + _lookDir.z * 0.01
     );
 }
 
@@ -1671,7 +1677,6 @@ function animate() {
 
     const delta = clock.getDelta();
     world.step(1 / 60);
-    collisionCacheCounter++;
 
     // IMPORTANT: Mettre à jour les proxies de collision AVANT tout test de collision
     // pour que la matrixWorld soit à jour quand le raycaster teste les intersections
@@ -1839,15 +1844,19 @@ ScoreManager.init('room_1');
  */
 setTimeout(async () => {
     try {
-        // Charger les scripts nécessaires pour reconstruire la scène
+        // Charger editor-state en premier (définit les variables globales)
         await loadScript('editor/editor-state.js');
         currentRoomName = 'room_1';
-        await loadScript('editor/editor-utils.js');
-        await loadScript('editor/editor-objects.js');
-        await loadScript('editor/editor-camera-lights.js');
-        await loadScript('editor/editor-audio.js');
+        // Charger les modules indépendants en parallèle pour accélérer le démarrage
+        await Promise.all([
+            loadScript('editor/editor-utils.js'),
+            loadScript('editor/editor-objects.js'),
+            loadScript('editor/editor-camera-lights.js'),
+            loadScript('editor/editor-audio.js'),
+            loadScript('editor/editor-floorplan.js')
+        ]);
+        // editor-save dépend des modules ci-dessus, charger en dernier
         await loadScript('editor/editor-save.js');
-        await loadScript('editor/editor-floorplan.js');
 
         // Bootstrap: charger les données de scène depuis fichiers/IndexedDB
         await bootstrapFromFiles();
@@ -1860,6 +1869,9 @@ setTimeout(async () => {
         } catch (e) {
             console.warn("Échec chargement nabydance.glb:", e);
         }
+
+        // Invalider le cache de collision après chargement complet de la scène
+        invalidateCollisionCache();
 
         // Positionner la caméra au spawn sauvegardé
         if (typeof applySpawnToCamera === 'function') applySpawnToCamera();
