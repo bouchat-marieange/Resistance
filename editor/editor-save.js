@@ -1905,7 +1905,7 @@ function loadObjectFromURL(url, data) {
     console.log(`   Rotation: ${JSON.stringify(data.rotation)}`);
     console.log(`   Scale: ${JSON.stringify(data.scale)}`);
 
-    const loader = new THREE.GLTFLoader();
+    const loader = (typeof sharedGLTFLoader !== 'undefined') ? sharedGLTFLoader : new THREE.GLTFLoader();
     loader.load(
         url,
         function(gltf) {

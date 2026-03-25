@@ -532,6 +532,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/loaders/DRACOLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/controls/OrbitControls.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/controls/TransformControls.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/utils/BufferGeometryUtils.js"></script>
@@ -541,6 +542,15 @@
 <script src="game/score-manager.js"></script>
 
 <script>
+/**
+ * GLTFLoader global avec support Draco (décompression des modèles 3D compressés)
+ * Tous les chargements GLB doivent utiliser ce loader partagé.
+ */
+const dracoLoader = new THREE.DRACOLoader();
+dracoLoader.setDecoderPath('https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/libs/draco/');
+const sharedGLTFLoader = new THREE.GLTFLoader();
+sharedGLTFLoader.setDRACOLoader(dracoLoader);
+
 /**
  * CONFIGURATION ET ÉTAT DU JEU
  */
@@ -853,7 +863,7 @@ function createWallNumbers() {
  */
 function loadAnimatedCharacter() {
     return new Promise((resolveLoad) => {
-    const loader = new THREE.GLTFLoader();
+    const loader = sharedGLTFLoader;
     const url = resolveURL('3D/perso/nabydance.glb');
     console.log("Chargement du modèle 3D avec animation:", url);
 
@@ -1026,7 +1036,7 @@ function loadAnimatedCharacter() {
 function loadPermanentObjects() {
     console.log('📦 Chargement des objets permanents par défaut...');
 
-    const loader = new THREE.GLTFLoader();
+    const loader = sharedGLTFLoader;
 
     // Fonction helper pour charger un objet permanent avec son fileData
     function loadPermanentObject(url, name, defaultPos, defaultRot, defaultScale) {
