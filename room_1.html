@@ -392,8 +392,8 @@
     <div class="volume-slider-row">
         <img src="icones/music.svg" width="16" height="16">
         <label>Musique</label>
-        <input type="range" min="0" max="100" value="80" id="vol-musique" oninput="updateGameVolume()">
-        <span class="volume-value" id="vol-musique-val">80</span>
+        <input type="range" min="0" max="100" value="0" id="vol-musique" oninput="updateGameVolume()">
+        <span class="volume-value" id="vol-musique-val">0</span>
     </div>
     <div class="volume-slider-row">
         <img src="icones/footprints.svg" width="16" height="16">
@@ -489,6 +489,14 @@
         <div><span style="font-size:10px; color:#666;">Total: </span><span id="total-score-val" style="color:#39ff14; font-size:13px; font-weight:600;">0</span></div>
     </div>
 </div>
+
+<!-- ========== BOUTON PARAMETRES ========== -->
+<button id="btn-settings" title="Paramètres des contrôles" onclick="window.location.href='game/controls-screen.html'" style="position:fixed; bottom:20px; right:70px; background:rgba(30,30,30,0.8); border:1px solid #39ff14; border-radius:50%; width:40px; height:40px; cursor:pointer; z-index:100; display:flex; align-items:center; justify-content:center; transition:all 0.3s;">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#39ff14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+    </svg>
+</button>
 
 <!-- ========== VISEUR MODE JEU ========== -->
 <div id="game-crosshair" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:500; pointer-events:none;">

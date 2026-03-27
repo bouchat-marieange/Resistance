@@ -6,7 +6,13 @@
  */
 
 const InputConfig = (function() {
-    const STORAGE_KEY = 'resistance-input-config';
+    const STORAGE_KEY_BASE = 'resistance-input-config';
+
+    // Cle de stockage liee au pseudo actif
+    function getStorageKey() {
+        const pseudo = localStorage.getItem('resistance_active_pseudo');
+        return pseudo ? STORAGE_KEY_BASE + '-' + pseudo : STORAGE_KEY_BASE;
+    }
 
     // ═══════════════════════════════════════════
     //  ACTIONS DU JEU (identifiants internes)
@@ -97,7 +103,7 @@ const InputConfig = (function() {
     // ═══════════════════════════════════════════
     function save() {
         try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+            localStorage.setItem(getStorageKey(), JSON.stringify(config));
         } catch (e) {
             console.warn('InputConfig: impossible de sauvegarder', e);
         }
@@ -105,7 +111,7 @@ const InputConfig = (function() {
 
     function load() {
         try {
-            const raw = localStorage.getItem(STORAGE_KEY);
+            const raw = localStorage.getItem(getStorageKey());
             if (raw) {
                 const saved = JSON.parse(raw);
                 // Merge avec les defaults pour couvrir les nouvelles actions
@@ -255,6 +261,48 @@ const InputConfig = (function() {
         save();
     }
 
+    // ═══════════════════════════════════════════
+    //  MESSAGES JOUEUR
+    // ═══════════════════════════════════════════
+
+    /**
+     * Sauvegarde avec message de confirmation contextuel
+     * @returns {string} Message a afficher au joueur
+     */
+    function saveWithFeedback() {
+        save();
+        const pseudo = localStorage.getItem('resistance_active_pseudo');
+        if (!pseudo) return 'Preferences sauvegardees.';
+        // Verifier si c'etait deja un joueur existant
+        const existingKey = STORAGE_KEY_BASE + '-' + pseudo;
+        return 'Preferences sauvegardees, ' + pseudo + '. Elles seront automatiquement restaurees lors de ta prochaine visite dans la Resistance.';
+    }
+
+    /**
+     * Message de bienvenue selon que le joueur est nouveau ou revient
+     * @returns {string|null} Message ou null si pas de pseudo
+     */
+    function getWelcomeMessage() {
+        const pseudo = localStorage.getItem('resistance_active_pseudo');
+        if (!pseudo) return null;
+        const key = STORAGE_KEY_BASE + '-' + pseudo;
+        const hasExisting = localStorage.getItem(key);
+        if (hasExisting) {
+            return 'Bon retour dans la Resistance, ' + pseudo + ' ! Tes preferences et reglages ont ete restaures.';
+        } else {
+            return 'Bienvenue dans la Resistance, ' + pseudo + ' ! Configure tes controles comme tu le souhaites.';
+        }
+    }
+
+    /**
+     * Verifie si le joueur actuel a des preferences sauvegardees
+     */
+    function hasExistingConfig() {
+        const pseudo = localStorage.getItem('resistance_active_pseudo');
+        if (!pseudo) return false;
+        return !!localStorage.getItem(STORAGE_KEY_BASE + '-' + pseudo);
+    }
+
     // Init
     load();
 
@@ -281,6 +329,9 @@ const InputConfig = (function() {
         resetGamepad,
         resetAll,
         save,
-        load
+        load,
+        saveWithFeedback,
+        getWelcomeMessage,
+        hasExistingConfig
     };
 })();
