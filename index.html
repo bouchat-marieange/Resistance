@@ -160,6 +160,17 @@
         .score-preview .score-label { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
         .score-preview .score-value { font-size: 28px; color: #39ff14; font-weight: 800; }
 
+        /* Bouton config contrôles */
+        .controls-btn {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            width: 100%; padding: 10px; margin-top: 12px;
+            background: transparent; border: 1px solid #333;
+            border-radius: 8px; color: #888; font-size: 13px;
+            cursor: pointer; transition: all 0.2s; text-decoration: none;
+        }
+        .controls-btn:hover { border-color: #39ff14; color: #39ff14; }
+        .controls-btn svg { width: 18px; height: 18px; fill: currentColor; }
+
         /* Responsive */
         @media (max-width: 480px) {
             .game-title { font-size: 30px; }
@@ -215,6 +226,12 @@
             <div class="score-label">Score total</div>
             <div class="score-value" id="preview-score">0</div>
         </div>
+
+        <!-- Bouton configuration des contrôles -->
+        <a class="controls-btn" href="game/controls-screen.html">
+            <svg viewBox="0 0 24 24"><path d="M17.5 7A5.5 5.5 0 0 1 23 12.5 5.5 5.5 0 0 1 17.5 18H15v-2h2.5a3.5 3.5 0 0 0 3.5-3.5A3.5 3.5 0 0 0 17.5 9H6.5A3.5 3.5 0 0 0 3 12.5 3.5 3.5 0 0 0 6.5 16H9v2H6.5A5.5 5.5 0 0 1 1 12.5 5.5 5.5 0 0 1 6.5 7h11M9 11.5A1.5 1.5 0 0 1 10.5 13 1.5 1.5 0 0 1 9 14.5 1.5 1.5 0 0 1 7.5 13 1.5 1.5 0 0 1 9 11.5M15 11.5A1.5 1.5 0 0 1 16.5 13 1.5 1.5 0 0 1 15 14.5 1.5 1.5 0 0 1 13.5 13 1.5 1.5 0 0 1 15 11.5Z"/></svg>
+            Configurer les contrôles
+        </a>
     </div>
 </div>
 

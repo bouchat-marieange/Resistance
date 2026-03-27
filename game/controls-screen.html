@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Résistance — Configuration des contrôles</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    background: #0a0a0a;
+    color: #e0e0e0;
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+/* ══════ HEADER ══════ */
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 40px;
+    border-bottom: 1px solid #2a2a2a;
+}
+.header h1 {
+    font-size: 22px;
+    color: #39ff14;
+    font-weight: 600;
+    letter-spacing: 1px;
+}
+.btn-back {
+    background: none;
+    border: 1px solid #39ff14;
+    color: #39ff14;
+    padding: 8px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+.btn-back:hover {
+    background: #39ff14;
+    color: #0a0a0a;
+}
+
+/* ══════ TABS ══════ */
+.tabs {
+    display: flex;
+    justify-content: center;
+    gap: 0;
+    margin: 20px 40px 0;
+    border-bottom: 2px solid #2a2a2a;
+}
+.tab {
+    padding: 12px 30px;
+    cursor: pointer;
+    color: #888;
+    font-size: 15px;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: all 0.2s;
+    user-select: none;
+}
+.tab:hover { color: #ccc; }
+.tab.active {
+    color: #39ff14;
+    border-bottom-color: #39ff14;
+}
+
+/* ══════ PANELS ══════ */
+.panel { display: none; padding: 30px 40px; }
+.panel.active { display: block; }
+
+/* ══════ KEYBOARD PANEL ══════ */
+.kb-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    max-width: 800px;
+    margin: 0 auto;
+}
+.kb-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #151515;
+    border: 1px solid #2a2a2a;
+    border-radius: 8px;
+    padding: 10px 16px;
+}
+.kb-row .action-label {
+    font-size: 14px;
+    color: #ccc;
+    min-width: 120px;
+}
+.kb-row .category-label {
+    font-size: 11px;
+    color: #666;
+    margin-top: 2px;
+}
+.kb-keys {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+.key-badge {
+    background: #1a1a1a;
+    border: 1px solid #39ff14;
+    color: #39ff14;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 13px;
+    min-width: 36px;
+    text-align: center;
+    text-transform: capitalize;
+}
+.btn-rebind {
+    background: #222;
+    border: 1px solid #444;
+    color: #aaa;
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    margin-left: 8px;
+    transition: all 0.2s;
+}
+.btn-rebind:hover {
+    border-color: #39ff14;
+    color: #39ff14;
+}
+.btn-rebind.listening {
+    border-color: #ff6b35;
+    color: #ff6b35;
+    animation: pulse 0.8s infinite alternate;
+}
+@keyframes pulse { from { opacity: 0.6; } to { opacity: 1; } }
+
+.conflict-warning {
+    color: #ff4444;
+    font-size: 12px;
+    margin-top: 12px;
+    text-align: center;
+}
+
+/* ══════ GAMEPAD PANEL ══════ */
+.gp-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.gp-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 20px;
+    background: #151515;
+    border-radius: 8px;
+    border: 1px solid #2a2a2a;
+}
+.gp-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: #ff4444;
+}
+.gp-dot.connected { background: #39ff14; }
+
+/* ── PS4 Controller SVG Layout ── */
+.controller-layout {
+    position: relative;
+    width: 700px;
+    height: 440px;
+}
+
+.controller-svg {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 420px;
+    height: 280px;
+}
+
+/* Binding labels positioned around the controller */
+.gp-binding {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+.gp-binding:hover .gp-btn-label { border-color: #39ff14; color: #39ff14; }
+.gp-binding .gp-action-name {
+    color: #999;
+    font-size: 11px;
+}
+.gp-btn-label {
+    background: #1a1a1a;
+    border: 1px solid #444;
+    color: #ccc;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 12px;
+}
+.gp-binding.listening .gp-btn-label {
+    border-color: #ff6b35;
+    color: #ff6b35;
+    animation: pulse 0.8s infinite alternate;
+}
+.gp-binding.active .gp-btn-label {
+    background: #39ff14;
+    color: #0a0a0a;
+    border-color: #39ff14;
+}
+/* Line connectors */
+.gp-binding::before {
+    content: '';
+    position: absolute;
+    border: 1px dashed #333;
+}
+
+/* Positions for each binding around the controller */
+/* ─── Face buttons (right side) ─── */
+.gp-pos-cross     { top: 220px; right: 20px; }
+.gp-pos-circle    { top: 180px; right: 20px; }
+.gp-pos-square    { top: 260px; right: 20px; }
+.gp-pos-triangle  { top: 140px; right: 20px; }
+
+/* ─── Shoulder buttons ─── */
+.gp-pos-l1        { top: 30px;  left: 20px; }
+.gp-pos-r1        { top: 30px;  right: 20px; }
+.gp-pos-l2        { top: 0px;   left: 20px; }
+.gp-pos-r2        { top: 0px;   right: 20px; }
+
+/* ─── Center buttons ─── */
+.gp-pos-share     { top: 100px; left: 160px; }
+.gp-pos-options   { top: 100px; right: 160px; }
+
+/* ─── Sticks ─── */
+.gp-pos-l3        { bottom: 30px; left: 20px; }
+.gp-pos-r3        { bottom: 30px; right: 20px; }
+
+/* ─── D-Pad ─── */
+.gp-pos-up        { top: 180px; left: 20px; }
+.gp-pos-down      { top: 260px; left: 20px; }
+.gp-pos-left      { top: 220px; left: 20px; }
+.gp-pos-right     { top: 300px; left: 20px; }
+
+/* ── Binding grid (alternative compact view) ── */
+.gp-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    width: 100%;
+    max-width: 700px;
+}
+.gp-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #151515;
+    border: 1px solid #2a2a2a;
+    border-radius: 8px;
+    padding: 10px 16px;
+}
+.gp-row .action-label { font-size: 14px; color: #ccc; }
+.gp-row .gp-current {
+    background: #1a1a1a;
+    border: 1px solid #39ff14;
+    color: #39ff14;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 12px;
+}
+.gp-row .btn-rebind-gp {
+    background: #222;
+    border: 1px solid #444;
+    color: #aaa;
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    margin-left: 8px;
+    transition: all 0.2s;
+}
+.gp-row .btn-rebind-gp:hover {
+    border-color: #39ff14;
+    color: #39ff14;
+}
+.gp-row .btn-rebind-gp.listening {
+    border-color: #ff6b35;
+    color: #ff6b35;
+    animation: pulse 0.8s infinite alternate;
+}
+
+/* ── Sliders ── */
+.slider-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: #151515;
+    border: 1px solid #2a2a2a;
+    border-radius: 8px;
+    padding: 12px 16px;
+    width: 100%;
+    max-width: 700px;
+}
+.slider-row label { font-size: 14px; color: #ccc; min-width: 160px; }
+.slider-row input[type="range"] {
+    flex: 1;
+    accent-color: #39ff14;
+}
+.slider-row .slider-val {
+    font-family: monospace;
+    color: #39ff14;
+    min-width: 40px;
+    text-align: right;
+}
+
+/* ══════ FOOTER ══════ */
+.footer {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    padding: 20px;
+    border-top: 1px solid #2a2a2a;
+    margin-top: 20px;
+}
+.btn-action {
+    padding: 10px 28px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+.btn-reset {
+    background: none;
+    border: 1px solid #ff4444;
+    color: #ff4444;
+}
+.btn-reset:hover { background: #ff4444; color: #fff; }
+.btn-save {
+    background: #39ff14;
+    border: 1px solid #39ff14;
+    color: #0a0a0a;
+    font-weight: 600;
+}
+.btn-save:hover { background: #2dd610; }
+
+/* ── PS4 Controller Inline SVG ── */
+.ps4-svg-wrapper {
+    width: 420px;
+    margin: 0 auto;
+}
+.ps4-svg-wrapper svg {
+    width: 100%;
+    height: auto;
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+    <h1>CONFIGURATION DES CONTRÔLES</h1>
+    <button class="btn-back" onclick="goBack()">← Retour</button>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+    <div class="tab active" data-tab="keyboard" onclick="switchTab('keyboard')">
+        ⌨️ Clavier + Souris
+    </div>
+    <div class="tab" data-tab="gamepad" onclick="switchTab('gamepad')">
+        🎮 Manette de jeu
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════ -->
+<!--  KEYBOARD PANEL                               -->
+<!-- ══════════════════════════════════════════════ -->
+<div class="panel active" id="panel-keyboard">
+    <div class="kb-grid" id="kb-grid"></div>
+    <div class="conflict-warning" id="kb-conflicts"></div>
+</div>
+
+<!-- ══════════════════════════════════════════════ -->
+<!--  GAMEPAD PANEL                                -->
+<!-- ══════════════════════════════════════════════ -->
+<div class="panel" id="panel-gamepad">
+    <div class="gp-container">
+
+        <!-- Status -->
+        <div class="gp-status">
+            <div class="gp-dot" id="gp-dot"></div>
+            <span id="gp-status-text">Aucune manette détectée</span>
+        </div>
+
+        <!-- PS4 Controller Visual -->
+        <div class="ps4-svg-wrapper">
+            <svg viewBox="0 0 600 400" xmlns="http://www.w3.org/2000/svg">
+                <!-- Controller body -->
+                <path d="M300,80 C220,80 180,100 140,140 C100,180 60,240 40,280 C20,320 30,360 70,370 C110,380 140,360 160,320 C180,280 200,260 240,260 L360,260 C400,260 420,280 440,320 C460,360 490,380 530,370 C570,360 580,320 560,280 C540,240 500,180 460,140 C420,100 380,80 300,80Z"
+                      fill="#2a2a2a" stroke="#444" stroke-width="2"/>
+
+                <!-- D-Pad -->
+                <rect x="135" y="165" width="18" height="55" rx="3" fill="#444" stroke="#555" stroke-width="1"/>
+                <rect x="118" y="182" width="55" height="18" rx="3" fill="#444" stroke="#555" stroke-width="1"/>
+
+                <!-- Left Stick -->
+                <circle cx="195" cy="240" r="22" fill="#333" stroke="#555" stroke-width="2"/>
+                <circle cx="195" cy="240" r="14" fill="#3a3a3a" stroke="#555" stroke-width="1"/>
+
+                <!-- Right Stick -->
+                <circle cx="405" cy="240" r="22" fill="#333" stroke="#555" stroke-width="2"/>
+                <circle cx="405" cy="240" r="14" fill="#3a3a3a" stroke="#555" stroke-width="1"/>
+
+                <!-- Face Buttons -->
+                <circle cx="460" cy="155" r="12" fill="none" stroke="#8888cc" stroke-width="2"/>
+                <text x="460" y="159" text-anchor="middle" fill="#8888cc" font-size="12" font-weight="bold">△</text>
+                <circle cx="485" cy="180" r="12" fill="none" stroke="#cc5555" stroke-width="2"/>
+                <text x="485" y="184" text-anchor="middle" fill="#cc5555" font-size="12" font-weight="bold">○</text>
+                <circle cx="460" cy="205" r="12" fill="none" stroke="#5588cc" stroke-width="2"/>
+                <text x="460" y="209" text-anchor="middle" fill="#5588cc" font-size="12" font-weight="bold">✕</text>
+                <circle cx="435" cy="180" r="12" fill="none" stroke="#cc55aa" stroke-width="2"/>
+                <text x="435" y="184" text-anchor="middle" fill="#cc55aa" font-size="12" font-weight="bold">□</text>
+
+                <!-- Shoulder Buttons -->
+                <rect x="120" y="95" width="70" height="16" rx="8" fill="#444" stroke="#555"/>
+                <text x="155" y="107" text-anchor="middle" fill="#aaa" font-size="10">L1</text>
+                <rect x="410" y="95" width="70" height="16" rx="8" fill="#444" stroke="#555"/>
+                <text x="445" y="107" text-anchor="middle" fill="#aaa" font-size="10">R1</text>
+
+                <!-- Triggers -->
+                <rect x="130" y="78" width="55" height="14" rx="7" fill="#555" stroke="#666"/>
+                <text x="157" y="89" text-anchor="middle" fill="#bbb" font-size="9">L2</text>
+                <rect x="415" y="78" width="55" height="14" rx="7" fill="#555" stroke="#666"/>
+                <text x="442" y="89" text-anchor="middle" fill="#bbb" font-size="9">R2</text>
+
+                <!-- Center Buttons -->
+                <rect x="255" y="170" width="30" height="10" rx="3" fill="#444"/>
+                <text x="270" y="178" text-anchor="middle" fill="#999" font-size="7">SHARE</text>
+                <rect x="315" y="170" width="30" height="10" rx="3" fill="#444"/>
+                <text x="330" y="178" text-anchor="middle" fill="#999" font-size="7">OPTIONS</text>
+
+                <!-- Touchpad -->
+                <rect x="255" y="130" width="90" height="35" rx="5" fill="#333" stroke="#555"/>
+
+                <!-- PS Button -->
+                <circle cx="300" cy="250" r="10" fill="#333" stroke="#555"/>
+                <text x="300" y="254" text-anchor="middle" fill="#39ff14" font-size="8">PS</text>
+            </svg>
+        </div>
+
+        <!-- Binding Grid -->
+        <div class="gp-grid" id="gp-grid"></div>
+
+        <!-- Sliders -->
+        <div class="slider-row">
+            <label>Zone morte (deadzone)</label>
+            <input type="range" id="gp-deadzone" min="0.05" max="0.40" step="0.01" value="0.15">
+            <span class="slider-val" id="gp-deadzone-val">0.15</span>
+        </div>
+        <div class="slider-row">
+            <label>Sensibilité caméra</label>
+            <input type="range" id="gp-sensitivity" min="0.5" max="5.0" step="0.1" value="2.5">
+            <span class="slider-val" id="gp-sensitivity-val">2.5</span>
+        </div>
+    </div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+    <button class="btn-action btn-reset" onclick="resetBindings()">Réinitialiser</button>
+    <button class="btn-action btn-save" onclick="saveAndClose()">Sauvegarder</button>
+</div>
+
+<!-- SCRIPTS -->
+<script src="input-config.js"></script>
+<script>
+// ═══════════════════════════════════════════
+//  TAB SWITCHING
+// ═══════════════════════════════════════════
+
+let currentTab = 'keyboard';
+
+function switchTab(tab) {
+    currentTab = tab;
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+    document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + tab));
+    InputConfig.preferredDevice = tab === 'keyboard' ? 'keyboard' : 'gamepad';
+}
+
+// ═══════════════════════════════════════════
+//  KEYBOARD PANEL
+// ═══════════════════════════════════════════
+
+const KEY_DISPLAY_NAMES = {
+    ' ': 'Espace', 'control': 'Ctrl', 'shift': 'Maj', 'escape': 'Échap',
+    'tab': 'Tab', 'enter': 'Entrée', 'backspace': '←', 'delete': 'Suppr',
+    'arrowup': '↑', 'arrowdown': '↓', 'arrowleft': '←', 'arrowright': '→'
+};
+
+function keyDisplayName(key) {
+    return KEY_DISPLAY_NAMES[key.toLowerCase()] || key.toUpperCase();
+}
+
+let listeningAction = null;
+let listeningKeys = [];
+
+function buildKeyboardPanel() {
+    const grid = document.getElementById('kb-grid');
+    grid.innerHTML = '';
+    const bindings = InputConfig.getKeyboardBindings();
+
+    for (const action in InputConfig.ACTIONS) {
+        const info = InputConfig.ACTIONS[action];
+        const keys = bindings[action] || [];
+
+        const row = document.createElement('div');
+        row.className = 'kb-row';
+        row.innerHTML = `
+            <div>
+                <div class="action-label">${info.label}</div>
+                <div class="category-label">${info.category}</div>
+            </div>
+            <div class="kb-keys">
+                ${keys.map(k => `<span class="key-badge">${keyDisplayName(k)}</span>`).join('')}
+                <button class="btn-rebind" data-action="${action}" onclick="startKeyboardListen('${action}', this)">Modifier</button>
+            </div>
+        `;
+        grid.appendChild(row);
+    }
+
+    checkKeyboardConflicts();
+}
+
+function startKeyboardListen(action, btn) {
+    // Annuler l'écoute précédente
+    document.querySelectorAll('.btn-rebind.listening').forEach(b => {
+        b.classList.remove('listening');
+        b.textContent = 'Modifier';
+    });
+
+    listeningAction = action;
+    listeningKeys = [];
+    btn.classList.add('listening');
+    btn.textContent = 'Appuyer...';
+
+    // Écouter la prochaine touche
+    const handler = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const key = e.key.toLowerCase();
+
+        // Ignorer les touches spéciales du navigateur
+        if (key === 'f5' || key === 'f12' || (e.ctrlKey && key === 'r')) return;
+
+        // Permet d'ajouter 2 touches max (ex: Z et W pour forward)
+        if (!listeningKeys.includes(key)) {
+            listeningKeys.push(key);
+        }
+
+        if (listeningKeys.length >= 2 || e.type === 'keyup') {
+            window.removeEventListener('keydown', handler, true);
+            window.removeEventListener('keyup', finalize, true);
+            InputConfig.setKeyboardBinding(action, listeningKeys);
+            listeningAction = null;
+            buildKeyboardPanel();
+        }
+    };
+
+    const finalize = (e) => {
+        if (listeningKeys.length > 0) {
+            window.removeEventListener('keydown', handler, true);
+            window.removeEventListener('keyup', finalize, true);
+            InputConfig.setKeyboardBinding(action, listeningKeys);
+            listeningAction = null;
+            buildKeyboardPanel();
+        }
+    };
+
+    window.addEventListener('keydown', handler, true);
+    window.addEventListener('keyup', finalize, true);
+}
+
+function checkKeyboardConflicts() {
+    const conflicts = InputConfig.getKeyboardConflicts();
+    const el = document.getElementById('kb-conflicts');
+    if (conflicts.length === 0) {
+        el.textContent = '';
+        return;
+    }
+    el.innerHTML = conflicts.map(c => {
+        const labels = c.actions.map(a => InputConfig.ACTIONS[a]?.label || a).join(' / ');
+        return `⚠️ Conflit : la touche <b>${keyDisplayName(c.key)}</b> est assignée à ${labels}`;
+    }).join('<br>');
+}
+
+// ═══════════════════════════════════════════
+//  GAMEPAD PANEL
+// ═══════════════════════════════════════════
+
+let gpListeningAction = null;
+let gpPollInterval = null;
+
+function buildGamepadPanel() {
+    const grid = document.getElementById('gp-grid');
+    grid.innerHTML = '';
+
+    for (const action in InputConfig.ACTIONS) {
+        const info = InputConfig.ACTIONS[action];
+        const label = InputConfig.getGamepadBindingLabel(action);
+
+        const row = document.createElement('div');
+        row.className = 'gp-row';
+        row.id = 'gp-row-' + action;
+        row.innerHTML = `
+            <div class="action-label">${info.label}</div>
+            <div style="display:flex;align-items:center;gap:6px;">
+                <span class="gp-current">${label}</span>
+                <button class="btn-rebind-gp" data-action="${action}" onclick="startGamepadListen('${action}', this)">Modifier</button>
+            </div>
+        `;
+        grid.appendChild(row);
+    }
+
+    // Sliders
+    const dz = document.getElementById('gp-deadzone');
+    const sens = document.getElementById('gp-sensitivity');
+    dz.value = InputConfig.gamepadDeadzone;
+    sens.value = InputConfig.gamepadCameraSensitivity;
+    document.getElementById('gp-deadzone-val').textContent = InputConfig.gamepadDeadzone.toFixed(2);
+    document.getElementById('gp-sensitivity-val').textContent = InputConfig.gamepadCameraSensitivity.toFixed(1);
+}
+
+function startGamepadListen(action, btn) {
+    // Annuler l'écoute précédente
+    document.querySelectorAll('.btn-rebind-gp.listening').forEach(b => {
+        b.classList.remove('listening');
+        b.textContent = 'Modifier';
+    });
+
+    gpListeningAction = action;
+    btn.classList.add('listening');
+    btn.textContent = 'Appuyer...';
+
+    // Poll gamepad pour détecter l'input
+    if (gpPollInterval) clearInterval(gpPollInterval);
+    gpPollInterval = setInterval(() => {
+        const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+        let gp = null;
+        for (const g of gamepads) { if (g) { gp = g; break; } }
+        if (!gp) return;
+
+        // Boutons
+        for (let i = 0; i < gp.buttons.length; i++) {
+            if (gp.buttons[i].pressed) {
+                clearInterval(gpPollInterval);
+                gpPollInterval = null;
+                InputConfig.setGamepadBinding(action, { type: 'button', index: i });
+                gpListeningAction = null;
+                buildGamepadPanel();
+                return;
+            }
+        }
+
+        // Axes
+        for (let i = 0; i < gp.axes.length; i++) {
+            if (Math.abs(gp.axes[i]) > 0.6) {
+                clearInterval(gpPollInterval);
+                gpPollInterval = null;
+                InputConfig.setGamepadBinding(action, {
+                    type: 'axis', index: i, direction: gp.axes[i] > 0 ? 1 : -1
+                });
+                gpListeningAction = null;
+                buildGamepadPanel();
+                return;
+            }
+        }
+    }, 60);
+}
+
+// Update gamepad connection status
+setInterval(() => {
+    const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+    let found = false;
+    for (const g of gamepads) {
+        if (g) {
+            found = true;
+            document.getElementById('gp-dot').classList.add('connected');
+            document.getElementById('gp-status-text').textContent = '✓ ' + g.id;
+            break;
+        }
+    }
+    if (!found) {
+        document.getElementById('gp-dot').classList.remove('connected');
+        document.getElementById('gp-status-text').textContent = 'Aucune manette détectée — branchez une manette USB ou Bluetooth';
+    }
+}, 1000);
+
+// Slider events
+document.getElementById('gp-deadzone').addEventListener('input', (e) => {
+    const val = parseFloat(e.target.value);
+    document.getElementById('gp-deadzone-val').textContent = val.toFixed(2);
+    InputConfig.gamepadDeadzone = val;
+});
+
+document.getElementById('gp-sensitivity').addEventListener('input', (e) => {
+    const val = parseFloat(e.target.value);
+    document.getElementById('gp-sensitivity-val').textContent = val.toFixed(1);
+    InputConfig.gamepadCameraSensitivity = val;
+});
+
+// ═══════════════════════════════════════════
+//  ACTIONS
+// ═══════════════════════════════════════════
+
+function resetBindings() {
+    if (currentTab === 'keyboard') {
+        InputConfig.resetKeyboard();
+        buildKeyboardPanel();
+    } else {
+        InputConfig.resetGamepad();
+        buildGamepadPanel();
+    }
+}
+
+function saveAndClose() {
+    InputConfig.save();
+    goBack();
+}
+
+function goBack() {
+    if (gpPollInterval) clearInterval(gpPollInterval);
+    // Retour à l'écran d'accueil
+    window.location.href = '../index.html';
+}
+
+// ═══════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════
+
+// Sélectionner l'onglet selon le device préféré
+if (InputConfig.preferredDevice === 'gamepad') {
+    switchTab('gamepad');
+}
+
+buildKeyboardPanel();
+buildGamepadPanel();
+</script>
+</body>
+</html>

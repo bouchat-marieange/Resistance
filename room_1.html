@@ -446,23 +446,29 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 8h.01"/><path d="M12 12h.01"/><path d="M14 8h.01"/><path d="M16 12h.01"/><path d="M18 8h.01"/><path d="M6 8h.01"/><path d="M7 16h10"/><path d="M8 12h.01"/><rect width="20" height="16" x="2" y="4" rx="2"/></svg>
             Clavier
         </div>
-        <div class="control-item">
+        <div class="control-item" id="ctrl-info-move">
             <div class="control-icon">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.6;"><path d="M5 3h14"/><path d="M5 9h14"/><path d="M5 15h14"/><path d="M5 21h14"/></svg>
             </div>
-            <span>Z/Q/S/D : Déplacement</span>
+            <span id="ctrl-label-move">Z/Q/S/D : Déplacement</span>
         </div>
-        <div class="control-item">
+        <div class="control-item" id="ctrl-info-interact">
             <div class="control-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.6;"><path d="m3 8 4-4 4 4"/><path d="M7 4v16"/><path d="m21 16-4 4-4-4"/><path d="M17 20V4"/></svg>
+                <span style="font-weight: bold; color: #a0a0a0;">E</span>
             </div>
-            <span>Flèches : Orienter la pièce</span>
+            <span id="ctrl-label-interact">E : Interagir</span>
         </div>
-        <div class="control-item">
+        <div class="control-item" id="ctrl-info-jump">
             <div class="control-icon">
                 <span style="font-weight: bold; color: #a0a0a0;">⎵</span>
             </div>
-            <span>Espace : Sauter</span>
+            <span id="ctrl-label-jump">Espace : Sauter</span>
+        </div>
+        <div class="control-item" id="ctrl-info-run">
+            <div class="control-icon">
+                <span style="font-weight: bold; color: #a0a0a0;">⇧</span>
+            </div>
+            <span id="ctrl-label-run">Maj : Courir</span>
         </div>
     </div>
 
@@ -540,6 +546,9 @@
 
 <!-- Score Manager (cross-rooms) -->
 <script src="game/score-manager.js"></script>
+<!-- Input Config + Gamepad (contrôles configurables) -->
+<script src="game/input-config.js"></script>
+<script src="game/gamepad-manager.js"></script>
 
 <script>
 /**
@@ -1582,10 +1591,10 @@ function handleSceneMovement(delta) {
 
     let moveX = 0, moveZ = 0;
 
-    if (keysPressed['z']) { moveX += direction.x * moveSpeed; moveZ += direction.z * moveSpeed; }
-    if (keysPressed['s']) { moveX -= direction.x * moveSpeed; moveZ -= direction.z * moveSpeed; }
-    if (keysPressed['q']) { moveX -= side.x * moveSpeed; moveZ -= side.z * moveSpeed; }
-    if (keysPressed['d']) { moveX += side.x * moveSpeed; moveZ += side.z * moveSpeed; }
+    if (InputConfig.isActionPressed('forward', keysPressed))  { moveX += direction.x * moveSpeed; moveZ += direction.z * moveSpeed; }
+    if (InputConfig.isActionPressed('backward', keysPressed)) { moveX -= direction.x * moveSpeed; moveZ -= direction.z * moveSpeed; }
+    if (InputConfig.isActionPressed('left', keysPressed))     { moveX -= side.x * moveSpeed; moveZ -= side.z * moveSpeed; }
+    if (InputConfig.isActionPressed('right', keysPressed))    { moveX += side.x * moveSpeed; moveZ += side.z * moveSpeed; }
 
     if (moveX === 0 && moveZ === 0) return;
 
@@ -1597,8 +1606,9 @@ function handleSceneMovement(delta) {
 }
 
 // Mouvement FPS en mode jeu — delta-time, accélération/décélération, collisions
+// Supporte clavier (via InputConfig) ET manette (via GamepadManager)
 function handleGameMovement(delta) {
-    // 1. Direction souhaitée depuis les touches
+    // 1. Direction souhaitée depuis les touches OU le stick gauche manette
     const forward = new THREE.Vector3();
     camera.getWorldDirection(forward);
     forward.y = 0;
@@ -1607,16 +1617,32 @@ function handleGameMovement(delta) {
     right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
 
     const inputDir = new THREE.Vector3(0, 0, 0);
-    if (keysPressed['z'] || keysPressed['w']) inputDir.add(forward);
-    if (keysPressed['s']) inputDir.sub(forward);
-    if (keysPressed['q'] || keysPressed['a']) inputDir.sub(right);
-    if (keysPressed['d']) inputDir.add(right);
+
+    // Clavier (utilise les bindings configurables)
+    if (InputConfig.isActionPressed('forward', keysPressed))  inputDir.add(forward);
+    if (InputConfig.isActionPressed('backward', keysPressed)) inputDir.sub(forward);
+    if (InputConfig.isActionPressed('left', keysPressed))     inputDir.sub(right);
+    if (InputConfig.isActionPressed('right', keysPressed))    inputDir.add(right);
+
+    // Manette — stick gauche (valeurs analogiques)
+    if (GamepadManager.connected) {
+        const gpFwd = GamepadManager.getActionValue('forward');
+        const gpBack = GamepadManager.getActionValue('backward');
+        const gpLeft = GamepadManager.getActionValue('left');
+        const gpRight = GamepadManager.getActionValue('right');
+        if (gpFwd > 0)   inputDir.addScaledVector(forward, gpFwd);
+        if (gpBack > 0)  inputDir.addScaledVector(forward, -gpBack);
+        if (gpLeft > 0)  inputDir.addScaledVector(right, -gpLeft);
+        if (gpRight > 0) inputDir.addScaledVector(right, gpRight);
+    }
 
     const hasInput = inputDir.lengthSq() > 0.001;
     if (hasInput) inputDir.normalize();
 
     // 2. Vitesse cible
-    const isSprinting = keysPressed['shift'] && hasInput;
+    const kbSprint = InputConfig.isActionPressed('run', keysPressed);
+    const gpSprint = GamepadManager.connected && GamepadManager.getActionValue('run') > 0.5;
+    const isSprinting = (kbSprint || gpSprint) && hasInput;
     const targetSpeed = hasInput ? (isSprinting ? runSpeed : walkSpeed) : 0;
 
     // 3. Accélération / décélération progressive
@@ -1695,6 +1721,27 @@ function animate() {
     }
 
     handleSceneMovement(delta);
+
+    // GAMEPAD: Rotation caméra via stick droit
+    if (GamepadManager.connected && interactionMode === 'game') {
+        const rs = GamepadManager.getRightStick();
+        if (rs.x !== 0 || rs.y !== 0) {
+            const sens = InputConfig.gamepadCameraSensitivity * 0.02;
+            // Rotation horizontale (yaw)
+            const angle = -rs.x * sens;
+            const offset = new THREE.Vector3().subVectors(controls.target, camera.position);
+            offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), angle);
+            controls.target.copy(camera.position).add(offset);
+            // Rotation verticale (pitch) — limitée
+            const pitchAngle = -rs.y * sens * 0.6;
+            const dir = new THREE.Vector3().subVectors(controls.target, camera.position).normalize();
+            const newY = Math.max(-0.8, Math.min(0.8, dir.y + pitchAngle));
+            dir.y = newY;
+            dir.normalize();
+            controls.target.copy(camera.position).add(dir);
+        }
+    }
+
     controls.update();
 
     // MODE JEU: Head bob, hauteur, collisions, zones, audio de pas
@@ -1747,10 +1794,62 @@ function animate() {
         }
     }
 
+    // GAMEPAD: Actions boutons (fronts montants uniquement)
+    if (GamepadManager.connected && interactionMode === 'game') {
+        if (GamepadManager.isActionJustPressed('grab')) {
+            // Simuler un clic d'interaction au centre de l'écran
+            simulateInteraction();
+        }
+        // Mettre à jour les états précédents pour la détection des fronts
+        GamepadManager.updatePrevStates();
+    }
+
     renderer.render(scene, camera);
 }
 
+/**
+ * Simule une interaction (grab) au centre de l'écran — utilisé par la manette
+ */
+function simulateInteraction() {
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+    if (typeof getCollisionMeshes === 'function') {
+        const meshes = getCollisionMeshes();
+        const intersects = raycaster.intersectObjects(meshes, true);
+        if (intersects.length > 0) {
+            const hit = intersects[0];
+            // Chercher si l'objet touché est dans une zone d'interaction
+            for (const zone of interactionZones) {
+                if (zone.mesh === hit.object || (hit.object.parent && zone.mesh === hit.object.parent)) {
+                    if (zone.triggerType === 'click' && typeof triggerZoneAction === 'function') {
+                        triggerZoneAction(zone);
+                    }
+                    break;
+                }
+            }
+        }
+    }
+}
+
 window.onload = init;
+
+// Mise à jour des labels de contrôles dans le panneau d'info
+(function updateControlLabels() {
+    try {
+        const kb = InputConfig.getKeyboardBindings();
+        const keyName = (k) => {
+            const names = {' ':'Espace','control':'Ctrl','shift':'Maj','escape':'Échap'};
+            return names[k] || k.toUpperCase();
+        };
+        const fmt = (arr) => arr.map(keyName).join('/');
+
+        const el = (id, text) => { const e = document.getElementById(id); if (e) e.textContent = text; };
+        el('ctrl-label-move', fmt(kb.forward) + '/' + fmt(kb.left) + '/' + fmt(kb.backward) + '/' + fmt(kb.right) + ' : Déplacement');
+        el('ctrl-label-interact', fmt(kb.grab) + ' : Interagir');
+        el('ctrl-label-jump', fmt(kb.jump) + ' : Sauter');
+        el('ctrl-label-run', fmt(kb.run) + ' : Courir');
+    } catch(e) {}
+})();
 
 // ==================== GESTION DES PANNEAUX UI ====================
 
