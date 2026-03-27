@@ -857,8 +857,12 @@ function saveAndClose() {
 }
 
 function goBack() {
-    if (gpPollInterval) clearInterval(gpPollInterval);
-    window.location.href = '../index.html';
+    // Retourner vers le jeu (page precedente ou room_1.html)
+    if (document.referrer && document.referrer.includes('room_')) {
+        window.location.href = document.referrer;
+    } else {
+        window.history.back();
+    }
 }
 
 // ═══════════════════════════════════════════
