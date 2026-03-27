@@ -874,8 +874,9 @@ if (InputConfig.preferredDevice === 'gamepad') switchTab('gamepad');
 highlightBoundKeys();
 buildActionLegend();
 
-// Message de bienvenue
-const welcomeMsg = InputConfig.getWelcomeMessage();
+// Message de bienvenue (uniquement si on vient de l'écran de démarrage, pas du jeu)
+const comingFromGame = document.referrer && document.referrer.includes('room_');
+const welcomeMsg = !comingFromGame ? InputConfig.getWelcomeMessage() : null;
 if (welcomeMsg) {
     const banner = document.createElement('div');
     banner.textContent = welcomeMsg;
