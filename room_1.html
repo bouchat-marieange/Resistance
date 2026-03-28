@@ -282,45 +282,7 @@
             display: block;
         }
 
-        #controls-info .control-section {
-            margin-bottom: 12px;
-        }
-
-        #controls-info .control-section:last-child {
-            margin-bottom: 0;
-        }
-
-        #controls-info .control-title {
-            font-weight: bold;
-            color: #ffffff;
-            margin-bottom: 6px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 14px;
-        }
-
-        #controls-info .control-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin: 4px 0;
-            padding-left: 28px;
-        }
-
-        #controls-info .control-icon {
-            width: 24px;
-            height: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        #controls-info .control-icon svg {
-            width: 20px;
-            height: 20px;
-            stroke: #a0a0a0;
-        }
+        /* (styles d'aide / indices à venir) */
 
         #controls-info-close {
             position: absolute;
@@ -428,66 +390,10 @@
     </div>
 </button>
 
-<!-- Panneau d'informations (masqué par défaut, affiché au clic sur l'icône) -->
+<!-- Panneau d'aide / indices (masqué par défaut, affiché au clic sur l'icône) -->
 <div id="controls-info" style="position:fixed;">
     <button id="controls-info-close" onclick="document.getElementById('controls-info').classList.remove('visible');">&#10005;</button>
-    <div class="control-section">
-        <div class="control-title">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="7"/><path d="M12 6v4"/></svg>
-            Souris
-        </div>
-        <div class="control-item">
-            <div class="control-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 25 25"><path d="M19.68,10.68v6.74c0,3.75-3.07,6.82-6.82,6.82h-.91c-3.75,0-6.82-3.07-6.82-6.82v-6.74h14.56M20.13,10.23H4.67v7.19c0,4.01,3.26,7.27,7.27,7.27h.91c4.01,0,7.27-3.26,7.27-7.27v-7.19h0Z"/><path d="M5.71,10.3c-.45,0-.82-.37-.82-.82v-2.43C4.89,3.6,7.71.78,11.17.78h.43c.45,0,.82.37.82.82v1.36l-.17.04c-.4.09-.68.46-.68.86v4.34c0,.41.29.77.68.86l.17.04v1.19h-6.7Z" fill="currentColor"/></svg>
-            </div>
-            <span>Clic gauche : Déplacer / Ouvrir</span>
-        </div>
-        <div class="control-item">
-            <div class="control-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 25 25"><path d="M19.68,10.68v6.74c0,3.75-3.07,6.82-6.82,6.82h-.91c-3.75,0-6.82-3.07-6.82-6.82v-6.74h14.56M20.13,10.23H4.67v7.19c0,4.01,3.26,7.27,7.27,7.27h.91c4.01,0,7.27-3.26,7.27-7.27v-7.19h0Z"/><path d="M13.73,1c3.27,0,5.95,2.68,5.95,5.95v2.63c0,.27-.22.49-.49.49h-6.4v-.82c.45-.14.77-.57.77-1.06V3.87c0-.49-.33-.92-.77-1.06v-1.31c0-.27.22-.49.49-.49h.44M13.73.56h-.44c-.52,0-.94.42-.94.94v1.64l.31.1c.27.09.46.35.46.63v4.34c0,.29-.19.55-.46.63l-.31.1v1.59h6.84c.52,0,.94-.42.94-.94v-2.63c0-3.53-2.87-6.4-6.4-6.4h0Z" fill="currentColor"/></svg>
-            </div>
-            <span>Clic droit : Tourner la vue</span>
-        </div>
-        <div class="control-item">
-            <div class="control-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 25 25"><path d="M20.13,10.23v7.19c0,4.01-3.26,7.27-7.27,7.27h-.91c-4.01,0-7.27-3.26-7.27-7.27v-7.19h15.45M20.58,9.78H4.22v7.64c0,4.25,3.47,7.72,7.72,7.72h.91c4.25,0,7.72-3.47,7.72-7.72v-7.64h0Z"/><path d="M13.73,1c3.27,0,5.95,2.68,5.95,5.95v2.63c0,.27-.22.49-.49.49h-14c-.27,0-.49-.22-.49-.49v-2.63C4.71,3.68,7.39,1,10.66,1h3.07M13.73.56h-3.07C6.89.56,4.26,3.18,4.26,6.95v2.63c0,.52.42.94.94.94h14c.52,0,.94-.42.94-.94v-2.63c0-3.77-2.63-6.4-6.4-6.4h0Z"/><rect x="11.31" y="2.89" width="1.91" height="4.52" rx=".45" ry=".45" fill="currentColor"/></svg>
-            </div>
-            <span>Molette : Zoomer / Dézoomer</span>
-        </div>
-    </div>
-
-    <div class="control-section">
-        <div class="control-title">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 8h.01"/><path d="M12 12h.01"/><path d="M14 8h.01"/><path d="M16 12h.01"/><path d="M18 8h.01"/><path d="M6 8h.01"/><path d="M7 16h10"/><path d="M8 12h.01"/><rect width="20" height="16" x="2" y="4" rx="2"/></svg>
-            Clavier
-        </div>
-        <div class="control-item" id="ctrl-info-move">
-            <div class="control-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.6;"><path d="M5 3h14"/><path d="M5 9h14"/><path d="M5 15h14"/><path d="M5 21h14"/></svg>
-            </div>
-            <span id="ctrl-label-move">Z/Q/S/D : Déplacement</span>
-        </div>
-        <div class="control-item" id="ctrl-info-interact">
-            <div class="control-icon">
-                <span style="font-weight: bold; color: #a0a0a0;">E</span>
-            </div>
-            <span id="ctrl-label-interact">E : Interagir</span>
-        </div>
-        <div class="control-item" id="ctrl-info-jump">
-            <div class="control-icon">
-                <span style="font-weight: bold; color: #a0a0a0;">⎵</span>
-            </div>
-            <span id="ctrl-label-jump">Espace : Sauter</span>
-        </div>
-        <div class="control-item" id="ctrl-info-run">
-            <div class="control-icon">
-                <span style="font-weight: bold; color: #a0a0a0;">⇧</span>
-            </div>
-            <span id="ctrl-label-run">Maj : Courir</span>
-        </div>
-    </div>
-
-    </div>
+    <p style="margin:0; padding:8px 24px 8px 0; color:#a0a0a0; font-style:italic;">Ici s'afficheront les indices et informations d'aide.</p>
 </div>
 
 <!-- Éléments UI éditeur créés dynamiquement via Ctrl+Shift+C -->
@@ -1852,24 +1758,6 @@ function simulateInteraction() {
 }
 
 window.onload = init;
-
-// Mise à jour des labels de contrôles dans le panneau d'info
-(function updateControlLabels() {
-    try {
-        const kb = InputConfig.getKeyboardBindings();
-        const keyName = (k) => {
-            const names = {' ':'Espace','control':'Ctrl','shift':'Maj','escape':'Échap'};
-            return names[k] || k.toUpperCase();
-        };
-        const fmt = (arr) => arr.map(keyName).join('/');
-
-        const el = (id, text) => { const e = document.getElementById(id); if (e) e.textContent = text; };
-        el('ctrl-label-move', fmt(kb.forward) + '/' + fmt(kb.left) + '/' + fmt(kb.backward) + '/' + fmt(kb.right) + ' : Déplacement');
-        el('ctrl-label-interact', fmt(kb.grab) + ' : Interagir');
-        el('ctrl-label-jump', fmt(kb.jump) + ' : Sauter');
-        el('ctrl-label-run', fmt(kb.run) + ' : Courir');
-    } catch(e) {}
-})();
 
 // ==================== GESTION DES PANNEAUX UI ====================
 

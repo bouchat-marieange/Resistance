@@ -7,6 +7,7 @@
 
 const InputConfig = (function() {
     const STORAGE_KEY_BASE = 'resistance-input-config';
+    const CONFIG_VERSION = 2; // Incrementer pour forcer le reset des bindings par defaut
 
     // Cle de stockage liee au pseudo actif
     function getStorageKey() {
@@ -25,8 +26,11 @@ const InputConfig = (function() {
         jump:     { label: 'Sauter',           category: 'Déplacements' },
         crouch:   { label: 'S\'accroupir',     category: 'Déplacements' },
         run:      { label: 'Courir',           category: 'Déplacements' },
+        aim:      { label: 'Viser',            category: 'Actions' },
         grab:     { label: 'Interagir',        category: 'Actions' },
         door:     { label: 'Ouvrir/Fermer',    category: 'Actions' },
+        map:      { label: 'Carte',            category: 'Interface' },
+        hints:    { label: 'Indices',          category: 'Interface' },
         inventory:{ label: 'Inventaire',       category: 'Interface' },
         pause:    { label: 'Pause',            category: 'Interface' }
     };
@@ -35,15 +39,18 @@ const InputConfig = (function() {
     //  BINDINGS PAR DÉFAUT — CLAVIER
     // ═══════════════════════════════════════════
     const DEFAULT_KEYBOARD = {
-        forward:   ['z', 'w'],
+        forward:   ['z'],
         backward:  ['s'],
-        left:      ['q', 'a'],
+        left:      ['q'],
         right:     ['d'],
         jump:      [' '],
         crouch:    ['control'],
         run:       ['shift'],
-        grab:      ['e'],
+        aim:       ['v'],
+        grab:      [],
         door:      ['f'],
+        map:       ['m'],
+        hints:     ['?'],
         inventory: ['i'],
         pause:     ['escape']
     };
@@ -66,8 +73,11 @@ const InputConfig = (function() {
         jump:      { type: 'button', index: 0 },               // Cross (X)
         crouch:    { type: 'button', index: 1 },               // Circle (O)
         run:       { type: 'button', index: 10 },              // L3 (click stick)
+        aim:       { type: 'button', index: 6 },               // L2
         grab:      { type: 'button', index: 2 },               // Square
         door:      { type: 'button', index: 3 },               // Triangle
+        map:       { type: 'button', index: 13 },              // D-pad Down
+        hints:     { type: 'button', index: 12 },              // D-pad Up
         inventory: { type: 'button', index: 9 },               // Options
         pause:     { type: 'button', index: 8 }                // Share
     };
@@ -91,6 +101,7 @@ const InputConfig = (function() {
     //  ÉTAT COURANT
     // ═══════════════════════════════════════════
     let config = {
+        _version: CONFIG_VERSION,
         preferredDevice: 'keyboard',  // 'keyboard' ou 'gamepad'
         keyboard: JSON.parse(JSON.stringify(DEFAULT_KEYBOARD)),
         gamepad:  JSON.parse(JSON.stringify(DEFAULT_GAMEPAD)),
@@ -114,6 +125,16 @@ const InputConfig = (function() {
             const raw = localStorage.getItem(getStorageKey());
             if (raw) {
                 const saved = JSON.parse(raw);
+                // Si la version a change, on reset les bindings aux nouveaux defaults
+                if (saved._version !== CONFIG_VERSION) {
+                    config._version = CONFIG_VERSION;
+                    config.preferredDevice = saved.preferredDevice || 'keyboard';
+                    config.gamepadDeadzone = saved.gamepadDeadzone ?? 0.15;
+                    config.gamepadCameraSensitivity = saved.gamepadCameraSensitivity ?? 2.5;
+                    // On garde les defaults frais, pas les anciens bindings
+                    save();
+                    return;
+                }
                 // Merge avec les defaults pour couvrir les nouvelles actions
                 config.preferredDevice = saved.preferredDevice || 'keyboard';
                 config.gamepadDeadzone = saved.gamepadDeadzone ?? 0.15;
@@ -129,6 +150,7 @@ const InputConfig = (function() {
                         config.gamepad[action] = saved.gamepad[action] || DEFAULT_GAMEPAD[action];
                     }
                 }
+                config._version = CONFIG_VERSION;
             }
         } catch (e) {
             console.warn('InputConfig: impossible de charger la config', e);

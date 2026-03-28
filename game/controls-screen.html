@@ -64,8 +64,9 @@ body {
 .tab.active { color: #39ff14; border-bottom-color: #39ff14; }
 
 /* ══════ PANELS ══════ */
-.panel { display: none; padding: 20px; }
+.panel { display: none; padding: 10px 20px 10px; margin-top: 15px; }
 .panel.active { display: block; }
+#panel-keyboard { margin-top: 45px; }
 
 /* ══════════════════════════════════════
    KEYBOARD PANEL — VISUAL LAYOUT
@@ -73,29 +74,34 @@ body {
 .kb-visual {
     display: flex;
     justify-content: center;
-    gap: 40px;
-    flex-wrap: wrap;
-    max-width: 1100px;
-    margin: 0 auto;
+    align-items: flex-start;
+    gap: 30px;
+    flex-wrap: nowrap;
+    max-width: 1400px;
+    margin: 10px auto 0;
+    padding: 0 40px;
 }
 
 /* ── Keyboard ── */
 .keyboard-wrapper {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 3px;
     background: #222;
-    padding: 16px;
+    padding: 12px;
     border-radius: 12px;
     border: 1px solid #333;
+    flex: 2;
+    min-width: 0;
 }
 .kb-row-keys {
     display: flex;
     gap: 3px;
 }
 .key {
-    width: 42px;
+    min-width: 38px;
     height: 38px;
+    flex: 1;
     background: #2a2a2a;
     border: 1px solid #444;
     border-radius: 5px;
@@ -137,19 +143,19 @@ body {
 }
 @keyframes pulse { from { opacity: 0.6; } to { opacity: 1; } }
 
-/* Special keys sizing */
-.key-esc   { width: 42px; }
-.key-fn    { width: 36px; font-size: 9px; }
-.key-tab   { width: 60px; font-size: 10px; }
-.key-caps  { width: 68px; font-size: 9px; }
-.key-shift-l { width: 52px; font-size: 9px; }
-.key-shift-r { width: 108px; font-size: 9px; }
-.key-ctrl  { width: 52px; font-size: 9px; }
-.key-alt   { width: 44px; font-size: 10px; }
-.key-space { width: 240px; font-size: 10px; }
-.key-enter { width: 80px; font-size: 10px; }
-.key-back  { width: 72px; font-size: 9px; }
-.key-gap   { width: 16px; background: none; border: none; cursor: default; }
+/* Special keys sizing — flex ratios */
+.key-esc   { flex: 1.1; }
+.key-fn    { flex: 0.85; font-size: 9px; }
+.key-tab   { flex: 1.5; font-size: 10px; }
+.key-caps  { flex: 1.7; font-size: 8px; }
+.key-shift-l { flex: 1.3; font-size: 9px; }
+.key-shift-r { flex: 2.8; font-size: 9px; }
+.key-ctrl  { flex: 1.3; font-size: 9px; }
+.key-alt   { flex: 1.1; font-size: 10px; }
+.key-space { flex: 6; font-size: 10px; }
+.key-enter { flex: 1.2; font-size: 10px; }
+.key-back  { flex: 1.8; font-size: 9px; }
+.key-gap   { flex: 0.4; min-width: 8px; background: none; border: none; cursor: default; }
 .key-gap:hover { background: none; }
 
 /* ── Mouse ── */
@@ -157,12 +163,20 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 16px;
+    justify-content: center;
+    gap: 0;
+    flex: 1;
+    min-width: 280px;
 }
 .mouse-svg-area {
     position: relative;
-    width: 180px;
-    height: 260px;
+    width: 340px;
+    height: 280px;
+    display: flex;
+    justify-content: center;
+}
+.mouse-svg-area svg {
+    margin-top: 15px;
 }
 .mouse-label {
     position: absolute;
@@ -176,14 +190,14 @@ body {
     font-size: 12px;
 }
 
-/* ── Action Legend (below keyboard) ── */
+/* ── Action Legend (below keyboard + mouse) ── */
 .action-legend {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 6px;
     justify-content: center;
-    margin-top: 24px;
-    max-width: 1100px;
+    margin-top: 45px;
+    max-width: 1200px;
     margin-left: auto;
     margin-right: auto;
 }
@@ -229,6 +243,122 @@ body {
     text-align: center;
 }
 
+/* ── Modal de configuration des touches ── */
+.key-modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 9998;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.key-modal {
+    background: #222;
+    border: 1px solid #39ff14;
+    border-radius: 10px;
+    padding: 20px 28px;
+    min-width: 300px;
+    max-width: 420px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.8);
+    text-align: center;
+}
+.key-modal h3 {
+    color: #39ff14;
+    font-size: 15px;
+    margin: 0 0 6px;
+    font-weight: 600;
+}
+.key-modal .modal-key-display {
+    display: inline-block;
+    background: #1a2a10;
+    border: 2px solid #39ff14;
+    color: #39ff14;
+    padding: 6px 18px;
+    border-radius: 6px;
+    font-size: 20px;
+    font-weight: 700;
+    font-family: monospace;
+    margin: 10px 0;
+}
+.key-modal p {
+    color: #aaa;
+    font-size: 13px;
+    margin: 8px 0 16px;
+}
+.key-modal select {
+    width: 100%;
+    padding: 8px 12px;
+    background: #1a1a1a;
+    border: 1px solid #444;
+    color: #e0e0e0;
+    border-radius: 6px;
+    font-size: 13px;
+    margin-bottom: 16px;
+    cursor: pointer;
+}
+.key-modal select:focus {
+    border-color: #39ff14;
+    outline: none;
+}
+.key-modal .modal-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+}
+.key-modal .btn-modal {
+    padding: 7px 22px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+}
+.key-modal .btn-cancel {
+    background: none;
+    border: 1px solid #666;
+    color: #999;
+}
+.key-modal .btn-cancel:hover { border-color: #aaa; color: #fff; }
+.key-modal .btn-confirm {
+    background: #39ff14;
+    border: 1px solid #39ff14;
+    color: #0a0a0a;
+    font-weight: 600;
+}
+.key-modal .btn-confirm:hover { background: #2dd610; }
+.key-modal .btn-danger {
+    background: none;
+    border: 1px solid #ff4444;
+    color: #ff4444;
+}
+.key-modal .btn-danger:hover { background: #ff4444; color: #fff; }
+
+/* Bouton X sur les touches liées */
+.key.bound {
+    position: relative;
+}
+.key-unbind {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 14px;
+    height: 14px;
+    background: #ff4444;
+    border: none;
+    border-radius: 50%;
+    color: #fff;
+    font-size: 9px;
+    line-height: 14px;
+    text-align: center;
+    cursor: pointer;
+    display: none;
+    padding: 0;
+    z-index: 3;
+}
+.key.bound:hover .key-unbind {
+    display: block;
+}
+
 /* ══════════════════════════════════════
    GAMEPAD PANEL
    ══════════════════════════════════════ */
@@ -236,19 +366,19 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 20px;
-    max-width: 900px;
+    gap: 10px;
+    max-width: 1050px;
     margin: 0 auto;
 }
 .gp-status {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 8px 20px;
+    padding: 6px 20px;
     background: #151515;
     border-radius: 8px;
     border: 1px solid #2a2a2a;
-    font-size: 13px;
+    font-size: 12px;
 }
 .gp-dot {
     width: 10px; height: 10px;
@@ -276,7 +406,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 600;
     color: #39ff14;
     cursor: pointer;
@@ -350,9 +480,9 @@ body {
     display: flex;
     justify-content: center;
     gap: 16px;
-    padding: 10px;
+    padding: 8px;
     border-top: 1px solid #2a2a2a;
-    margin-top: 8px;
+    margin-top: 30px;
 }
 .btn-action {
     padding: 8px 24px;
@@ -423,6 +553,7 @@ body {
             </div>
             <!-- Row 1: Numbers (AZERTY belge) -->
             <div class="kb-row-keys" style="margin-top:8px;">
+                <div class="key" data-key="²">²</div>
                 <div class="key" data-key="&">&amp;</div>
                 <div class="key" data-key="é">é</div>
                 <div class="key" data-key="&quot;">"</div>
@@ -433,9 +564,9 @@ body {
                 <div class="key" data-key="!">!</div>
                 <div class="key" data-key="ç">ç</div>
                 <div class="key" data-key="à">à</div>
-                <div class="key" data-key=")">) </div>
+                <div class="key" data-key=")">)</div>
                 <div class="key" data-key="-">-</div>
-                <div class="key key-back" data-key="backspace">Backspace</div>
+                <div class="key key-back" data-key="backspace">←</div>
             </div>
             <!-- Row 2: AZERTY belge top row -->
             <div class="kb-row-keys">
@@ -451,11 +582,12 @@ body {
                 <div class="key" data-key="o">O</div>
                 <div class="key" data-key="p">P</div>
                 <div class="key" data-key="^">^</div>
-                <div class="key" data-key="$">$</div>
+                <div class="key" data-key="$">*</div>
+                <div class="key key-enter" data-key="enter" style="width:48px; font-size:10px;">Enter</div>
             </div>
             <!-- Row 3: Home row -->
             <div class="kb-row-keys">
-                <div class="key key-caps" data-key="capslock">Caps Lock</div>
+                <div class="key key-caps" data-key="capslock" style="font-size:8px;">Shift Lock</div>
                 <div class="key" data-key="q">Q</div>
                 <div class="key" data-key="s">S</div>
                 <div class="key" data-key="d">D</div>
@@ -466,8 +598,8 @@ body {
                 <div class="key" data-key="k">K</div>
                 <div class="key" data-key="l">L</div>
                 <div class="key" data-key="m">M</div>
-                <div class="key" data-key="ù">ù</div>
-                <div class="key key-enter" data-key="enter">Enter</div>
+                <div class="key" data-key="ù">%</div>
+                <div class="key" data-key="µ">£</div>
             </div>
             <!-- Row 4: Bottom row -->
             <div class="kb-row-keys">
@@ -479,7 +611,7 @@ body {
                 <div class="key" data-key="v">V</div>
                 <div class="key" data-key="b">B</div>
                 <div class="key" data-key="n">N</div>
-                <div class="key" data-key=",">,</div>
+                <div class="key" data-key="?">?</div>
                 <div class="key" data-key=";">;</div>
                 <div class="key" data-key=":">:</div>
                 <div class="key" data-key="=">=</div>
@@ -488,11 +620,11 @@ body {
             <!-- Row 5: Space bar row -->
             <div class="kb-row-keys">
                 <div class="key key-ctrl" data-key="control">Ctrl</div>
-                <div class="key" data-key="meta" style="width:36px;font-size:14px;">&#8862;</div>
+                <div class="key" data-key="meta" style="width:36px;font-size:14px;">⊞</div>
                 <div class="key key-alt" data-key="alt">Alt</div>
                 <div class="key key-space" data-key=" ">Espace</div>
-                <div class="key key-alt" data-key="altgraph">Alt Gr</div>
-                <div class="key" data-key="meta" style="width:36px;font-size:14px;">&#8862;</div>
+                <div class="key key-alt" data-key="altgraph">Alt.Gr</div>
+                <div class="key" data-key="meta" style="width:36px;font-size:14px;">⊞</div>
                 <div class="key key-ctrl" data-key="control">Ctrl</div>
             </div>
         </div>
@@ -520,19 +652,23 @@ body {
                 </svg>
 
                 <!-- Mouse labels -->
-                <div class="mouse-label" style="top:35px; right:-90px; text-align:left;">
-                    <div class="mouse-label-action">Tourner la vue</div>
-                    <div>Clic droit</div>
-                </div>
-                <div class="mouse-label" style="top:35px; left:-80px; text-align:right;">
+                <!-- Interagir — à gauche du bouton gauche -->
+                <div class="mouse-label" style="top:50px; right:calc(50% + 75px); text-align:right;">
                     <div class="mouse-label-action">Interagir</div>
                     <div>Clic gauche</div>
                 </div>
-                <div class="mouse-label" style="top:100px; right:-90px; text-align:left;">
+                <!-- Tourner la vue — à droite du bouton droit (même niveau) -->
+                <div class="mouse-label" style="top:50px; left:calc(50% + 75px); text-align:left;">
+                    <div class="mouse-label-action">Tourner la vue</div>
+                    <div>Clic droit</div>
+                </div>
+                <!-- Zoom — centré sous la molette -->
+                <div class="mouse-label" style="top:130px; left:50%; transform:translateX(-50%); text-align:center;">
                     <div class="mouse-label-action">Zoom</div>
                     <div>Molette</div>
                 </div>
-                <div class="mouse-label" style="bottom:20px; left:50%; transform:translateX(-50%); text-align:center;">
+                <!-- Regarder Mouvement — centré sous la souris -->
+                <div class="mouse-label" style="bottom:2px; left:50%; transform:translateX(-50%); text-align:center;">
                     <div class="mouse-label-action">Regarder</div>
                     <div>Mouvement</div>
                 </div>
@@ -564,9 +700,9 @@ body {
             <div class="gp-label gp-lbl-l1"  data-gp="share"  >Pause</div>
             <div class="gp-label gp-lbl-l2"  data-gp="l2"     >Viser (L2)</div>
             <div class="gp-label gp-lbl-l3"  data-gp="l1"     >Courir (L1)</div>
-            <div class="gp-label gp-lbl-l4"  data-gp="dup"    >---</div>
+            <div class="gp-label gp-lbl-l4"  data-gp="dup"    >Indices</div>
             <div class="gp-label gp-lbl-l5"  data-gp="dright" >Zoom avant</div>
-            <div class="gp-label gp-lbl-l6"  data-gp="ddown"  >---</div>
+            <div class="gp-label gp-lbl-l6"  data-gp="ddown"  >Carte</div>
             <div class="gp-label gp-lbl-l7"  data-gp="dleft"  >Zoom arriere</div>
             <div class="gp-label gp-lbl-l8"  data-gp="lstk-x" >Deplacement droite</div>
             <div class="gp-label gp-lbl-l9"  data-gp="lstk-y" >Deplacement avant</div>
@@ -649,8 +785,9 @@ function keyDisplayName(key) {
 // Map action -> short label for the key overlay
 const ACTION_SHORT_LABELS = {
     forward: 'Avancer', backward: 'Reculer', left: 'Gauche', right: 'Droite',
-    jump: 'Sauter', crouch: 'Accroupir', run: 'Courir', grab: 'Interagir',
-    door: 'Porte', inventory: 'Inventaire', pause: 'Pause'
+    jump: 'Sauter', crouch: 'Accroupir', run: 'Courir', aim: 'Viser',
+    grab: 'Interagir', door: 'Porte', map: 'Carte', hints: 'Indices',
+    inventory: 'Inventaire', pause: 'Pause'
 };
 
 let selectedAction = null; // action en cours de rebind
@@ -660,6 +797,8 @@ function highlightBoundKeys() {
     document.querySelectorAll('#keyboard-visual .key').forEach(k => {
         k.classList.remove('bound');
         k.removeAttribute('data-action-label');
+        const oldX = k.querySelector('.key-unbind');
+        if (oldX) oldX.remove();
     });
 
     const bindings = InputConfig.getKeyboardBindings();
@@ -672,12 +811,23 @@ function highlightBoundKeys() {
         }
     }
 
-    // Highlight
+    // Highlight + ajouter bouton X
     document.querySelectorAll('#keyboard-visual .key[data-key]').forEach(el => {
         const dataKey = el.getAttribute('data-key').toLowerCase();
         if (keyToAction[dataKey]) {
             el.classList.add('bound');
             el.setAttribute('data-action-label', ACTION_SHORT_LABELS[keyToAction[dataKey]] || keyToAction[dataKey]);
+
+            // Bouton X pour délier
+            const xBtn = document.createElement('button');
+            xBtn.className = 'key-unbind';
+            xBtn.textContent = '✕';
+            xBtn.title = 'Retirer cette touche';
+            xBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                onUnbindKey(dataKey, keyToAction[dataKey]);
+            });
+            el.appendChild(xBtn);
         }
     });
 }
@@ -757,25 +907,165 @@ function startKeyboardListen(action, legendItem) {
     window.addEventListener('keyup', finalize, true);
 }
 
-// Click on visual key to assign it to an action
-document.querySelectorAll('#keyboard-visual .key[data-key]').forEach(el => {
-    el.addEventListener('click', () => {
-        const key = el.getAttribute('data-key').toLowerCase();
-        if (key === 'capslock' || key === 'meta' || key === 'altgraph') return;
+// ═══════════════════════════════════════════
+//  SYSTEME DE MODALES — Attribution de touches
+// ═══════════════════════════════════════════
 
-        // If no action selected, show which action this key has
+function closeModal() {
+    const old = document.querySelector('.key-modal-overlay');
+    if (old) old.remove();
+}
+
+function createModal(content) {
+    closeModal();
+    const overlay = document.createElement('div');
+    overlay.className = 'key-modal-overlay';
+    const modal = document.createElement('div');
+    modal.className = 'key-modal';
+    modal.innerHTML = content;
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(); });
+    return modal;
+}
+
+// Retourne la liste des touches non attribuees
+function getUnboundKeys() {
+    const bindings = InputConfig.getKeyboardBindings();
+    const boundKeys = new Set();
+    for (const action in bindings) {
+        for (const k of bindings[action]) boundKeys.add(k);
+    }
+    const allKeys = [];
+    document.querySelectorAll('#keyboard-visual .key[data-key]').forEach(el => {
+        const k = el.getAttribute('data-key').toLowerCase();
+        if (k && k !== 'capslock' && k !== 'meta' && k !== 'altgraph' && k !== 'tab' && k !== 'backspace' && k !== 'enter') {
+            if (!boundKeys.has(k)) allKeys.push(k);
+        }
+    });
+    return [...new Set(allKeys)];
+}
+
+// 1) Clic sur touche LIBRE → confirmation puis choix d'action
+function onUnboundKeyClick(key) {
+    const label = keyDisplayName(key);
+    const modal = createModal(
+        '<h3>Attribuer une action à cette touche ?</h3>' +
+        '<div class="modal-key-display">' + label + '</div>' +
+        '<p>Voulez-vous associer la touche <b>' + label + '</b> à une action ?</p>' +
+        '<div class="modal-buttons">' +
+            '<button class="btn-modal btn-cancel">Annuler</button>' +
+            '<button class="btn-modal btn-confirm">Confirmer</button>' +
+        '</div>'
+    );
+    modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
+    modal.querySelector('.btn-confirm').addEventListener('click', () => showActionSelector(key));
+}
+
+// 2) Sélecteur d'action avec liste déroulante
+function showActionSelector(key) {
+    const label = keyDisplayName(key);
+    let options = '';
+    for (const action in InputConfig.ACTIONS) {
+        const info = InputConfig.ACTIONS[action];
+        options += '<option value="' + action + '">' + info.label + '</option>';
+    }
+    const modal = createModal(
+        '<h3>Choisir une action</h3>' +
+        '<div class="modal-key-display">' + label + '</div>' +
+        '<p>Associer la touche <b>' + label + '</b> à :</p>' +
+        '<select id="modal-action-select">' + options + '</select>' +
+        '<div class="modal-buttons">' +
+            '<button class="btn-modal btn-cancel">Annuler</button>' +
+            '<button class="btn-modal btn-confirm">Confirmer</button>' +
+        '</div>'
+    );
+    modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
+    modal.querySelector('.btn-confirm').addEventListener('click', () => {
+        const action = modal.querySelector('#modal-action-select').value;
         const bindings = InputConfig.getKeyboardBindings();
+        const keys = bindings[action] || [];
+        if (!keys.includes(key)) keys.push(key);
+        InputConfig.setKeyboardBinding(action, keys);
+        closeModal();
+        highlightBoundKeys();
+        buildActionLegend();
+    });
+}
+
+// 3) Clic sur le X d'une touche LIÉE → délier + proposer réassociation
+function onUnbindKey(key, currentAction) {
+    const label = keyDisplayName(key);
+    const actionLabel = ACTION_SHORT_LABELS[currentAction] || currentAction;
+
+    // Délier immédiatement
+    const bindings = InputConfig.getKeyboardBindings();
+    const prevKeys = bindings[currentAction].filter(k => k !== key);
+    InputConfig.setKeyboardBinding(currentAction, prevKeys);
+    highlightBoundKeys();
+    buildActionLegend();
+
+    // Proposer de réassocier l'action à une autre touche
+    const unboundKeys = getUnboundKeys();
+    if (unboundKeys.length === 0) {
+        closeModal();
+        return;
+    }
+
+    let options = '';
+    for (const k of unboundKeys) {
+        options += '<option value="' + k + '">' + keyDisplayName(k) + '</option>';
+    }
+    const modal = createModal(
+        '<h3>Touche ' + label + ' retirée</h3>' +
+        '<p>L\'action <b>' + actionLabel + '</b> n\'a plus de touche associée.<br>Voulez-vous l\'associer à une autre touche ?</p>' +
+        '<select id="modal-key-select">' + options + '</select>' +
+        '<div class="modal-buttons">' +
+            '<button class="btn-modal btn-cancel">Non merci</button>' +
+            '<button class="btn-modal btn-confirm">Confirmer</button>' +
+        '</div>'
+    );
+    modal.querySelector('.btn-cancel').addEventListener('click', () => {
+        closeModal();
+    });
+    modal.querySelector('.btn-confirm').addEventListener('click', () => {
+        const newKey = modal.querySelector('#modal-key-select').value;
+        const newBindings = InputConfig.getKeyboardBindings();
+        const actionKeys = newBindings[currentAction] || [];
+        if (!actionKeys.includes(newKey)) actionKeys.push(newKey);
+        InputConfig.setKeyboardBinding(currentAction, actionKeys);
+        closeModal();
+        highlightBoundKeys();
+        buildActionLegend();
+    });
+}
+
+// Gestionnaire de clics sur les touches du clavier visuel
+document.querySelectorAll('#keyboard-visual .key[data-key]').forEach(el => {
+    el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (e.target.classList.contains('key-unbind')) return; // géré par le bouton X
+        const key = el.getAttribute('data-key').toLowerCase();
+        if (key === 'capslock' || key === 'meta' || key === 'altgraph' || key === 'tab' || key === 'backspace' || key === 'enter') return;
+
+        // Vérifier si la touche est déjà attribuée
+        const bindings = InputConfig.getKeyboardBindings();
+        let currentAction = null;
         for (const action in bindings) {
-            if (bindings[action].includes(key)) {
-                // Flash the legend item
-                const item = document.querySelector(`.legend-item[data-action="${action}"]`);
-                if (item) {
-                    item.style.transform = 'scale(1.05)';
-                    item.style.borderColor = '#39ff14';
-                    setTimeout(() => { item.style.transform = ''; item.style.borderColor = ''; }, 600);
-                }
-                break;
+            if (bindings[action].includes(key)) { currentAction = action; break; }
+        }
+
+        if (currentAction) {
+            // Touche liée → flash la légende correspondante
+            const item = document.querySelector('.legend-item[data-action="' + currentAction + '"]');
+            if (item) {
+                item.style.transform = 'scale(1.05)';
+                item.style.borderColor = '#39ff14';
+                setTimeout(() => { item.style.transform = ''; item.style.borderColor = ''; }, 600);
             }
+        } else {
+            // Touche libre → proposer d'attribuer une action
+            onUnboundKeyClick(key);
         }
     });
 });

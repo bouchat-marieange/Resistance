@@ -1182,17 +1182,22 @@ setTimeout(async () => {
     } catch (e) {
         console.warn('Chargement éditeur échoué:', e.message);
     }
-    initEditor();
-    if (typeof initEditorObjectsListeners === 'function') initEditorObjectsListeners();
-    initAccordions();
-    await bootstrapFromFiles();
-    await loadProjectOnStartup();
+    try {
+        initEditor();
+        if (typeof initEditorObjectsListeners === 'function') initEditorObjectsListeners();
+        initAccordions();
+        await bootstrapFromFiles();
+        await loadProjectOnStartup();
 
-    if (interactionMode === 'game') {
-        hideAllLightHelpers();
+        if (interactionMode === 'game') {
+            hideAllLightHelpers();
+        }
+    } catch (e) {
+        console.warn("⚠️ Erreur lors du chargement de la scène:", e);
+    } finally {
+        // Masquer l'écran de chargement DANS TOUS LES CAS
+        hideLoadingScreen();
     }
-
-    hideLoadingScreen();
 }, 2000);
 
 window.onload = init;
