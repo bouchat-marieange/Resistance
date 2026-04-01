@@ -5,12 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shape Sorter 3D - Expert WebGL</title>
 
-    <!-- Tailwind CSS + DaisyUI -->
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.14/dist/full.min.css" rel="stylesheet" type="text/css" />
-    <script src="https://cdn.tailwindcss.com"></script>
-
-    <!-- CSS éditeur autonome -->
-    <link rel="stylesheet" href="editor/editor.css">
+    <!-- Tailwind/DaisyUI et éditeur chargés uniquement via editor.html -->
 
     <style>
         body {
@@ -141,16 +136,6 @@
         #volume-icon { top: 56px; width: 40px; height: 40px; }
         #info-icon:hover, #volume-icon:hover { background: rgba(60,60,60,0.9); }
 
-        /* Toggle editor button */
-        #toggle-editor-btn {
-            position: fixed; top: 16px; right: 16px; z-index: 100;
-            background: rgba(30,30,30,0.7); border: none; border-radius: 50%;
-            width: 36px; height: 36px; cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
-            transition: background 0.2s;
-        }
-        #toggle-editor-btn:hover { background: rgba(60,60,60,0.9); }
-
         /* Étiquette dimensions objet sélectionné (masquée par défaut) */
         #object-dimensions-label {
             position: fixed;
@@ -202,11 +187,6 @@
     </div>
 </div>
 
-<!-- Bouton discret pour activer le mode éditeur -->
-<button id="toggle-editor-btn" title="Mode Éditeur">
-    <img src="icones/wrench.svg" alt="Éditeur" width="20" height="20" style="filter: brightness(0) invert(1);">
-</button>
-
 <!-- Icône volume cliquable -->
 <div id="volume-icon" title="Réglage du volume">
     <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
@@ -233,32 +213,6 @@
     </div>
 </div>
 
-<!-- Switch Mode Jeu/Développeur FLOTTANT -->
-<button id="floating-mode-switch" title="Basculer entre mode Jeu et mode Développeur" style="position: fixed; bottom: 20px; right: 20px; background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 20px; width: 40px; height: 80px; padding: 4px; cursor: pointer; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.3s;">
-    <div id="floating-switch-indicator" style="position: absolute; top: 4px; width: 32px; height: 36px; background: #ff6b35; border-radius: 16px; transition: all 0.3s; display: flex; align-items: center; justify-content: center;">
-        <img src="icones/gamepad-2.svg" width="20" height="20" style="filter: brightness(0) invert(1);">
-    </div>
-    <div style="width: 32px; height: 36px; display: flex; align-items: center; justify-content: center; z-index: 1;"></div>
-    <div style="width: 32px; height: 36px; display: flex; align-items: center; justify-content: center; z-index: 1;">
-        <img src="icones/code-xml.svg" width="20" height="20" style="filter: brightness(0) invert(1);">
-    </div>
-</button>
-
-<!-- Bouton pour plier/déplier le panneau éditeur -->
-<button id="toggle-panel-collapse" title="Plier/Déplier le panneau">
-    <img src="icones/circle-chevron-right.svg" alt="Déplier" width="24" height="24" style="filter: brightness(0) invert(1);">
-</button>
-
-<!-- Étiquette dimensions objet sélectionné -->
-<div id="object-dimensions-label">
-    <div class="dim-title" id="dim-label-name">Objet</div>
-    <div class="dim-row">
-        <span>L: <span class="dim-val" id="dim-label-w">-</span><span class="dim-unit"> cm</span></span>
-        <span>l: <span class="dim-val" id="dim-label-d">-</span><span class="dim-unit"> cm</span></span>
-        <span>H: <span class="dim-val" id="dim-label-h">-</span><span class="dim-unit"> cm</span></span>
-    </div>
-</div>
-
 <div id="ui-container">
     <div id="score-display">Score: <span id="score-val">0</span> / 5</div>
     <div id="controls-info">
@@ -277,9 +231,6 @@
 
 <div id="feedback-msg">BRAVO !</div>
 <div id="door-msg">TOC TOC !</div>
-
-<!-- Panneau éditeur chargé dynamiquement -->
-<div id="editor-container"></div>
 
 <!-- ========== SCORE & PROFIL JOUEUR ========== -->
 <div id="game-score" style="position:fixed; bottom:16px; left:16px; z-index:100; background:rgba(30,30,30,0.8); border:1px solid #333; border-radius:8px; padding:8px 14px; display:none;">
@@ -338,12 +289,11 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/loaders/GLTFLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/controls/OrbitControls.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/controls/TransformControls.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/utils/BufferGeometryUtils.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/polygon-clipping@0.15.7/dist/polygon-clipping.umd.min.js"></script>
 
-<!-- Variables d'état éditeur (doit être chargé après THREE.js, avant le script inline) -->
-<script src="editor/editor-state.js"></script>
+<!-- Scene Loader (reconstruction scène sans éditeur) -->
+<script src="scene-loader.js"></script>
 
 <script>
 /**
@@ -365,8 +315,7 @@ let walls = [];
 let characterCollisionProxies = [];
 let savedNabyTransform = null;
 let nabyRawHeight = null;
-let _cinematicPlaying = false;
-let _currentCinematicZone = null;
+// _cinematicPlaying et _currentCinematicZone sont déjà déclarés dans scene-loader.js
 let mixer; // Animation mixer (non utilisé dans room_2 mais référencé par l'éditeur)
 let isMoving = false;
 let collisionCacheCounter = 0;
@@ -453,28 +402,6 @@ function createCharacterCollisionProxy(character) { /* stub - pas de collision p
 function removeCharacterCollisionProxy(character) { /* stub */ }
 function updateCharacterCollisionProxy(entry) { /* stub */ }
 function loadPermanentObjects() { /* stub - pas d'objets permanents dans room_2 */ }
-
-// Toggle du panneau éditeur (plier/déplier)
-document.getElementById('toggle-panel-collapse').addEventListener('click', function() {
-    const panel = document.getElementById('editor-panel');
-    const btn = document.getElementById('toggle-panel-collapse');
-
-    isPanelCollapsed = !isPanelCollapsed;
-
-    const btnImg = btn.querySelector('img');
-
-    if (isPanelCollapsed) {
-        panel.classList.add('collapsed');
-        btn.classList.add('collapsed');
-        btnImg.src = 'icones/circle-chevron-left.svg';
-        btn.title = 'Déplier le panneau';
-    } else {
-        panel.classList.remove('collapsed');
-        btn.classList.remove('collapsed');
-        btnImg.src = 'icones/circle-chevron-right.svg';
-        btn.title = 'Plier le panneau';
-    }
-});
 
 // Toggle volume popup
 document.getElementById('volume-icon').addEventListener('click', function() {
@@ -1168,49 +1095,28 @@ function animate() {
     renderer.render(scene, camera);
 }
 
-// Charger le HTML de l'éditeur puis initialiser
+// Charger la scène via scene-loader.js
 setTimeout(async () => {
-    // Chargement dynamique du panneau éditeur
+    const safetyTimeout = setTimeout(() => {
+        console.warn('⏱️ Timeout de sécurité — masquage du loading screen');
+        hideLoadingScreen();
+    }, 15000);
+
     try {
-        const editorResp = await fetch('editor/editor-panel.html');
-        if (editorResp.ok) {
-            const editorHTML = await editorResp.text();
-            document.getElementById('editor-container').innerHTML = editorHTML;
-        } else {
-            console.warn('Impossible de charger editor/editor-panel.html:', editorResp.status);
-        }
-    } catch (e) {
-        console.warn('Chargement éditeur échoué:', e.message);
-    }
-    try {
-        initEditor();
-        if (typeof initEditorObjectsListeners === 'function') initEditorObjectsListeners();
-        initAccordions();
+        currentRoomName = 'room_2';
         await bootstrapFromFiles();
         await loadProjectOnStartup();
-
-        if (interactionMode === 'game') {
-            hideAllLightHelpers();
-        }
     } catch (e) {
         console.warn("⚠️ Erreur lors du chargement de la scène:", e);
     } finally {
-        // Masquer l'écran de chargement DANS TOUS LES CAS
+        clearTimeout(safetyTimeout);
         hideLoadingScreen();
     }
-}, 2000);
+}, 500);
 
 window.onload = init;
 </script>
 
-<!-- Scripts éditeur autonome -->
-<script src="editor/editor-utils.js"></script>
-<script src="editor/editor-core.js"></script>
-<script src="editor/editor-objects.js"></script>
-<script src="editor/editor-camera-lights.js"></script>
-<script src="editor/editor-audio.js"></script>
-<script src="editor/editor-save.js"></script>
-<script src="editor/editor-floorplan.js"></script>
 
 </body>
 </html>

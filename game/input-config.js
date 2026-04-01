@@ -7,7 +7,7 @@
 
 const InputConfig = (function() {
     const STORAGE_KEY_BASE = 'resistance-input-config';
-    const CONFIG_VERSION = 2; // Incrementer pour forcer le reset des bindings par defaut
+    const CONFIG_VERSION = 4; // Incrementer pour forcer le reset des bindings par defaut
 
     // Cle de stockage liee au pseudo actif
     function getStorageKey() {
@@ -41,8 +41,8 @@ const InputConfig = (function() {
     const DEFAULT_KEYBOARD = {
         forward:   ['z'],
         backward:  ['s'],
-        left:      ['q'],
-        right:     ['d'],
+        left:      ['q', 'a'],
+        right:     ['d', 'e'],
         jump:      [' '],
         crouch:    ['control'],
         run:       ['shift'],
@@ -70,14 +70,14 @@ const InputConfig = (function() {
         backward:  { type: 'axis', index: 1, direction: 1 },   // Left Stick Down
         left:      { type: 'axis', index: 0, direction: -1 },  // Left Stick Left
         right:     { type: 'axis', index: 0, direction: 1 },   // Left Stick Right
-        jump:      { type: 'button', index: 0 },               // Cross (X)
-        crouch:    { type: 'button', index: 1 },               // Circle (O)
-        run:       { type: 'button', index: 10 },              // L3 (click stick)
+        jump:      { type: 'button', index: 0 },               // Croix (X)
+        crouch:    { type: 'button', index: 1 },               // Rond (O)
+        run:       { type: 'button', index: 4 },               // L1
         aim:       { type: 'button', index: 6 },               // L2
-        grab:      { type: 'button', index: 2 },               // Square
-        door:      { type: 'button', index: 3 },               // Triangle
-        map:       { type: 'button', index: 13 },              // D-pad Down
-        hints:     { type: 'button', index: 12 },              // D-pad Up
+        grab:      { type: 'button', index: 7 },               // R2
+        door:      { type: 'button', index: 5 },               // R1
+        map:       { type: 'button', index: 14 },              // D-pad Gauche
+        hints:     { type: 'button', index: 10 },              // L3 (clic stick gauche)
         inventory: { type: 'button', index: 9 },               // Options
         pause:     { type: 'button', index: 8 }                // Share
     };

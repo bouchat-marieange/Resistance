@@ -1089,7 +1089,7 @@ document.querySelectorAll('.gp-label').forEach(el => {
     if (el.textContent.trim() === '---') el.classList.add('unassigned');
 });
 
-// Update gamepad connection status
+// Update gamepad connection status + live axis/button debug
 setInterval(() => {
     const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
     let found = false;
@@ -1097,15 +1097,44 @@ setInterval(() => {
         if (g) {
             found = true;
             document.getElementById('gp-dot').classList.add('connected');
-            document.getElementById('gp-status-text').textContent = '&#10003; ' + g.id;
+            document.getElementById('gp-status-text').innerHTML = '&#10003; ' + g.id;
+
+            // Live debug panel — axes and buttons
+            let debugEl = document.getElementById('gp-debug-panel');
+            if (!debugEl) {
+                debugEl = document.createElement('div');
+                debugEl.id = 'gp-debug-panel';
+                debugEl.style.cssText = 'background:#111;border:1px solid #39ff14;border-radius:8px;padding:12px 16px;margin:10px auto;max-width:700px;font-family:monospace;font-size:12px;color:#aaa;';
+                debugEl.innerHTML = '<div style="color:#39ff14;font-weight:bold;margin-bottom:6px;">Diagnostic manette (temps reel)</div><div id="gp-debug-axes"></div><div id="gp-debug-buttons" style="margin-top:6px;"></div>';
+                // Insert after the status bar
+                const statusBar = document.querySelector('.gp-status');
+                if (statusBar) statusBar.after(debugEl);
+            }
+            // Axes
+            const axesHtml = g.axes.map((v, i) => {
+                const bar = Math.round(Math.abs(v) * 20);
+                const color = Math.abs(v) > 0.15 ? '#39ff14' : '#444';
+                return `<span style="display:inline-block;width:160px;">Axe ${i}: <span style="color:${color}">${v >= 0 ? '+' : ''}${v.toFixed(3)}</span> ${'█'.repeat(bar)}</span>`;
+            }).join('');
+            document.getElementById('gp-debug-axes').innerHTML = axesHtml;
+            // Pressed buttons
+            const pressed = [];
+            for (let i = 0; i < g.buttons.length; i++) {
+                if (g.buttons[i].pressed) pressed.push('Btn ' + i + (g.buttons[i].value < 1 ? ' (' + g.buttons[i].value.toFixed(2) + ')' : ''));
+            }
+            document.getElementById('gp-debug-buttons').innerHTML = pressed.length > 0
+                ? 'Boutons actifs: <span style="color:#ff6b35;">' + pressed.join(', ') + '</span>'
+                : 'Boutons actifs: <span style="color:#555;">aucun</span>';
             break;
         }
     }
     if (!found) {
         document.getElementById('gp-dot').classList.remove('connected');
         document.getElementById('gp-status-text').textContent = 'Aucune manette detectee — branchez une manette USB ou Bluetooth';
+        const debugEl = document.getElementById('gp-debug-panel');
+        if (debugEl) debugEl.remove();
     }
-}, 1000);
+}, 100);
 
 document.getElementById('gp-deadzone').addEventListener('input', (e) => {
     const val = parseFloat(e.target.value);

@@ -5,11 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shape Sorter 3D - Expert WebGL</title>
 
-    <!-- Tailwind CSS + DaisyUI -->
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.14/dist/full.min.css" rel="stylesheet" type="text/css" />
-    <script src="https://cdn.tailwindcss.com"></script>
-
-    <!-- CSS éditeur chargé dynamiquement via Ctrl+Shift+C -->
+    <!-- Tailwind/DaisyUI et éditeur chargés uniquement via editor.html -->
 
     <style>
         /* ========== LOADING SCREEN ========== */
@@ -379,15 +375,8 @@
     </div>
 </div>
 
-<!-- Switch Mode Jeu/Développeur FLOTTANT (toujours visible) -->
-<button id="floating-mode-switch" title="Basculer entre mode Jeu et mode Développeur" style="position: fixed; bottom: 20px; right: 20px; background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 20px; width: 40px; height: 80px; padding: 4px; cursor: pointer; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.3s;">
-    <div id="floating-switch-indicator" style="position: absolute; top: 4px; width: 32px; height: 36px; background: #ff6b35; border-radius: 16px; transition: all 0.3s; display: flex; align-items: center; justify-content: center;">
-        <img src="icones/gamepad-2.svg" width="20" height="20" style="filter: brightness(0) invert(1);">
-    </div>
-    <div style="width: 32px; height: 36px; display: flex; align-items: center; justify-content: center; z-index: 1;"></div>
-    <div style="width: 32px; height: 36px; display: flex; align-items: center; justify-content: center; z-index: 1;">
-        <img src="icones/code-xml.svg" width="20" height="20" style="filter: brightness(0) invert(1);">
-    </div>
+<!-- Switch Mode Jeu/Développeur FLOTTANT (masqué en mode jeu pur) -->
+<button id="floating-mode-switch" title="Basculer entre mode Jeu et mode Développeur" style="display: none;">
 </button>
 
 <!-- Panneau d'aide / indices (masqué par défaut, affiché au clic sur l'icône) -->
@@ -395,11 +384,6 @@
     <button id="controls-info-close" onclick="document.getElementById('controls-info').classList.remove('visible');">&#10005;</button>
     <p style="margin:0; padding:8px 24px 8px 0; color:#a0a0a0; font-style:italic;">Ici s'afficheront les indices et informations d'aide.</p>
 </div>
-
-<!-- Éléments UI éditeur créés dynamiquement via Ctrl+Shift+C -->
-
-<!-- Panneau éditeur chargé dynamiquement depuis editor/editor-panel.html -->
-<div id="editor-container"></div>
 
 <!-- ========== SCORE & PROFIL JOUEUR ========== -->
 <div id="game-score" style="position:fixed; bottom:16px; left:16px; z-index:100; background:rgba(30,30,30,0.8); border:1px solid #333; border-radius:8px; padding:8px 14px; display:none;">
@@ -416,15 +400,19 @@
     <img src="icones/settings.svg" width="28" height="28" alt="Paramètres" style="filter: invert(1);">
 </div>
 
-<!-- ========== VISEUR MODE JEU ========== -->
-<div id="game-crosshair" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:500; pointer-events:none;">
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="12" cy="12" r="3" stroke="rgba(255,255,255,0.6)" stroke-width="1.5" fill="none"/>
-        <line x1="12" y1="2" x2="12" y2="8" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
-        <line x1="12" y1="16" x2="12" y2="22" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
-        <line x1="2" y1="12" x2="8" y2="12" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
-        <line x1="16" y1="12" x2="22" y2="12" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
+<!-- ========== VISEUR MODE JEU + LABEL INTERACTION ========== -->
+<div id="game-crosshair" style="position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:500; pointer-events:none; transition: opacity 0.2s;">
+    <svg id="crosshair-svg" width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="14" cy="14" r="3" stroke="rgba(255,255,255,0.7)" stroke-width="1.5" fill="none"/>
+        <line x1="14" y1="3" x2="14" y2="9" stroke="rgba(255,255,255,0.5)" stroke-width="1"/>
+        <line x1="14" y1="19" x2="14" y2="25" stroke="rgba(255,255,255,0.5)" stroke-width="1"/>
+        <line x1="3" y1="14" x2="9" y2="14" stroke="rgba(255,255,255,0.5)" stroke-width="1"/>
+        <line x1="19" y1="14" x2="25" y2="14" stroke="rgba(255,255,255,0.5)" stroke-width="1"/>
     </svg>
+</div>
+<div id="interaction-label" style="position:fixed; top:calc(50% + 28px); left:50%; transform:translateX(-50%); z-index:500; pointer-events:none; opacity:0; transition:opacity 0.2s; text-align:center; white-space:nowrap;">
+    <span id="interaction-label-text" style="background:rgba(0,0,0,0.7); color:#FFD700; font-size:13px; font-family:sans-serif; padding:4px 12px; border-radius:4px; display:inline-block;"></span>
+    <div id="interaction-label-hint" style="color:rgba(255,255,255,0.5); font-size:10px; margin-top:2px; font-family:sans-serif;"></div>
 </div>
 
 <!-- ========== OVERLAY SYSTEM ========== -->
@@ -466,9 +454,11 @@
 <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/loaders/GLTFLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/loaders/DRACOLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/controls/OrbitControls.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/controls/TransformControls.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/utils/BufferGeometryUtils.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/polygon-clipping@0.15.7/dist/polygon-clipping.umd.min.js"></script>
+
+<!-- Scene Loader (reconstruction scène sans éditeur) -->
+<script src="scene-loader.js"></script>
 
 <!-- Score Manager (cross-rooms) -->
 <script src="game/score-manager.js"></script>
@@ -837,6 +827,7 @@ function loadAnimatedCharacter() {
             babyModel.userData.referenceWidthAtScale1 = rawVisualSize.x;
             babyModel.userData.referenceDepthAtScale1 = rawVisualSize.z;
             babyModel.userData.isCharacter = true;
+            babyModel.userData.editorName = 'Naby';
 
             const TARGET_HEIGHT = 1.70; // Hauteur cible par défaut en mètres
 
@@ -1122,45 +1113,38 @@ function onPointerDown(event) {
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
     raycaster.setFromCamera(mouse, camera);
 
-    {
-        // Vérifier les zones d'interaction en mode Jeu
-        if (interactionMode === 'game') {
-            // Double-clic detection
-            const now = performance.now();
-            if (lastClickTime && (now - lastClickTime) < 400) {
-                checkZoneInteraction(event, 'double-click');
-                lastClickTime = 0;
-                lastClickZone = null;
-            } else {
-                lastClickTime = now;
-                checkZoneInteraction(event, 'click');
+    // Vérifier les zones d'interaction en mode Jeu
+    if (interactionMode === 'game') {
+        // Utiliser le système de crosshair : interagir avec la cible visée
+        if (_crosshairTargetZone) {
+            executeZoneAction(_crosshairTargetZone);
+        }
+        // Hold: commencer le tracking
+        const now = performance.now();
+        heldZone = null;
+        holdStartTime = now;
+        for (const zone of interactionZones) {
+            if ((zone.triggerType || 'click') !== 'hold') continue;
+            const isMechanical = ['turn-button', 'lever', 'fader'].includes(zone.actionType);
+            if (!zone.actionValue && !isMechanical) continue;
+            const distance = getZoneDistance(zone, camera.position);
+            const interactRange = (zone.surfaceMode === 'wall' || zone.surfaceMode === 'object' || zone.surfaceMode === 'character') ? 2.5 : 1.5;
+            if (distance < interactRange) {
+                heldZone = zone;
+                break;
             }
-            // Hold: commencer le tracking
-            heldZone = null;
-            holdStartTime = now;
-            for (const zone of interactionZones) {
-                if ((zone.triggerType || 'click') !== 'hold') continue;
-                const isMechanical = ['turn-button', 'lever', 'fader'].includes(zone.actionType);
-                if (!zone.actionValue && !isMechanical) continue;
-                const distance = getZoneDistance(zone, camera.position);
-                const interactRange = (zone.surfaceMode === 'wall' || zone.surfaceMode === 'object' || zone.surfaceMode === 'character') ? 2.5 : 1.5;
-                if (distance < interactRange) {
-                    heldZone = zone;
+        }
+        // Vérifier les déclencheurs audio au clic
+        if (_audioMeshesDirty) { _rebuildAudioMeshes(); }
+        const audioHits = raycaster.intersectObjects(_cachedAudioMeshes, false);
+        if (audioHits.length > 0) {
+            let hit = audioHits[0].object;
+            while (hit) {
+                if (hit.userData.isImported && importedObjects.includes(hit)) {
+                    checkAudioClickTriggers(hit.userData.editorName || hit.name || '');
                     break;
                 }
-            }
-            // Vérifier les déclencheurs audio au clic (cache mis à jour à chaque ajout d'objet)
-            if (_audioMeshesDirty) { _rebuildAudioMeshes(); }
-            const audioHits = raycaster.intersectObjects(_cachedAudioMeshes, false);
-            if (audioHits.length > 0) {
-                let hit = audioHits[0].object;
-                while (hit) {
-                    if (hit.userData.isImported && importedObjects.includes(hit)) {
-                        checkAudioClickTriggers(hit.userData.editorName || hit.name || '');
-                        break;
-                    }
-                    hit = hit.parent;
-                }
+                hit = hit.parent;
             }
         }
     }
@@ -1522,6 +1506,18 @@ function handleSceneMovement(delta) {
     if (InputConfig.isActionPressed('left', keysPressed))     { moveX -= side.x * moveSpeed; moveZ -= side.z * moveSpeed; }
     if (InputConfig.isActionPressed('right', keysPressed))    { moveX += side.x * moveSpeed; moveZ += side.z * moveSpeed; }
 
+    // Manette — stick gauche (aussi en mode développeur)
+    if (GamepadManager.connected) {
+        const gpFwd = GamepadManager.getActionValue('forward');
+        const gpBack = GamepadManager.getActionValue('backward');
+        const gpLeft = GamepadManager.getActionValue('left');
+        const gpRight = GamepadManager.getActionValue('right');
+        if (gpFwd > 0)   { moveX += direction.x * moveSpeed * gpFwd;  moveZ += direction.z * moveSpeed * gpFwd; }
+        if (gpBack > 0)  { moveX -= direction.x * moveSpeed * gpBack; moveZ -= direction.z * moveSpeed * gpBack; }
+        if (gpLeft > 0)  { moveX -= side.x * moveSpeed * gpLeft;      moveZ -= side.z * moveSpeed * gpLeft; }
+        if (gpRight > 0) { moveX += side.x * moveSpeed * gpRight;     moveZ += side.z * moveSpeed * gpRight; }
+    }
+
     if (moveX === 0 && moveZ === 0) return;
 
     const nextX = camera.position.x + moveX;
@@ -1648,27 +1644,35 @@ function animate() {
 
     handleSceneMovement(delta);
 
-    // GAMEPAD: Rotation caméra via stick droit
-    if (GamepadManager.connected && interactionMode === 'game') {
+    controls.update();
+
+    // GAMEPAD: Rotation caméra via stick droit (tous modes)
+    // Appliqué APRÈS controls.update() pour ne pas être écrasé par OrbitControls
+    if (GamepadManager.connected) {
         const rs = GamepadManager.getRightStick();
         if (rs.x !== 0 || rs.y !== 0) {
-            const sens = InputConfig.gamepadCameraSensitivity * 0.02;
-            // Rotation horizontale (yaw)
-            const angle = -rs.x * sens;
-            const offset = new THREE.Vector3().subVectors(controls.target, camera.position);
-            offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), angle);
-            controls.target.copy(camera.position).add(offset);
-            // Rotation verticale (pitch) — limitée
-            const pitchAngle = -rs.y * sens * 0.6;
-            const dir = new THREE.Vector3().subVectors(controls.target, camera.position).normalize();
-            const newY = Math.max(-0.8, Math.min(0.8, dir.y + pitchAngle));
-            dir.y = newY;
-            dir.normalize();
-            controls.target.copy(camera.position).add(dir);
+            const sens = InputConfig.gamepadCameraSensitivity;
+            const rotateX = -rs.x * sens * 0.03;  // Horizontal (yaw)
+            const rotateY = -rs.y * sens * 0.015;  // Vertical (pitch)
+
+            const dir = new THREE.Vector3().subVectors(controls.target, camera.position);
+            const distance = Math.max(dir.length(), 0.001);
+
+            const theta = Math.atan2(dir.x, dir.z);
+            const phi = Math.acos(Math.max(-1, Math.min(1, dir.y / distance)));
+
+            const newTheta = theta + rotateX;
+            const newPhi = Math.max(0.3, Math.min(2.8, phi + rotateY));
+
+            const newDir = new THREE.Vector3(
+                distance * Math.sin(newPhi) * Math.sin(newTheta),
+                distance * Math.cos(newPhi),
+                distance * Math.sin(newPhi) * Math.cos(newTheta)
+            );
+            controls.target.copy(camera.position).add(newDir);
+            camera.lookAt(controls.target);
         }
     }
-
-    controls.update();
 
     // MODE JEU: Head bob, hauteur, collisions, zones, audio de pas
     if (interactionMode === 'game') {
@@ -1720,11 +1724,18 @@ function animate() {
         }
     }
 
+    // CROSSHAIR HOVER: Détecter si le viseur pointe sur un interactable
+    if (interactionMode === 'game') {
+        updateCrosshairHover();
+    }
+
     // GAMEPAD: Actions boutons (fronts montants uniquement)
     if (GamepadManager.connected && interactionMode === 'game') {
         if (GamepadManager.isActionJustPressed('grab')) {
-            // Simuler un clic d'interaction au centre de l'écran
-            simulateInteraction();
+            // Interagir avec la cible visée par le crosshair
+            if (_crosshairTargetZone) {
+                executeZoneAction(_crosshairTargetZone);
+            }
         }
         // Mettre à jour les états précédents pour la détection des fronts
         GamepadManager.updatePrevStates();
@@ -1734,26 +1745,111 @@ function animate() {
 }
 
 /**
- * Simule une interaction (grab) au centre de l'écran — utilisé par la manette
+ * SYSTÈME DE VISÉE CROSSHAIR — détecte ce que le joueur vise au centre de l'écran
+ */
+var _crosshairTargetZone = null;
+var _crosshairRaycaster = new THREE.Raycaster();
+var _crosshairLabelEl = null;
+var _crosshairLabelText = null;
+var _crosshairLabelHint = null;
+var _crosshairSvg = null;
+
+function _initCrosshairRefs() {
+    if (!_crosshairLabelEl) _crosshairLabelEl = document.getElementById('interaction-label');
+    if (!_crosshairLabelText) _crosshairLabelText = document.getElementById('interaction-label-text');
+    if (!_crosshairLabelHint) _crosshairLabelHint = document.getElementById('interaction-label-hint');
+    if (!_crosshairSvg) _crosshairSvg = document.getElementById('crosshair-svg');
+}
+
+function updateCrosshairHover() {
+    _initCrosshairRefs();
+    _crosshairRaycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+
+    let bestZone = null;
+    let bestLabel = '';
+    let bestDist = Infinity;
+
+    for (const zone of interactionZones) {
+        if (!zone.actionValue && !['turn-button', 'lever', 'fader'].includes(zone.actionType)) continue;
+
+        const distance = getZoneDistance(zone, camera.position);
+        const interactRange = (zone.surfaceMode === 'wall' || zone.surfaceMode === 'object' || zone.surfaceMode === 'character') ? 2.5 : 1.5;
+        if (distance >= interactRange) continue;
+
+        // Tester si le crosshair vise cet interactable
+        let hit = false;
+        let label = zone.customName || '';
+
+        if (zone.surfaceMode === 'character' && zone.characterRef) {
+            const char = findCharacterByRef(zone.characterRef);
+            if (char) {
+                // Tester le hotspot pulsatile (priorité)
+                const hlData = highlightedInteractionObjects.get(char.uuid);
+                if (hlData && hlData.hotspot) {
+                    hlData.hotspot.updateMatrixWorld(true);
+                    const hits = _crosshairRaycaster.intersectObject(hlData.hotspot, false);
+                    if (hits.length > 0) { hit = true; bestDist = hits[0].distance; }
+                }
+                // Fallback: tester les meshes du personnage
+                if (!hit) {
+                    const meshes = [];
+                    char.traverse(c => { if (c.isMesh) meshes.push(c); });
+                    const hits = _crosshairRaycaster.intersectObjects(meshes, false);
+                    if (hits.length > 0 && hits[0].distance < interactRange) { hit = true; bestDist = hits[0].distance; }
+                }
+                if (!label) label = char.userData.editorName || char.name || 'Personnage';
+            }
+        } else if (zone.surfaceMode === 'object' && zone.objectRef) {
+            const obj = findObjectByRef(zone.objectRef);
+            if (obj) {
+                const meshes = [];
+                obj.traverse(c => { if (c.isMesh) meshes.push(c); });
+                const hits = _crosshairRaycaster.intersectObjects(meshes, false);
+                if (hits.length > 0 && hits[0].distance < interactRange) { hit = true; bestDist = hits[0].distance; }
+                if (!label) label = obj.userData.editorName || obj.name || 'Objet';
+            }
+        } else if (zone.surfaceMode === 'floor' || zone.surfaceMode === 'ceiling' || zone.surfaceMode === 'wall') {
+            // Pour les zones sol/mur, vérifier que le joueur est à portée (pas de raycast mesh)
+            hit = true;
+            bestDist = distance;
+            if (!label) label = zone.actionType === 'video' ? 'Vidéo' : zone.actionType === 'link' ? 'Aller' : 'Interagir';
+        }
+
+        if (hit && distance < bestDist + 0.5) {
+            bestZone = zone;
+            bestLabel = label;
+        }
+    }
+
+    _crosshairTargetZone = bestZone;
+
+    // Mettre à jour l'UI du crosshair
+    if (_crosshairSvg && _crosshairLabelEl) {
+        if (bestZone) {
+            // Crosshair doré = cible verrouillée
+            _crosshairSvg.querySelectorAll('circle').forEach(c => { c.setAttribute('stroke', '#FFD700'); c.setAttribute('stroke-width', '2'); });
+            _crosshairSvg.querySelectorAll('line').forEach(l => l.setAttribute('stroke', 'rgba(255,215,0,0.7)'));
+            // Label
+            const actionIcon = bestZone.actionType === 'video' ? '▶ ' : bestZone.actionType === 'message' ? '💬 ' : bestZone.actionType === 'link' ? '➜ ' : '⬡ ';
+            if (_crosshairLabelText) _crosshairLabelText.textContent = actionIcon + bestLabel;
+            const isGamepad = GamepadManager && GamepadManager.connected;
+            if (_crosshairLabelHint) _crosshairLabelHint.textContent = isGamepad ? 'R2 pour interagir' : 'Clic pour interagir';
+            _crosshairLabelEl.style.opacity = '1';
+        } else {
+            // Crosshair blanc = rien visé
+            _crosshairSvg.querySelectorAll('circle').forEach(c => { c.setAttribute('stroke', 'rgba(255,255,255,0.7)'); c.setAttribute('stroke-width', '1.5'); });
+            _crosshairSvg.querySelectorAll('line').forEach(l => l.setAttribute('stroke', 'rgba(255,255,255,0.5)'));
+            _crosshairLabelEl.style.opacity = '0';
+        }
+    }
+}
+
+/**
+ * Simule une interaction (grab) au centre de l'écran — souris ou manette
  */
 function simulateInteraction() {
-    const raycaster = new THREE.Raycaster();
-    raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
-    if (typeof getCollisionMeshes === 'function') {
-        const meshes = getCollisionMeshes();
-        const intersects = raycaster.intersectObjects(meshes, true);
-        if (intersects.length > 0) {
-            const hit = intersects[0];
-            // Chercher si l'objet touché est dans une zone d'interaction
-            for (const zone of interactionZones) {
-                if (zone.mesh === hit.object || (hit.object.parent && zone.mesh === hit.object.parent)) {
-                    if (zone.triggerType === 'click' && typeof triggerZoneAction === 'function') {
-                        triggerZoneAction(zone);
-                    }
-                    break;
-                }
-            }
-        }
+    if (_crosshairTargetZone) {
+        executeZoneAction(_crosshairTargetZone);
     }
 }
 
@@ -1854,26 +1950,20 @@ ScoreManager.init('room_1');
 
 /**
  * ============================================
- * CHARGEMENT DU JEU (sans éditeur)
+ * CHARGEMENT DU JEU (via scene-loader.js)
  * ============================================
- * Charge les scripts de sauvegarde pour reconstruire la scène
- * (murs, objets, lumières) sans charger l'UI de l'éditeur.
+ * Reconstruit la scène (murs, objets, lumières, zones)
+ * sans charger l'éditeur. Fonctions fournies par scene-loader.js.
  */
 setTimeout(async () => {
+    // Timeout de sécurité : masquer le loading screen au bout de 15s max
+    const safetyTimeout = setTimeout(() => {
+        console.warn('⏱️ Timeout de sécurité — masquage du loading screen');
+        hideLoadingScreen();
+    }, 15000);
+
     try {
-        // Charger editor-state en premier (définit les variables globales)
-        await loadScript('editor/editor-state.js');
         currentRoomName = 'room_1';
-        // Charger les modules indépendants en parallèle pour accélérer le démarrage
-        await Promise.all([
-            loadScript('editor/editor-utils.js'),
-            loadScript('editor/editor-objects.js'),
-            loadScript('editor/editor-camera-lights.js'),
-            loadScript('editor/editor-audio.js'),
-            loadScript('editor/editor-floorplan.js')
-        ]);
-        // editor-save dépend des modules ci-dessus, charger en dernier
-        await loadScript('editor/editor-save.js');
 
         // Bootstrap: charger les données de scène depuis fichiers/IndexedDB
         await bootstrapFromFiles();
@@ -1898,230 +1988,14 @@ setTimeout(async () => {
     } catch (e) {
         console.warn("⚠️ Erreur lors du chargement de la scène:", e);
     } finally {
+        clearTimeout(safetyTimeout);
         // Masquer l'écran de chargement DANS TOUS LES CAS
         hideLoadingScreen();
     }
 }, 500);
 
-/**
- * ============================================
- * SECRET EDITOR LOADING (Ctrl+Shift+C)
- * ============================================
- */
-var editorLoaded = false;
-var editorActive = false;
-var secretDialogOpen = false;
-
-document.addEventListener('keydown', function(e) {
-    if (e.ctrlKey && e.shiftKey && e.code === 'KeyC') {
-        e.preventDefault();
-        if (!secretDialogOpen) openSecretDialog();
-    }
-});
-
-function openSecretDialog() {
-    secretDialogOpen = true;
-    var overlay = document.createElement('div');
-    overlay.id = 'secret-overlay';
-    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:99999;display:flex;align-items:center;justify-content:center;';
-
-    if (editorLoaded && editorActive) {
-        overlay.innerHTML = '<div style="background:rgba(18,18,22,0.95);border:1px solid #333;border-radius:12px;padding:20px 28px;text-align:center;">' +
-            '<div style="color:#39ff14;font-size:13px;margin-bottom:12px;font-family:monospace;">Éditeur actif</div>' +
-            '<button id="secret-deactivate-btn" style="background:#e74c3c;color:#fff;border:none;border-radius:8px;padding:10px 24px;font-size:14px;font-weight:600;cursor:pointer;margin-right:8px;">Désactiver l\'éditeur</button>' +
-            '<button id="secret-cancel-btn" style="background:#333;color:#aaa;border:1px solid #444;border-radius:8px;padding:10px 16px;font-size:14px;cursor:pointer;">Annuler</button>' +
-            '</div>';
-    } else {
-        overlay.innerHTML = '<input type="password" id="secret-input" placeholder="Code..." autofocus style="background:#111;color:#39ff14;border:1px solid #333;padding:12px 20px;border-radius:8px;font-size:18px;font-family:monospace;outline:none;text-align:center;width:200px;">';
-    }
-    document.body.appendChild(overlay);
-
-    if (editorLoaded && editorActive) {
-        document.getElementById('secret-deactivate-btn').addEventListener('click', function() {
-            overlay.remove(); secretDialogOpen = false;
-            deactivateEditor();
-        });
-        document.getElementById('secret-cancel-btn').addEventListener('click', function() {
-            overlay.remove(); secretDialogOpen = false;
-        });
-        overlay.addEventListener('click', function(e) {
-            if (e.target === overlay) { overlay.remove(); secretDialogOpen = false; }
-        });
-    } else {
-        var input = document.getElementById('secret-input');
-        input.focus();
-        input.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                if (input.value.toLowerCase() === 'editor') {
-                    overlay.remove(); secretDialogOpen = false;
-                    if (editorLoaded && !editorActive) { reactivateEditor(); }
-                    else { loadEditor(); }
-                } else {
-                    overlay.remove(); secretDialogOpen = false;
-                }
-            }
-            if (e.key === 'Escape') { overlay.remove(); secretDialogOpen = false; }
-        });
-        overlay.addEventListener('click', function(e) {
-            if (e.target === overlay) { overlay.remove(); secretDialogOpen = false; }
-        });
-    }
-}
-
-function loadScript(src) {
-    return new Promise(function(resolve, reject) {
-        var script = document.createElement('script');
-        script.src = src;
-        script.onload = resolve;
-        script.onerror = function() { console.warn('Failed to load:', src); reject(new Error('Script load failed: ' + src)); };
-        document.body.appendChild(script);
-    });
-}
-
-async function loadEditor() {
-    if (editorLoaded) return;
-    console.log('🔧 Activation de l\'éditeur...');
-
-    // 1. CSS éditeur
-    if (!document.querySelector('link[href="editor/editor.css"]')) {
-        var cssLink = document.createElement('link');
-        cssLink.rel = 'stylesheet';
-        cssLink.href = 'editor/editor.css';
-        document.head.appendChild(cssLink);
-    }
-
-    // 2. Panneau HTML de l'éditeur
-    try {
-        var resp = await fetch('editor/editor-panel.html');
-        if (resp.ok) {
-            document.getElementById('editor-container').innerHTML = await resp.text();
-        }
-    } catch (e) {
-        console.warn('Chargement editor-panel.html échoué:', e);
-    }
-
-    // 3. Ajouter les éléments UI de l'éditeur
-    addEditorUIElements();
-
-    // 4. Charger editor-core.js (seul script pas encore chargé au démarrage jeu)
-    await loadScript('editor/editor-core.js');
-
-    // 5. Initialiser l'éditeur
-    initEditor();
-    if (typeof initEditorObjectsListeners === 'function') initEditorObjectsListeners();
-    initAccordions();
-
-    // En mode jeu au démarrage, masquer les helpers
-    if (interactionMode === 'game') {
-        if (typeof hideAllLightHelpers === 'function') hideAllLightHelpers();
-    }
-
-    editorLoaded = true;
-    editorActive = true;
-    console.log('✅ Éditeur activé avec succès');
-}
-
-function addEditorUIElements() {
-    // Bouton toggle éditeur
-    if (!document.getElementById('toggle-editor-btn')) {
-        var btn = document.createElement('button');
-        btn.id = 'toggle-editor-btn';
-        btn.title = 'Mode Éditeur';
-        btn.style.cssText = 'position:fixed; top:16px; right:16px; z-index:100; background:rgba(30,30,30,0.7); border:none; border-radius:50%; width:36px; height:36px; cursor:pointer; display:flex; align-items:center; justify-content:center;';
-        btn.innerHTML = '<img src="icones/wrench.svg" alt="Éditeur" width="20" height="20" style="filter: brightness(0) invert(1);">';
-        document.body.appendChild(btn);
-    }
-
-    // Bouton plier/déplier panneau
-    if (!document.getElementById('toggle-panel-collapse')) {
-        var colBtn = document.createElement('button');
-        colBtn.id = 'toggle-panel-collapse';
-        colBtn.title = 'Plier/Déplier le panneau';
-        colBtn.innerHTML = '<img src="icones/circle-chevron-right.svg" alt="Déplier" width="24" height="24" style="filter: brightness(0) invert(1);">';
-        document.body.appendChild(colBtn);
-        colBtn.addEventListener('click', function() {
-            var panel = document.getElementById('editor-panel');
-            var btnEl = document.getElementById('toggle-panel-collapse');
-            isPanelCollapsed = !isPanelCollapsed;
-            var btnImg = btnEl.querySelector('img');
-            if (isPanelCollapsed) {
-                panel.classList.add('collapsed');
-                btnEl.classList.add('collapsed');
-                btnImg.src = 'icones/circle-chevron-left.svg';
-            } else {
-                panel.classList.remove('collapsed');
-                btnEl.classList.remove('collapsed');
-                btnImg.src = 'icones/circle-chevron-right.svg';
-            }
-        });
-    }
-
-    // Switch Mode Jeu/Développeur
-    if (!document.getElementById('floating-mode-switch')) {
-        var sw = document.createElement('button');
-        sw.id = 'floating-mode-switch';
-        sw.title = 'Mode Jeu / Développeur';
-        sw.style.cssText = 'position:fixed; bottom:20px; right:20px; background:#2a2a2a; border:1px solid #3a3a3a; border-radius:20px; width:40px; height:80px; padding:4px; cursor:pointer; z-index:100; display:flex; flex-direction:column; align-items:center; justify-content:center; transition:all 0.3s;';
-        sw.innerHTML = '<div id="floating-switch-indicator" style="position:absolute; top:4px; width:32px; height:36px; background:#ff6b35; border-radius:16px; transition:all 0.3s; display:flex; align-items:center; justify-content:center;">' +
-            '<img src="icones/gamepad-2.svg" width="20" height="20" style="filter: brightness(0) invert(1);">' +
-            '</div>' +
-            '<div style="width:32px; height:36px; display:flex; align-items:center; justify-content:center; z-index:1;"></div>' +
-            '<div style="width:32px; height:36px; display:flex; align-items:center; justify-content:center; z-index:1;">' +
-            '<img src="icones/code-xml.svg" width="20" height="20" style="filter: brightness(0) invert(1);">' +
-            '</div>';
-        document.body.appendChild(sw);
-    }
-
-    // Étiquette dimensions (masquée, pour l'éditeur)
-    if (!document.getElementById('object-dimensions-label')) {
-        var label = document.createElement('div');
-        label.id = 'object-dimensions-label';
-        label.style.display = 'none';
-        label.innerHTML = '<div class="dim-title" id="dim-label-name">Objet</div><div class="dim-row"><span>L: <span class="dim-val" id="dim-label-w">-</span><span class="dim-unit"> cm</span></span><span>l: <span class="dim-val" id="dim-label-d">-</span><span class="dim-unit"> cm</span></span><span>H: <span class="dim-val" id="dim-label-h">-</span><span class="dim-unit"> cm</span></span></div>';
-        document.body.appendChild(label);
-    }
-}
-
-function deactivateEditor() {
-    editorActive = false;
-    interactionMode = 'game';
-    editorMode = false;
-    // Masquer tous les éléments UI de l'éditeur
-    ['editor-panel', 'toggle-editor-btn', 'toggle-panel-collapse', 'floating-mode-switch', 'object-dimensions-label'].forEach(function(id) {
-        var el = document.getElementById(id);
-        if (el) el.style.display = 'none';
-    });
-    if (typeof hideAllLightHelpers === 'function') hideAllLightHelpers();
-    if (typeof floorPlanGrid !== 'undefined' && floorPlanGrid) floorPlanGrid.visible = false;
-    if (typeof updateControlsForMode === 'function') updateControlsForMode();
-    console.log('🔒 Éditeur désactivé');
-}
-
-function reactivateEditor() {
-    editorActive = true;
-    ['toggle-editor-btn', 'floating-mode-switch'].forEach(function(id) {
-        var el = document.getElementById(id);
-        if (el) el.style.display = '';
-    });
-    console.log('🔓 Éditeur réactivé');
-}
-
-// Fonction hideLoadingScreen (nécessaire avant le chargement de editor-utils.js)
-function hideLoadingScreen() {
-    var loadingScreen = document.getElementById('loading-screen');
-    if (!loadingScreen) return;
-    var bar = document.getElementById('loading-bar');
-    if (bar) { bar.style.animation = 'none'; bar.style.width = '100%'; }
-    setTimeout(function() {
-        loadingScreen.classList.add('fade-out');
-        setTimeout(function() { loadingScreen.style.display = 'none'; }, 600);
-    }, 400);
-    loadingScreenDismissed = true;
-}
 
 </script>
-
-<!-- Éditeur chargé dynamiquement via Ctrl+Shift+C -->
 
 </body>
 </html>
