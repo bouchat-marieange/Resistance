@@ -1129,14 +1129,18 @@ function createZoneOutlineMesh(x1, z1, x2, z2, y, type, color, opacity) {
     return group;
 }
 
-function createZoneLabelSprite(text, position) {
+function createZoneLabelSprite(text, position, options) {
+    options = options || {};
+    var scaleX = options.scaleX || 2;
+    var scaleY = options.scaleY || 0.25;
+    var yOffset = options.yOffset !== undefined ? options.yOffset : 0.5;
+
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     canvas.width = 512;
     canvas.height = 64;
 
-    ctx.fillStyle = 'rgba(0, 206, 209, 0.85)';
-    // roundRect fallback for older browsers
+    ctx.fillStyle = 'rgba(0, 206, 209, 0.75)';
     if (ctx.roundRect) {
         ctx.beginPath();
         ctx.roundRect(0, 0, canvas.width, canvas.height, 8);
@@ -1145,11 +1149,25 @@ function createZoneLabelSprite(text, position) {
         ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
 
+    // Texte du label
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 28px Segoe UI, sans-serif';
+    ctx.font = 'bold 26px Segoe UI, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+    ctx.fillText(text, canvas.width / 2 - 16, canvas.height / 2);
+
+    // Bouton croix × en haut à droite
+    const crossX = canvas.width - 32;
+    const crossY = 32;
+    ctx.fillStyle = 'rgba(255, 80, 80, 0.9)';
+    ctx.beginPath();
+    ctx.arc(crossX, crossY, 14, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 22px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('×', crossX, crossY);
 
     const texture = new THREE.CanvasTexture(canvas);
     const material = new THREE.SpriteMaterial({
@@ -1157,14 +1175,55 @@ function createZoneLabelSprite(text, position) {
     });
     const sprite = new THREE.Sprite(material);
     sprite.position.copy(position);
-    sprite.position.y += 0.5;
-    sprite.scale.set(2, 0.25, 1);
+    sprite.position.y += yOffset;
+    sprite.scale.set(scaleX, scaleY, 1);
     sprite.renderOrder = 999;
     sprite.userData.isGizmo = true;
     sprite.userData.isInteractionZone = true;
+    sprite.userData.isZoneLabel = true;
 
     return sprite;
 }
+
+// Masquer un label de zone quand on clique dessus (clic sur la croix)
+function _initZoneLabelClickHandler() {
+    if (_zoneLabelClickInitialized) return;
+    _zoneLabelClickInitialized = true;
+
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    document.addEventListener('click', function(event) {
+        if (interactionMode === 'game') return;
+
+        // Ignorer les clics sur le panneau de droite
+        if (event.target.closest('#editor-panel') || event.target.closest('.editor-sidebar')) return;
+
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        raycaster.setFromCamera(mouse, camera);
+
+        // Collecter tous les labels de zone visibles
+        const labelSprites = [];
+        for (const zone of interactionZones) {
+            if (zone.labelSprite && zone.labelSprite.visible) {
+                labelSprites.push(zone.labelSprite);
+            }
+        }
+
+        const intersects = raycaster.intersectObjects(labelSprites);
+        if (intersects.length > 0) {
+            const clickedSprite = intersects[0].object;
+            // Vérifier si le clic est dans la zone de la croix (côté droit du sprite, >80% de la largeur)
+            const uv = intersects[0].uv;
+            if (uv && uv.x > 0.88) {
+                clickedSprite.visible = false;
+                console.log('🔇 Label de zone masqué (clic sur ×)');
+            }
+        }
+    });
+}
+var _zoneLabelClickInitialized = false;
 
 // --- Wall Zone Mesh (rectangle on wall face) ---
 function createWallZoneOutlineMesh(u1, v1, u2, v2, wallRefData, color, opacity) {
@@ -1448,7 +1507,9 @@ function finalizeCharacterZone(characterRoot) {
         characterRef: {
             editorName: characterRoot.userData.editorName || characterRoot.name || '',
             characterUUID: characterRoot.uuid
-        }
+        },
+        characterHeight: height,
+        characterBaseY: characterRoot.position.y
     };
 
     // Create bounding box wireframe autour du personnage
@@ -1458,11 +1519,12 @@ function finalizeCharacterZone(characterRoot) {
     zone.meshGroup = createObjectZoneOutlineMesh(box, 0x00CED1, 0.8);
     scene.add(zone.meshGroup);
 
-    // Create label above the character
-    const labelPos = new THREE.Vector3(cx, characterRoot.position.y + height + 0.2, cz);
+    // Create label above the character (position haute + petite taille)
+    const labelPos = new THREE.Vector3(cx, characterRoot.position.y + height, cz);
     zone.labelSprite = createZoneLabelSprite(
         'Zone #' + id + ' (non configurée)',
-        labelPos
+        labelPos,
+        { scaleX: 0.8, scaleY: 0.1, yOffset: 0.15 }
     );
     scene.add(zone.labelSprite);
 
@@ -1593,9 +1655,24 @@ function updateZoneLabel(zone) {
     const cx = (zone.bounds.minX + zone.bounds.maxX) / 2;
     const cz = (zone.bounds.minZ + zone.bounds.maxZ) / 2;
 
+    // Calculer position Y et taille du label
+    let labelY = zone.y;
+    let spriteOptions = {};  // défaut: scale 2x0.25, yOffset +0.5
+    if (zone.surfaceMode === 'character') {
+        // Positionner bien au-dessus de la tête du personnage
+        if (zone.characterHeight !== undefined && zone.characterBaseY !== undefined) {
+            labelY = zone.characterBaseY + zone.characterHeight;
+        } else {
+            // Fallback: zone.y est le centre du personnage, ajouter ~moitié hauteur
+            labelY = zone.y + 0.85;
+        }
+        spriteOptions = { scaleX: 0.8, scaleY: 0.1, yOffset: 0.15 };
+    }
+
     zone.labelSprite = createZoneLabelSprite(
         labelText,
-        new THREE.Vector3(cx, zone.y, cz)
+        new THREE.Vector3(cx, labelY, cz),
+        spriteOptions
     );
     scene.add(zone.labelSprite);
 }
@@ -2043,6 +2120,8 @@ function loadInteractionZonesFromData(zonesData) {
         if (zd.localBounds) zone.localBounds = zd.localBounds;
         if (zd.objectRef) zone.objectRef = zd.objectRef;
         if (zd.characterRef) zone.characterRef = zd.characterRef;
+        if (zd.characterHeight !== undefined) zone.characterHeight = zd.characterHeight;
+        if (zd.characterBaseY !== undefined) zone.characterBaseY = zd.characterBaseY;
         if (zd.actionConfig) zone.actionConfig = zd.actionConfig;
         if (zd.videoEndAction) zone.videoEndAction = zd.videoEndAction;
         if (zd.videoEndUrl) zone.videoEndUrl = zd.videoEndUrl;
@@ -2114,7 +2193,19 @@ function loadInteractionZonesFromData(zonesData) {
         if (zd.actionType === 'link' && zd.actionValue) labelText = 'Lien: ' + zd.actionValue;
         else if (zd.actionValue) labelText = zd.actionType + ': ' + zd.actionValue;
 
-        zone.labelSprite = createZoneLabelSprite(labelText, new THREE.Vector3(cx, zd.y || 0, cz));
+        // Pour les zones personnage, positionner le label au-dessus de la tête
+        let labelY = zd.y || 0;
+        let spriteOpts = {};
+        if (sm === 'character') {
+            if (zone.characterHeight !== undefined && zone.characterBaseY !== undefined) {
+                labelY = zone.characterBaseY + zone.characterHeight;
+            } else {
+                labelY = (zd.y || 0) + 0.85;
+            }
+            spriteOpts = { scaleX: 0.8, scaleY: 0.1, yOffset: 0.15 };
+        }
+
+        zone.labelSprite = createZoneLabelSprite(labelText, new THREE.Vector3(cx, labelY, cz), spriteOpts);
         scene.add(zone.labelSprite);
 
         if (interactionMode === 'game') {
@@ -8007,7 +8098,13 @@ function saveFloorPlan() {
         nabyTransform: babyModel ? {
             position: { x: babyModel.position.x, y: babyModel.position.y, z: babyModel.position.z },
             rotation: { x: babyModel.rotation.x, y: babyModel.rotation.y, z: babyModel.rotation.z },
-            scale: { x: babyModel.scale.x, y: babyModel.scale.y, z: babyModel.scale.z }
+            scale: { x: babyModel.scale.x, y: babyModel.scale.y, z: babyModel.scale.z },
+            customRoughness: babyModel.userData.customRoughness,
+            customBrightness: babyModel.userData.customBrightness,
+            customExposure: babyModel.userData.customExposure,
+            customContrast: babyModel.userData.customContrast,
+            customOffset: babyModel.userData.customOffset,
+            customGamma: babyModel.userData.customGamma
         } : null,
         // Position de départ du joueur
         spawn: spawnSaved && spawnPosition ? {
@@ -8038,6 +8135,8 @@ function saveFloorPlan() {
             };
             if (zone.objectRef) zd.objectRef = zone.objectRef;
             if (zone.characterRef) zd.characterRef = zone.characterRef;
+            if (zone.characterHeight !== undefined) zd.characterHeight = zone.characterHeight;
+            if (zone.characterBaseY !== undefined) zd.characterBaseY = zone.characterBaseY;
             if (zone.actionConfig) zd.actionConfig = zone.actionConfig;
             if (zone.videoEndAction) zd.videoEndAction = zone.videoEndAction;
             if (zone.videoEndUrl) zd.videoEndUrl = zone.videoEndUrl;

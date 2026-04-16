@@ -1,0 +1,4 @@
+fichier,status,triangles_avant,triangles_apres,reduction,taille_avant,taille_apres,erreur
+perso\baby.glb,OK,4881,3172,35.0%,1.1 MB,1.1 MB,
+perso\nabydance-original.glb,OK,463179,80080,82.7%,26.5 MB,8.0 MB,
+perso\nabydance.glb,OK,463259,80160,82.7%,26.5 MB,8.0 MB,

@@ -470,10 +470,11 @@ function init() {
         camera.lookAt(0, 2, 0);
     }
 
-    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.type = THREE.PCFShadowMap;
     document.body.appendChild(renderer.domElement);
 
     controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -506,7 +507,7 @@ function init() {
     const dirLight = new THREE.DirectionalLight(0xffffff, 0.4);
     dirLight.position.set(10, 25, 10);
     dirLight.castShadow = true;
-    dirLight.shadow.mapSize.set(2048, 2048);
+    dirLight.shadow.mapSize.set(512, 512);
     scene.add(dirLight);
 
     const babyLight = new THREE.PointLight(0xffffff, 1.5, 35);

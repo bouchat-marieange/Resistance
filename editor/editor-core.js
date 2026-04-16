@@ -134,9 +134,73 @@ function initEditor() {
                 saveImportedObjectsToStorage();
             }
 
-            console.log(`🔧 Roughness ajusté: ${value.toFixed(2)}`);
+            // Marquer comme modifié pour activer l'indicateur de sauvegarde
+            if (typeof markUnsavedChanges === 'function') markUnsavedChanges();
         }
     });
+
+    // Slider de luminosité (emissive intensity) — précision 0.01, range 0-0.5
+    document.getElementById('brightness-slider').addEventListener('input', (e) => {
+        const value = parseFloat(e.target.value);
+        document.getElementById('brightness-value').textContent = value.toFixed(2);
+        if (selectedEditorObject) {
+            selectedEditorObject.userData.customBrightness = value;
+            applyVisualSettings(selectedEditorObject);
+            if (selectedEditorObject.userData.isImported) saveImportedObjectsToStorage();
+            if (typeof markUnsavedChanges === 'function') markUnsavedChanges();
+        }
+    });
+
+    // Slider d'exposition
+    document.getElementById('exposure-slider').addEventListener('input', (e) => {
+        const value = parseFloat(e.target.value);
+        document.getElementById('exposure-value').textContent = value.toFixed(2);
+        if (selectedEditorObject) {
+            selectedEditorObject.userData.customExposure = value;
+            applyVisualSettings(selectedEditorObject);
+            if (selectedEditorObject.userData.isImported) saveImportedObjectsToStorage();
+            if (typeof markUnsavedChanges === 'function') markUnsavedChanges();
+        }
+    });
+
+    // Slider de contraste
+    document.getElementById('contrast-slider').addEventListener('input', (e) => {
+        const value = parseFloat(e.target.value);
+        document.getElementById('contrast-value').textContent = value.toFixed(2);
+        if (selectedEditorObject) {
+            selectedEditorObject.userData.customContrast = value;
+            applyVisualSettings(selectedEditorObject);
+            if (selectedEditorObject.userData.isImported) saveImportedObjectsToStorage();
+            if (typeof markUnsavedChanges === 'function') markUnsavedChanges();
+        }
+    });
+
+    // Slider de décalage (offset)
+    document.getElementById('offset-slider').addEventListener('input', (e) => {
+        const value = parseFloat(e.target.value);
+        document.getElementById('offset-value').textContent = value.toFixed(2);
+        if (selectedEditorObject) {
+            selectedEditorObject.userData.customOffset = value;
+            applyVisualSettings(selectedEditorObject);
+            if (selectedEditorObject.userData.isImported) saveImportedObjectsToStorage();
+            if (typeof markUnsavedChanges === 'function') markUnsavedChanges();
+        }
+    });
+
+    // Slider de correction gamma
+    document.getElementById('gamma-slider').addEventListener('input', (e) => {
+        const value = parseFloat(e.target.value);
+        document.getElementById('gamma-value').textContent = value.toFixed(2);
+        if (selectedEditorObject) {
+            selectedEditorObject.userData.customGamma = value;
+            applyVisualSettings(selectedEditorObject);
+            if (selectedEditorObject.userData.isImported) saveImportedObjectsToStorage();
+            if (typeof markUnsavedChanges === 'function') markUnsavedChanges();
+        }
+    });
+
+    // Initialiser le clic pour masquer les labels de zone
+    if (typeof _initZoneLabelClickHandler === 'function') _initZoneLabelClickHandler();
 
     // Cases à cocher pour les axes
     document.getElementById('axis-x').addEventListener('change', updateAxisControls);

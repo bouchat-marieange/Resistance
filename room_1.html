@@ -530,6 +530,23 @@ const clock = new THREE.Clock();
 // Limites de la pièce pour le blocage caméra
 const ROOM_LIMIT = 98;
 
+// --- Vecteurs pré-alloués (réutilisés à chaque frame, zéro allocation GC) ---
+const _tmpVec3A = new THREE.Vector3();
+const _tmpVec3B = new THREE.Vector3();
+const _tmpVec3C = new THREE.Vector3();
+const _tmpVec2A = new THREE.Vector2();
+const _tmpVec2B = new THREE.Vector2();
+const _moveForward = new THREE.Vector3();
+const _moveRight = new THREE.Vector3();
+const _moveInput = new THREE.Vector3();
+const _devDirection = new THREE.Vector3();
+const _devSide = new THREE.Vector3();
+const _slideX = new THREE.Vector3();
+const _slideZ = new THREE.Vector3();
+const _slideResult = new THREE.Vector3();
+const _gpCamDir = new THREE.Vector3();
+const _gpCamNewDir = new THREE.Vector3();
+
 // Variables pour le saut et le mouvement
 let verticalVelocity = 0;
 const gravityConst = 0.015;
@@ -606,11 +623,12 @@ function init() {
         camera.lookAt(0, baseEyeHeight, 0);
     }
 
-    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFShadowMap;
-    renderer.physicallyCorrectLights = true; // Éclairage physiquement correct (atténuation réaliste)
+    renderer.physicallyCorrectLights = true;
     document.body.appendChild(renderer.domElement);
 
     controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -682,8 +700,8 @@ function init() {
     directionalLight.shadow.camera.right = 100;
     directionalLight.shadow.camera.top = 100;
     directionalLight.shadow.camera.bottom = -100;
-    directionalLight.shadow.mapSize.width = 1024;
-    directionalLight.shadow.mapSize.height = 1024;
+    directionalLight.shadow.mapSize.width = 512;
+    directionalLight.shadow.mapSize.height = 512;
     directionalLight.shadow.bias = -0.002;
     directionalLight.shadow.normalBias = 0.02;
     scene.add(directionalLight);
@@ -701,6 +719,7 @@ function init() {
         }
     }
 
+    _initCrosshairRefs();
     animate();
     if (typeof initFootstepAudio === 'function') initFootstepAudio();
 
@@ -897,6 +916,29 @@ function loadAnimatedCharacter() {
             scene.add(babyModel);
             babyModel.updateMatrixWorld(true);
 
+            // Appliquer les réglages visuels sauvegardés (luminosité, exposition, etc.)
+            if (savedNabyTransform) {
+                if (savedNabyTransform.customRoughness !== undefined) babyModel.userData.customRoughness = savedNabyTransform.customRoughness;
+                if (savedNabyTransform.customBrightness !== undefined) babyModel.userData.customBrightness = savedNabyTransform.customBrightness;
+                if (savedNabyTransform.customExposure !== undefined) babyModel.userData.customExposure = savedNabyTransform.customExposure;
+                if (savedNabyTransform.customContrast !== undefined) babyModel.userData.customContrast = savedNabyTransform.customContrast;
+                if (savedNabyTransform.customOffset !== undefined) babyModel.userData.customOffset = savedNabyTransform.customOffset;
+                if (savedNabyTransform.customGamma !== undefined) babyModel.userData.customGamma = savedNabyTransform.customGamma;
+                // Roughness
+                if (savedNabyTransform.customRoughness !== undefined) {
+                    babyModel.traverse(function(child) {
+                        if (child.isMesh && child.material && child.material.roughness !== undefined) {
+                            child.material.roughness = savedNabyTransform.customRoughness;
+                            child.material.needsUpdate = true;
+                        }
+                    });
+                }
+                // Réglages visuels via _applyVisualSettings
+                if (typeof _applyVisualSettings === 'function') {
+                    _applyVisualSettings(babyModel);
+                }
+            }
+
             // INITIALISATION DU MIXER SUR LA SCÈNE COMPLÈTE
             mixer = new THREE.AnimationMixer(babyModel);
 
@@ -936,9 +978,9 @@ function loadAnimatedCharacter() {
             babyBody.updateBoundingRadius();
             world.addBody(babyBody);
 
-            // Toujours ajouter Naby aux objets sélectionnables
-            makeObjectsSelectable();
-            if (editorMode) {
+            // Ajouter Naby aux objets sélectionnables (si l'éditeur est chargé)
+            if (typeof makeObjectsSelectable === 'function') makeObjectsSelectable();
+            if (editorMode && typeof updateObjectsList === 'function') {
                 updateObjectsList();
             }
             // Créer le proxy de collision pour bloquer le joueur
@@ -1208,29 +1250,17 @@ function raycastDistance(origin, direction, maxDist) {
 
 // Vérifie si on peut se déplacer dans une direction, avec wall-sliding
 // Retourne le vecteur de déplacement autorisé (possiblement modifié pour glisser le long des murs)
-let _lastCollisionDebugTime = 0;
 function computeAllowedMovement(origin, moveVec) {
     const moveDist = moveVec.length();
     if (moveDist < 0.0001) return moveVec;
 
-    const moveDir = moveVec.clone().normalize();
+    _tmpVec3A.copy(moveVec).normalize();
+    const moveDir = _tmpVec3A;
     const checkDist = moveDist + CAMERA_COLLISION_MARGIN;
 
     // Test principal : direction complète du mouvement
     const dist = raycastDistance(origin, moveDir, checkDist);
     const allowed = dist - CAMERA_COLLISION_MARGIN;
-
-    // Debug throttlé: log quand bloqué par un proxy (1x toutes les 2 secondes)
-    if (allowed < moveDist && Date.now() - _lastCollisionDebugTime > 2000) {
-        CAMERA_COLLISION_RAYCASTER.set(origin, moveDir);
-        CAMERA_COLLISION_RAYCASTER.far = checkDist;
-        CAMERA_COLLISION_RAYCASTER.near = 0;
-        const debugHits = CAMERA_COLLISION_RAYCASTER.intersectObjects(getCollisionMeshes(), false);
-        if (debugHits.length > 0 && debugHits[0].object.userData.isCollisionProxy) {
-            console.log(`🛡️ COLLISION PROXY: bloqué à ${debugHits[0].distance.toFixed(2)}m (allowed=${allowed.toFixed(3)})`);
-        }
-        _lastCollisionDebugTime = Date.now();
-    }
 
     if (allowed >= moveDist) {
         return moveVec; // Pas d'obstacle
@@ -1242,42 +1272,40 @@ function computeAllowedMovement(origin, moveVec) {
     }
 
     // Bloqué en direct → essayer le wall-sliding (glissement)
-    // Décomposer le mouvement en X et Z séparés
-    const slideX = new THREE.Vector3(moveVec.x, 0, 0);
-    const slideZ = new THREE.Vector3(0, 0, moveVec.z);
-    let resultVec = new THREE.Vector3(0, 0, 0);
+    _slideX.set(moveVec.x, 0, 0);
+    _slideZ.set(0, 0, moveVec.z);
+    _slideResult.set(0, 0, 0);
 
     // Essayer de glisser en X
-    if (Math.abs(slideX.x) > 0.0001) {
-        const dirX = slideX.clone().normalize();
-        const distX = raycastDistance(origin, dirX, Math.abs(slideX.x) + CAMERA_COLLISION_MARGIN);
+    if (Math.abs(_slideX.x) > 0.0001) {
+        _tmpVec3B.copy(_slideX).normalize();
+        const distX = raycastDistance(origin, _tmpVec3B, Math.abs(_slideX.x) + CAMERA_COLLISION_MARGIN);
         const allowedX = distX - CAMERA_COLLISION_MARGIN;
         if (allowedX > 0.01) {
-            resultVec.x = dirX.x * Math.min(allowedX, Math.abs(slideX.x));
+            _slideResult.x = _tmpVec3B.x * Math.min(allowedX, Math.abs(_slideX.x));
         }
     }
 
     // Essayer de glisser en Z
-    if (Math.abs(slideZ.z) > 0.0001) {
-        const dirZ = slideZ.clone().normalize();
-        const distZ = raycastDistance(origin, dirZ, Math.abs(slideZ.z) + CAMERA_COLLISION_MARGIN);
+    if (Math.abs(_slideZ.z) > 0.0001) {
+        _tmpVec3B.copy(_slideZ).normalize();
+        const distZ = raycastDistance(origin, _tmpVec3B, Math.abs(_slideZ.z) + CAMERA_COLLISION_MARGIN);
         const allowedZ = distZ - CAMERA_COLLISION_MARGIN;
         if (allowedZ > 0.01) {
-            resultVec.z = dirZ.z * Math.min(allowedZ, Math.abs(slideZ.z));
+            _slideResult.z = _tmpVec3B.z * Math.min(allowedZ, Math.abs(_slideZ.z));
         }
     }
 
-    return resultVec;
+    return _slideResult;
 }
 
-// Directions de collision pré-allouées (4 cardinales + haut/bas = 6 raycasts)
+// Directions de collision pré-allouées (4 cardinales XZ uniquement — pas besoin de Y en FPS)
 const _collisionDirs = [
     new THREE.Vector3(1, 0, 0), new THREE.Vector3(-1, 0, 0),
-    new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, -1),
-    new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, -1, 0)
+    new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, -1)
 ];
 
-// Repousse la caméra hors des murs si elle est trop proche (6 directions)
+// Repousse la caméra hors des murs si elle est trop proche (4 directions)
 function enforceCameraCollisions() {
     if (interactionMode !== 'game') return;
 
@@ -1285,7 +1313,7 @@ function enforceCameraCollisions() {
     const margin = CAMERA_COLLISION_MARGIN;
     const meshes = getCollisionMeshes();
 
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 4; i++) {
         const dir = _collisionDirs[i];
         CAMERA_COLLISION_RAYCASTER.set(pos, dir);
         CAMERA_COLLISION_RAYCASTER.far = margin;
@@ -1294,7 +1322,7 @@ function enforceCameraCollisions() {
         const hits = CAMERA_COLLISION_RAYCASTER.intersectObjects(meshes, false);
         if (hits.length > 0) {
             const pushBack = margin - hits[0].distance;
-            if (pushBack > 0.001 && Math.abs(dir.y) < 0.5) {
+            if (pushBack > 0.001) {
                 pos.x -= dir.x * pushBack;
                 pos.z -= dir.z * pushBack;
                 controls.target.x -= dir.x * pushBack;
@@ -1491,20 +1519,17 @@ function handleSceneMovement(delta) {
 
     // Mode développeur : déplacement libre (vitesse augmentée)
     const moveSpeed = 0.4;
-    const direction = new THREE.Vector3();
-    const side = new THREE.Vector3();
-
-    camera.getWorldDirection(direction);
-    direction.y = 0;
-    direction.normalize();
-    side.crossVectors(direction, camera.up).normalize();
+    camera.getWorldDirection(_devDirection);
+    _devDirection.y = 0;
+    _devDirection.normalize();
+    _devSide.crossVectors(_devDirection, camera.up).normalize();
 
     let moveX = 0, moveZ = 0;
 
-    if (InputConfig.isActionPressed('forward', keysPressed))  { moveX += direction.x * moveSpeed; moveZ += direction.z * moveSpeed; }
-    if (InputConfig.isActionPressed('backward', keysPressed)) { moveX -= direction.x * moveSpeed; moveZ -= direction.z * moveSpeed; }
-    if (InputConfig.isActionPressed('left', keysPressed))     { moveX -= side.x * moveSpeed; moveZ -= side.z * moveSpeed; }
-    if (InputConfig.isActionPressed('right', keysPressed))    { moveX += side.x * moveSpeed; moveZ += side.z * moveSpeed; }
+    if (InputConfig.isActionPressed('forward', keysPressed))  { moveX += _devDirection.x * moveSpeed; moveZ += _devDirection.z * moveSpeed; }
+    if (InputConfig.isActionPressed('backward', keysPressed)) { moveX -= _devDirection.x * moveSpeed; moveZ -= _devDirection.z * moveSpeed; }
+    if (InputConfig.isActionPressed('left', keysPressed))     { moveX -= _devSide.x * moveSpeed; moveZ -= _devSide.z * moveSpeed; }
+    if (InputConfig.isActionPressed('right', keysPressed))    { moveX += _devSide.x * moveSpeed; moveZ += _devSide.z * moveSpeed; }
 
     // Manette — stick gauche (aussi en mode développeur)
     if (GamepadManager.connected) {
@@ -1512,10 +1537,10 @@ function handleSceneMovement(delta) {
         const gpBack = GamepadManager.getActionValue('backward');
         const gpLeft = GamepadManager.getActionValue('left');
         const gpRight = GamepadManager.getActionValue('right');
-        if (gpFwd > 0)   { moveX += direction.x * moveSpeed * gpFwd;  moveZ += direction.z * moveSpeed * gpFwd; }
-        if (gpBack > 0)  { moveX -= direction.x * moveSpeed * gpBack; moveZ -= direction.z * moveSpeed * gpBack; }
-        if (gpLeft > 0)  { moveX -= side.x * moveSpeed * gpLeft;      moveZ -= side.z * moveSpeed * gpLeft; }
-        if (gpRight > 0) { moveX += side.x * moveSpeed * gpRight;     moveZ += side.z * moveSpeed * gpRight; }
+        if (gpFwd > 0)   { moveX += _devDirection.x * moveSpeed * gpFwd;  moveZ += _devDirection.z * moveSpeed * gpFwd; }
+        if (gpBack > 0)  { moveX -= _devDirection.x * moveSpeed * gpBack; moveZ -= _devDirection.z * moveSpeed * gpBack; }
+        if (gpLeft > 0)  { moveX -= _devSide.x * moveSpeed * gpLeft;      moveZ -= _devSide.z * moveSpeed * gpLeft; }
+        if (gpRight > 0) { moveX += _devSide.x * moveSpeed * gpRight;     moveZ += _devSide.z * moveSpeed * gpRight; }
     }
 
     if (moveX === 0 && moveZ === 0) return;
@@ -1531,20 +1556,19 @@ function handleSceneMovement(delta) {
 // Supporte clavier (via InputConfig) ET manette (via GamepadManager)
 function handleGameMovement(delta) {
     // 1. Direction souhaitée depuis les touches OU le stick gauche manette
-    const forward = new THREE.Vector3();
-    camera.getWorldDirection(forward);
-    forward.y = 0;
-    forward.normalize();
-    const right = new THREE.Vector3();
-    right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+    camera.getWorldDirection(_moveForward);
+    _moveForward.y = 0;
+    _moveForward.normalize();
+    _moveRight.set(0, 1, 0);
+    _moveRight.crossVectors(_moveForward, _moveRight).normalize();
 
-    const inputDir = new THREE.Vector3(0, 0, 0);
+    _moveInput.set(0, 0, 0);
 
     // Clavier (utilise les bindings configurables)
-    if (InputConfig.isActionPressed('forward', keysPressed))  inputDir.add(forward);
-    if (InputConfig.isActionPressed('backward', keysPressed)) inputDir.sub(forward);
-    if (InputConfig.isActionPressed('left', keysPressed))     inputDir.sub(right);
-    if (InputConfig.isActionPressed('right', keysPressed))    inputDir.add(right);
+    if (InputConfig.isActionPressed('forward', keysPressed))  _moveInput.add(_moveForward);
+    if (InputConfig.isActionPressed('backward', keysPressed)) _moveInput.sub(_moveForward);
+    if (InputConfig.isActionPressed('left', keysPressed))     _moveInput.sub(_moveRight);
+    if (InputConfig.isActionPressed('right', keysPressed))    _moveInput.add(_moveRight);
 
     // Manette — stick gauche (valeurs analogiques)
     if (GamepadManager.connected) {
@@ -1552,14 +1576,14 @@ function handleGameMovement(delta) {
         const gpBack = GamepadManager.getActionValue('backward');
         const gpLeft = GamepadManager.getActionValue('left');
         const gpRight = GamepadManager.getActionValue('right');
-        if (gpFwd > 0)   inputDir.addScaledVector(forward, gpFwd);
-        if (gpBack > 0)  inputDir.addScaledVector(forward, -gpBack);
-        if (gpLeft > 0)  inputDir.addScaledVector(right, -gpLeft);
-        if (gpRight > 0) inputDir.addScaledVector(right, gpRight);
+        if (gpFwd > 0)   _moveInput.addScaledVector(_moveForward, gpFwd);
+        if (gpBack > 0)  _moveInput.addScaledVector(_moveForward, -gpBack);
+        if (gpLeft > 0)  _moveInput.addScaledVector(_moveRight, -gpLeft);
+        if (gpRight > 0) _moveInput.addScaledVector(_moveRight, gpRight);
     }
 
-    const hasInput = inputDir.lengthSq() > 0.001;
-    if (hasInput) inputDir.normalize();
+    const hasInput = _moveInput.lengthSq() > 0.001;
+    if (hasInput) _moveInput.normalize();
 
     // 2. Vitesse cible
     const kbSprint = InputConfig.isActionPressed('run', keysPressed);
@@ -1581,11 +1605,11 @@ function handleGameMovement(delta) {
         return;
     }
 
-    // 4. Vecteur de déplacement
-    const moveVec = inputDir.multiplyScalar(currentSpeed * delta);
+    // 4. Vecteur de déplacement (réutilise _moveInput, pas de nouvelle allocation)
+    _moveInput.multiplyScalar(currentSpeed * delta);
 
     // 5. Collision avec wall-sliding
-    const allowed = computeAllowedMovement(camera.position, moveVec);
+    const allowed = computeAllowedMovement(camera.position, _moveInput);
     if (allowed.lengthSq() < 0.00001) return;
 
     // 6. Appliquer le déplacement
@@ -1634,12 +1658,16 @@ function animate() {
     if (_cinematicPlaying) return;
 
     const delta = clock.getDelta();
-    world.step(1 / 60);
+    // Physique cannon.js uniquement si des corps dynamiques existent (pas en mode jeu FPS)
+    if (interactionMode !== 'game') world.step(1 / 60);
 
-    // IMPORTANT: Mettre à jour les proxies de collision AVANT tout test de collision
-    // pour que la matrixWorld soit à jour quand le raycaster teste les intersections
+    // Proxies de collision: personnages immobiles → mise à jour toutes les 8 frames suffit
     if (interactionMode === 'game') {
-        updateAllCharacterCollisionProxies();
+        _proxyUpdateFrame++;
+        if (_proxyUpdateFrame >= 8) {
+            _proxyUpdateFrame = 0;
+            updateAllCharacterCollisionProxies();
+        }
     }
 
     handleSceneMovement(delta);
@@ -1653,23 +1681,23 @@ function animate() {
         if (rs.x !== 0 || rs.y !== 0) {
             const sens = InputConfig.gamepadCameraSensitivity;
             const rotateX = -rs.x * sens * 0.03;  // Horizontal (yaw)
-            const rotateY = -rs.y * sens * 0.015;  // Vertical (pitch)
+            const rotateY = rs.y * sens * 0.015;  // Vertical (pitch) — non inversé
 
-            const dir = new THREE.Vector3().subVectors(controls.target, camera.position);
-            const distance = Math.max(dir.length(), 0.001);
+            _gpCamDir.subVectors(controls.target, camera.position);
+            const distance = Math.max(_gpCamDir.length(), 0.001);
 
-            const theta = Math.atan2(dir.x, dir.z);
-            const phi = Math.acos(Math.max(-1, Math.min(1, dir.y / distance)));
+            const theta = Math.atan2(_gpCamDir.x, _gpCamDir.z);
+            const phi = Math.acos(Math.max(-1, Math.min(1, _gpCamDir.y / distance)));
 
             const newTheta = theta + rotateX;
             const newPhi = Math.max(0.3, Math.min(2.8, phi + rotateY));
 
-            const newDir = new THREE.Vector3(
+            _gpCamNewDir.set(
                 distance * Math.sin(newPhi) * Math.sin(newTheta),
                 distance * Math.cos(newPhi),
                 distance * Math.sin(newPhi) * Math.cos(newTheta)
             );
-            controls.target.copy(camera.position).add(newDir);
+            controls.target.copy(camera.position).add(_gpCamNewDir);
             camera.lookAt(controls.target);
         }
     }
@@ -1680,9 +1708,14 @@ function animate() {
         enforceGameHeight();
         enforceCameraCollisions();
         if (typeof updateFootstepAudio === 'function') updateFootstepAudio(delta);
-        if (typeof checkZoneProximity === 'function') checkZoneProximity();
+        // Throttle zone checks (1 frame sur 4)
+        _zoneCheckFrame++;
+        if (_zoneCheckFrame >= 4) {
+            _zoneCheckFrame = 0;
+            if (typeof checkZoneProximity === 'function') checkZoneProximity();
+            if (typeof checkHoverAndProximityTriggers === 'function') checkHoverAndProximityTriggers();
+        }
         if (typeof checkHoldTrigger === 'function') checkHoldTrigger();
-        if (typeof checkHoverAndProximityTriggers === 'function') checkHoverAndProximityTriggers();
     }
 
     // MISE À JOUR DE L'ANIMATION AVEC LE DELTA
@@ -1717,11 +1750,8 @@ function animate() {
     // Mettre à jour l'étiquette de dimensions
     if (editorMode && (selectedEditorObject || (selectedWalls && selectedWalls.length > 0))) {
         updateDimensionsLabelPosition();
-    } else {
-        const dimLabel = document.getElementById('object-dimensions-label');
-        if (dimLabel && dimLabel.style.display !== 'none' && typeof hideDimensionsLabel === 'function') {
-            hideDimensionsLabel();
-        }
+    } else if (_dimLabelEl && _dimLabelEl.style.display !== 'none' && typeof hideDimensionsLabel === 'function') {
+        hideDimensionsLabel();
     }
 
     // CROSSHAIR HOVER: Détecter si le viseur pointe sur un interactable
@@ -1748,22 +1778,53 @@ function animate() {
  * SYSTÈME DE VISÉE CROSSHAIR — détecte ce que le joueur vise au centre de l'écran
  */
 var _crosshairTargetZone = null;
+var _crosshairLastZone = null;  // Dirty flag pour label DOM
 var _crosshairRaycaster = new THREE.Raycaster();
+var _crosshairCenter = new THREE.Vector2(0, 0); // Pré-alloué
 var _crosshairLabelEl = null;
 var _crosshairLabelText = null;
 var _crosshairLabelHint = null;
-var _crosshairSvg = null;
+var _crosshairCircles = null;  // Cache SVG elements
+var _crosshairLines = null;
+var _crosshairActive = false;  // Dirty flag — évite de re-modifier le DOM si pas changé
+var _zoneCheckFrame = 0;       // Throttle : zone proximity toutes les 4 frames
+var _proxyUpdateFrame = 0;     // Throttle : collision proxy update toutes les 8 frames
+var _crosshairFrameSkip = 0;   // Throttle : raycast toutes les 3 frames
+// Cache de meshes par objet/personnage UUID (évite traverse() à chaque frame)
+var _meshCacheByUUID = new Map();
+var _dimLabelEl = null;  // Cache DOM ref
 
 function _initCrosshairRefs() {
-    if (!_crosshairLabelEl) _crosshairLabelEl = document.getElementById('interaction-label');
-    if (!_crosshairLabelText) _crosshairLabelText = document.getElementById('interaction-label-text');
-    if (!_crosshairLabelHint) _crosshairLabelHint = document.getElementById('interaction-label-hint');
-    if (!_crosshairSvg) _crosshairSvg = document.getElementById('crosshair-svg');
+    if (_crosshairCircles) return; // Déjà initialisé
+    _dimLabelEl = document.getElementById('object-dimensions-label');
+    _crosshairLabelEl = document.getElementById('interaction-label');
+    _crosshairLabelText = document.getElementById('interaction-label-text');
+    _crosshairLabelHint = document.getElementById('interaction-label-hint');
+    const svg = document.getElementById('crosshair-svg');
+    if (svg) {
+        _crosshairCircles = svg.querySelectorAll('circle');
+        _crosshairLines = svg.querySelectorAll('line');
+    }
+}
+
+function _getCachedMeshes(obj) {
+    if (!obj) return [];
+    let cached = _meshCacheByUUID.get(obj.uuid);
+    if (cached) return cached;
+    cached = [];
+    obj.traverse(c => { if (c.isMesh) cached.push(c); });
+    _meshCacheByUUID.set(obj.uuid, cached);
+    return cached;
 }
 
 function updateCrosshairHover() {
-    _initCrosshairRefs();
-    _crosshairRaycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+    // Throttle : raycast toutes les 3 frames (20fps de détection suffit largement)
+    _crosshairFrameSkip++;
+    if (_crosshairFrameSkip < 3) return;
+    _crosshairFrameSkip = 0;
+
+    _crosshairRaycaster.setFromCamera(_crosshairCenter, camera);
+    _crosshairRaycaster.far = 3;  // Max interaction range = 2.5, pas besoin de tester plus loin
 
     let bestZone = null;
     let bestLabel = '';
@@ -1776,24 +1837,19 @@ function updateCrosshairHover() {
         const interactRange = (zone.surfaceMode === 'wall' || zone.surfaceMode === 'object' || zone.surfaceMode === 'character') ? 2.5 : 1.5;
         if (distance >= interactRange) continue;
 
-        // Tester si le crosshair vise cet interactable
         let hit = false;
         let label = zone.customName || '';
 
         if (zone.surfaceMode === 'character' && zone.characterRef) {
             const char = findCharacterByRef(zone.characterRef);
             if (char) {
-                // Tester le hotspot pulsatile (priorité)
                 const hlData = highlightedInteractionObjects.get(char.uuid);
                 if (hlData && hlData.hotspot) {
-                    hlData.hotspot.updateMatrixWorld(true);
                     const hits = _crosshairRaycaster.intersectObject(hlData.hotspot, false);
                     if (hits.length > 0) { hit = true; bestDist = hits[0].distance; }
                 }
-                // Fallback: tester les meshes du personnage
                 if (!hit) {
-                    const meshes = [];
-                    char.traverse(c => { if (c.isMesh) meshes.push(c); });
+                    const meshes = _getCachedMeshes(char);
                     const hits = _crosshairRaycaster.intersectObjects(meshes, false);
                     if (hits.length > 0 && hits[0].distance < interactRange) { hit = true; bestDist = hits[0].distance; }
                 }
@@ -1802,14 +1858,12 @@ function updateCrosshairHover() {
         } else if (zone.surfaceMode === 'object' && zone.objectRef) {
             const obj = findObjectByRef(zone.objectRef);
             if (obj) {
-                const meshes = [];
-                obj.traverse(c => { if (c.isMesh) meshes.push(c); });
+                const meshes = _getCachedMeshes(obj);
                 const hits = _crosshairRaycaster.intersectObjects(meshes, false);
                 if (hits.length > 0 && hits[0].distance < interactRange) { hit = true; bestDist = hits[0].distance; }
                 if (!label) label = obj.userData.editorName || obj.name || 'Objet';
             }
         } else if (zone.surfaceMode === 'floor' || zone.surfaceMode === 'ceiling' || zone.surfaceMode === 'wall') {
-            // Pour les zones sol/mur, vérifier que le joueur est à portée (pas de raycast mesh)
             hit = true;
             bestDist = distance;
             if (!label) label = zone.actionType === 'video' ? 'Vidéo' : zone.actionType === 'link' ? 'Aller' : 'Interagir';
@@ -1823,22 +1877,30 @@ function updateCrosshairHover() {
 
     _crosshairTargetZone = bestZone;
 
-    // Mettre à jour l'UI du crosshair
-    if (_crosshairSvg && _crosshairLabelEl) {
+    // Dirty flag : ne modifier le DOM que si l'état change
+    const nowActive = !!bestZone;
+    if (nowActive !== _crosshairActive) {
+        _crosshairActive = nowActive;
+        if (_crosshairCircles) {
+            if (nowActive) {
+                _crosshairCircles.forEach(c => { c.setAttribute('stroke', '#FFD700'); c.setAttribute('stroke-width', '2'); });
+                _crosshairLines.forEach(l => l.setAttribute('stroke', 'rgba(255,215,0,0.7)'));
+            } else {
+                _crosshairCircles.forEach(c => { c.setAttribute('stroke', 'rgba(255,255,255,0.7)'); c.setAttribute('stroke-width', '1.5'); });
+                _crosshairLines.forEach(l => l.setAttribute('stroke', 'rgba(255,255,255,0.5)'));
+            }
+        }
+    }
+    // Dirty flag label : ne modifier le DOM que si la zone ciblée change
+    if (_crosshairLabelEl && bestZone !== _crosshairLastZone) {
+        _crosshairLastZone = bestZone;
         if (bestZone) {
-            // Crosshair doré = cible verrouillée
-            _crosshairSvg.querySelectorAll('circle').forEach(c => { c.setAttribute('stroke', '#FFD700'); c.setAttribute('stroke-width', '2'); });
-            _crosshairSvg.querySelectorAll('line').forEach(l => l.setAttribute('stroke', 'rgba(255,215,0,0.7)'));
-            // Label
             const actionIcon = bestZone.actionType === 'video' ? '▶ ' : bestZone.actionType === 'message' ? '💬 ' : bestZone.actionType === 'link' ? '➜ ' : '⬡ ';
             if (_crosshairLabelText) _crosshairLabelText.textContent = actionIcon + bestLabel;
             const isGamepad = GamepadManager && GamepadManager.connected;
             if (_crosshairLabelHint) _crosshairLabelHint.textContent = isGamepad ? 'R2 pour interagir' : 'Clic pour interagir';
             _crosshairLabelEl.style.opacity = '1';
         } else {
-            // Crosshair blanc = rien visé
-            _crosshairSvg.querySelectorAll('circle').forEach(c => { c.setAttribute('stroke', 'rgba(255,255,255,0.7)'); c.setAttribute('stroke-width', '1.5'); });
-            _crosshairSvg.querySelectorAll('line').forEach(l => l.setAttribute('stroke', 'rgba(255,255,255,0.5)'));
             _crosshairLabelEl.style.opacity = '0';
         }
     }

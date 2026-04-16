@@ -1,5 +1,70 @@
 // ==================== GESTION DE LA SAUVEGARDE ====================
 
+/**
+ * Applique les réglages visuels (luminosité, exposition, contraste, offset, gamma) à un objet 3D.
+ * Sauvegarde les couleurs originales puis recalcule material.color en temps réel.
+ * Luminosité via emissive. Exposition/Contraste/Offset/Gamma via modification directe de la couleur.
+ * Compatible THREE.js r128 — fonctionne immédiatement sans recompilation shader.
+ */
+function applyVisualSettings(object) {
+    var brightness = object.userData.customBrightness || 0;
+    var exposure = object.userData.customExposure !== undefined ? object.userData.customExposure : 1.0;
+    var contrast = object.userData.customContrast !== undefined ? object.userData.customContrast : 1.0;
+    var colorOffset = object.userData.customOffset || 0;
+    var gamma = object.userData.customGamma !== undefined ? object.userData.customGamma : 1.0;
+
+    object.traverse(function(child) {
+        if (!child.isMesh || !child.material) return;
+        var mat = child.material;
+
+        // Sauvegarder la couleur originale la première fois
+        if (!mat.userData) mat.userData = {};
+        if (!mat.userData._originalColor) {
+            mat.userData._originalColor = mat.color ? mat.color.clone() : new THREE.Color(1, 1, 1);
+        }
+
+        // --- Luminosité via emissive ---
+        if (brightness > 0) {
+            if (!mat.emissive) mat.emissive = new THREE.Color(0xffffff);
+            mat.emissive.setRGB(brightness, brightness, brightness);
+            mat.emissiveIntensity = 1.0;
+        } else {
+            if (mat.emissive) mat.emissive.setRGB(0, 0, 0);
+            mat.emissiveIntensity = 0;
+        }
+
+        // --- Exposition, Contraste, Offset, Gamma via modification de material.color ---
+        var orig = mat.userData._originalColor;
+        var r = orig.r, g = orig.g, b = orig.b;
+
+        // 1. Exposition (multiplier)
+        r *= exposure; g *= exposure; b *= exposure;
+
+        // 2. Contraste (pivot autour de 0.5)
+        r = (r - 0.5) * contrast + 0.5;
+        g = (g - 0.5) * contrast + 0.5;
+        b = (b - 0.5) * contrast + 0.5;
+
+        // 3. Décalage (offset)
+        r += colorOffset; g += colorOffset; b += colorOffset;
+
+        // 4. Clamp négatifs
+        r = Math.max(0, r); g = Math.max(0, g); b = Math.max(0, b);
+
+        // 5. Gamma (correction)
+        if (gamma !== 1.0) {
+            var invGamma = 1.0 / gamma;
+            r = Math.pow(r, invGamma);
+            g = Math.pow(g, invGamma);
+            b = Math.pow(b, invGamma);
+        }
+
+        // Appliquer
+        mat.color.setRGB(r, g, b);
+        mat.needsUpdate = true;
+    });
+}
+
 // Marquer qu'il y a des changements non sauvegardés
 function markUnsavedChanges() {
     if (!hasUnsavedChanges) {
@@ -250,6 +315,11 @@ async function saveProject() {
                     rotation: { x: obj.rotation.x, y: obj.rotation.y, z: obj.rotation.z },
                     scale: { x: obj.scale.x, y: obj.scale.y, z: obj.scale.z },
                     customRoughness: obj.userData.customRoughness,
+                    customBrightness: obj.userData.customBrightness,
+                    customExposure: obj.userData.customExposure,
+                    customContrast: obj.userData.customContrast,
+                    customOffset: obj.userData.customOffset,
+                    customGamma: obj.userData.customGamma,
                     isCharacter: obj.userData.isCharacter || false,
                     armatureScaleY: obj.userData.armatureScaleY || 1,
                     fileDataBlobId: blobId
@@ -318,7 +388,13 @@ async function saveProject() {
             nabyTransform: babyModel ? {
                 position: { x: babyModel.position.x, y: babyModel.position.y, z: babyModel.position.z },
                 rotation: { x: babyModel.rotation.x, y: babyModel.rotation.y, z: babyModel.rotation.z },
-                scale: { x: babyModel.scale.x, y: babyModel.scale.y, z: babyModel.scale.z }
+                scale: { x: babyModel.scale.x, y: babyModel.scale.y, z: babyModel.scale.z },
+                customRoughness: babyModel.userData.customRoughness,
+                customBrightness: babyModel.userData.customBrightness,
+                customExposure: babyModel.userData.customExposure,
+                customContrast: babyModel.userData.customContrast,
+                customOffset: babyModel.userData.customOffset,
+                customGamma: babyModel.userData.customGamma
             } : null,
             // Position de départ du joueur
             spawn: spawnSaved && spawnPosition ? {
@@ -1737,7 +1813,12 @@ function saveImportedObjectsToStorage() {
             position: { x: obj.position.x, y: obj.position.y, z: obj.position.z },
             rotation: { x: obj.rotation.x, y: obj.rotation.y, z: obj.rotation.z },
             scale: { x: obj.scale.x, y: obj.scale.y, z: obj.scale.z },
-            customRoughness: obj.userData.customRoughness, // Sauvegarder le roughness personnalisé
+            customRoughness: obj.userData.customRoughness,
+            customBrightness: obj.userData.customBrightness,
+            customExposure: obj.userData.customExposure,
+            customContrast: obj.userData.customContrast,
+            customOffset: obj.userData.customOffset,
+            customGamma: obj.userData.customGamma,
             isCharacter: obj.userData.isCharacter || false,
             armatureScaleY: obj.userData.armatureScaleY || 1
             // NE PAS sauvegarder fileData - fichiers GLB trop volumineux pour localStorage
@@ -1980,6 +2061,14 @@ function loadObjectFromURL(url, data) {
             if (data.customRoughness !== undefined) {
                 model.userData.customRoughness = data.customRoughness;
             }
+            // Restaurer tous les réglages visuels
+            if (data.customBrightness !== undefined) model.userData.customBrightness = data.customBrightness;
+            if (data.customExposure !== undefined) model.userData.customExposure = data.customExposure;
+            if (data.customContrast !== undefined) model.userData.customContrast = data.customContrast;
+            if (data.customOffset !== undefined) model.userData.customOffset = data.customOffset;
+            if (data.customGamma !== undefined) model.userData.customGamma = data.customGamma;
+            // Appliquer les réglages visuels aux matériaux
+            applyVisualSettings(model);
 
             // Restaurer le flag personnage et les propriétés associées
             if (data.isCharacter) {

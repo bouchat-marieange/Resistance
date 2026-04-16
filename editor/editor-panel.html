@@ -271,6 +271,46 @@
                     <span>Tissu</span>
                 </div>
             </div>
+            <div class="mb-2 mt-2">
+                <div class="text-[9px] font-semibold mb-0.5 flex items-center justify-between">
+                    <span>Luminosité: <span id="brightness-value">0.00</span></span>
+                    <span class="text-[8px] text-base-content/60">0=Sombre, 0.5=Très lumineux</span>
+                </div>
+                <input type="range" id="brightness-slider" min="0" max="0.5" step="0.01" value="0" class="range range-xs range-warning" disabled />
+                <div class="flex justify-between text-[8px] text-base-content/60 mt-0.5">
+                    <span>Normal</span>
+                    <span>Subtil: 0.05-0.15</span>
+                    <span>Fort</span>
+                </div>
+            </div>
+            <div class="mb-2 mt-1">
+                <div class="text-[9px] font-semibold mb-0.5 flex items-center justify-between">
+                    <span>Exposition: <span id="exposure-value">1.00</span></span>
+                    <span class="text-[8px] text-base-content/60">0.5=Sombre, 2=Surexposé</span>
+                </div>
+                <input type="range" id="exposure-slider" min="0.2" max="3.0" step="0.05" value="1.0" class="range range-xs range-info" disabled />
+            </div>
+            <div class="mb-2 mt-1">
+                <div class="text-[9px] font-semibold mb-0.5 flex items-center justify-between">
+                    <span>Contraste: <span id="contrast-value">1.00</span></span>
+                    <span class="text-[8px] text-base-content/60">0.5=Plat, 2=Fort</span>
+                </div>
+                <input type="range" id="contrast-slider" min="0.3" max="2.5" step="0.05" value="1.0" class="range range-xs range-secondary" disabled />
+            </div>
+            <div class="mb-2 mt-1">
+                <div class="text-[9px] font-semibold mb-0.5 flex items-center justify-between">
+                    <span>Décalage: <span id="offset-value">0.00</span></span>
+                    <span class="text-[8px] text-base-content/60">-0.3=Assombrir, +0.3=Éclaircir</span>
+                </div>
+                <input type="range" id="offset-slider" min="-0.3" max="0.3" step="0.01" value="0" class="range range-xs range-accent" disabled />
+            </div>
+            <div class="mb-2 mt-1">
+                <div class="text-[9px] font-semibold mb-0.5 flex items-center justify-between">
+                    <span>Gamma: <span id="gamma-value">1.00</span></span>
+                    <span class="text-[8px] text-base-content/60">0.5=Clair, 2=Sombre</span>
+                </div>
+                <input type="range" id="gamma-slider" min="0.3" max="2.5" step="0.05" value="1.0" class="range range-xs" disabled />
+            </div>
             <div class="text-[8px] text-base-content/60 italic">
                 💡 Sélectionne un objet importé pour ajuster
             </div>

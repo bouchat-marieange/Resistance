@@ -49,6 +49,102 @@ var MOVEMENT_ACTION_KEYS = (typeof MOVEMENT_ACTION_KEYS !== 'undefined') ? MOVEM
     'jump': [' '], 'crouch': ['control'], 'run': ['shift'], 'grab': ['e'], 'door': ['f']
 };
 
+// ==================== RÉGLAGES VISUELS PER-OBJET ====================
+// Applique luminosité, exposition, contraste, décalage, gamma à un objet 3D
+
+function _applyVisualSettings(object) {
+    var brightness = object.userData.customBrightness || 0;
+    var exposure = object.userData.customExposure !== undefined ? object.userData.customExposure : 1.0;
+    var contrast = object.userData.customContrast !== undefined ? object.userData.customContrast : 1.0;
+    var colorOffset = object.userData.customOffset || 0;
+    var gamma = object.userData.customGamma !== undefined ? object.userData.customGamma : 1.0;
+
+    object.traverse(function(child) {
+        if (!child.isMesh || !child.material) return;
+        var mat = child.material;
+
+        // Sauvegarder la couleur originale la première fois
+        if (!mat.userData) mat.userData = {};
+        if (!mat.userData._originalColor) {
+            mat.userData._originalColor = mat.color ? mat.color.clone() : new THREE.Color(1, 1, 1);
+        }
+
+        // Luminosité via emissive
+        if (brightness > 0) {
+            if (!mat.emissive) mat.emissive = new THREE.Color(0xffffff);
+            mat.emissive.setRGB(brightness, brightness, brightness);
+            mat.emissiveIntensity = 1.0;
+        }
+
+        // Exposition, contraste, offset, gamma via modification directe de material.color
+        var orig = mat.userData._originalColor;
+        var r = orig.r, g = orig.g, b = orig.b;
+        r *= exposure; g *= exposure; b *= exposure;
+        r = (r - 0.5) * contrast + 0.5;
+        g = (g - 0.5) * contrast + 0.5;
+        b = (b - 0.5) * contrast + 0.5;
+        r += colorOffset; g += colorOffset; b += colorOffset;
+        r = Math.max(0, r); g = Math.max(0, g); b = Math.max(0, b);
+        if (gamma !== 1.0) {
+            var invGamma = 1.0 / gamma;
+            r = Math.pow(r, invGamma);
+            g = Math.pow(g, invGamma);
+            b = Math.pow(b, invGamma);
+        }
+        mat.color.setRGB(r, g, b);
+        mat.needsUpdate = true;
+    });
+}
+
+// ==================== CACHE DE TEXTURES/MATÉRIAUX PARTAGÉS ====================
+// Évite de charger N copies de la même image en mémoire GPU
+// Clé = textureBlobId, Valeur = THREE.Texture déjà chargée
+var _textureCache = new Map();
+var _textureCacheStats = { hits: 0, misses: 0 };
+
+// Charge ou réutilise une texture depuis le cache
+async function _getCachedTexture(textureBlobId) {
+    // Déjà en cache ?
+    if (_textureCache.has(textureBlobId)) {
+        _textureCacheStats.hits++;
+        return _textureCache.get(textureBlobId);
+    }
+    _textureCacheStats.misses++;
+
+    // Charger depuis IndexedDB
+    const blobRecord = await RoomEditorDB.get(RoomEditorDB.STORE_BLOBS, textureBlobId);
+    if (!blobRecord || !blobRecord.data) return null;
+
+    const tex = await new Promise((resolve, reject) => {
+        new THREE.TextureLoader().load(blobRecord.data, resolve, undefined, reject);
+    });
+    tex.colorSpace = THREE.SRGBColorSpace;
+
+    // Stocker dans le cache (texture de base, les clones auront leur propre repeat/wrap)
+    _textureCache.set(textureBlobId, { texture: tex, dataURL: blobRecord.data });
+    return { texture: tex, dataURL: blobRecord.data };
+}
+
+// Crée un matériau qui partage la texture (clone pour repeat/wrap indépendants)
+function _createSharedMaterial(cachedEntry, options = {}) {
+    // Cloner la texture pour que chaque usage ait son propre repeat/wrap
+    const tex = cachedEntry.texture.clone();
+    tex.needsUpdate = true;
+    tex.wrapS = options.wrapS !== undefined ? options.wrapS : THREE.RepeatWrapping;
+    tex.wrapT = options.wrapT !== undefined ? options.wrapT : THREE.RepeatWrapping;
+    if (options.repeatX !== undefined) tex.repeat.set(options.repeatX, options.repeatY || 1);
+
+    return new THREE.MeshStandardMaterial({
+        map: tex,
+        side: THREE.DoubleSide,
+        roughness: options.roughness !== undefined ? options.roughness : 0.5,
+        metalness: options.metalness !== undefined ? options.metalness : 0,
+        polygonOffset: options.polygonOffset || false,
+        polygonOffsetFactor: options.polygonOffsetFactor || 0,
+        polygonOffsetUnits: options.polygonOffsetUnits || 0,
+    });
+}
+
 // Murs et plan de pièce
 var floorPlanWalls = (typeof floorPlanWalls !== 'undefined') ? floorPlanWalls : [];
 var wallHeight = (typeof wallHeight !== 'undefined') ? wallHeight : 2.5;
@@ -693,20 +789,12 @@ function checkAudioHoverTriggers(hoveredObjectName) {
 // ==================== RESTAURATION DE TEXTURES ====================
 
 async function restoreWallTextures(wall, textureInfoData) {
-    const textureLoader = new THREE.TextureLoader();
     for (const faceIdx in textureInfoData) {
         const info = textureInfoData[faceIdx];
         if (!info || !info.textureBlobId) continue;
         try {
-            const blobRecord = await RoomEditorDB.get(RoomEditorDB.STORE_BLOBS, info.textureBlobId);
-            if (!blobRecord || !blobRecord.data) continue;
-            const imageDataURL = blobRecord.data;
-            const tex = await new Promise((resolve, reject) => {
-                textureLoader.load(imageDataURL, resolve, undefined, reject);
-            });
-            tex.colorSpace = THREE.SRGBColorSpace;
-            tex.wrapS = THREE.RepeatWrapping;
-            tex.wrapT = THREE.RepeatWrapping;
+            const cached = await _getCachedTexture(info.textureBlobId);
+            if (!cached) continue;
 
             let faceWidth, faceHeight;
             if (wall.isMerged || !wall.start || !wall.end) {
@@ -721,19 +809,22 @@ async function restoreWallTextures(wall, textureInfoData) {
                 else if (fi === 2 || fi === 3) faceHeight = wallThickness;
             }
 
+            let repeatX, repeatY, wrapT = THREE.RepeatWrapping;
             if (info.type === 'tile') {
-                tex.repeat.set(faceWidth / info.tileSize, faceHeight / info.tileSize);
+                repeatX = faceWidth / info.tileSize;
+                repeatY = faceHeight / info.tileSize;
             } else {
-                tex.wrapT = THREE.ClampToEdgeWrapping;
-                const img = tex.image;
+                wrapT = THREE.ClampToEdgeWrapping;
+                const img = cached.texture.image;
                 const aspectRatio = img ? (img.width / img.height) : 1;
-                tex.repeat.set(faceWidth / (faceHeight * aspectRatio), 1);
+                repeatX = faceWidth / (faceHeight * aspectRatio);
+                repeatY = 1;
             }
 
             const existingMat = Array.isArray(wall.mesh.material) ? wall.mesh.material[parseInt(faceIdx)] : null;
             const pof = (existingMat && existingMat.polygonOffsetFactor) || 1;
-            const texMat = new THREE.MeshStandardMaterial({
-                map: tex, side: THREE.DoubleSide, roughness: 0.5, metalness: 0,
+            const texMat = _createSharedMaterial(cached, {
+                wrapT, repeatX, repeatY,
                 polygonOffset: true, polygonOffsetFactor: pof, polygonOffsetUnits: pof
             });
             ensureMultiMaterial(wall);
@@ -741,7 +832,7 @@ async function restoreWallTextures(wall, textureInfoData) {
             wall.mesh.material[parseInt(faceIdx)] = texMat;
 
             if (!wall.textureInfo) wall.textureInfo = {};
-            wall.textureInfo[faceIdx] = { type: info.type, tileSize: info.tileSize, imageDataURL, fileName: info.fileName };
+            wall.textureInfo[faceIdx] = { type: info.type, tileSize: info.tileSize, imageDataURL: cached.dataURL, fileName: info.fileName };
         } catch (e) {
             console.warn(`⚠️ Échec restauration texture face ${faceIdx} de ${wall.name}:`, e);
         }
@@ -754,21 +845,17 @@ async function restoreWallTextures(wall, textureInfoData) {
 async function restoreFloorTile(tileData) {
     if (!tileData.textureBlobId) return;
     try {
-        const blobRecord = await RoomEditorDB.get(RoomEditorDB.STORE_BLOBS, tileData.textureBlobId);
-        if (!blobRecord || !blobRecord.data) return;
-        const tex = await new Promise((resolve, reject) => {
-            new THREE.TextureLoader().load(blobRecord.data, resolve, undefined, reject);
+        const cached = await _getCachedTexture(tileData.textureBlobId);
+        if (!cached) return;
+        const tileSize = tileData.tileSize || 1;
+        const mat = _createSharedMaterial(cached, {
+            repeatX: 1 / tileSize, repeatY: 1 / tileSize
         });
-        tex.colorSpace = THREE.SRGBColorSpace; tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
-        tex.repeat.set(1 / (tileData.tileSize || 1), 1 / (tileData.tileSize || 1));
-        const tile = new THREE.Mesh(
-            new THREE.PlaneGeometry(1, 1),
-            new THREE.MeshStandardMaterial({ map: tex, side: THREE.DoubleSide, roughness: 0.5, metalness: 0 })
-        );
+        const tile = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), mat);
         tile.rotation.x = -Math.PI / 2;
         tile.position.set(tileData.x, 0.02, tileData.z);
         tile.receiveShadow = true;
-        tile.userData = { type: 'floor-tile', isEnvironment: true, textureDataURL: blobRecord.data, tileSize: tileData.tileSize || 1 };
+        tile.userData = { type: 'floor-tile', isEnvironment: true, textureDataURL: cached.dataURL, tileSize };
         scene.add(tile);
     } catch (e) { console.warn('⚠️ Échec restauration dalle de sol:', e); }
 }
@@ -776,21 +863,17 @@ async function restoreFloorTile(tileData) {
 async function restoreCeilingTile(tileData) {
     if (!tileData.textureBlobId) return;
     try {
-        const blobRecord = await RoomEditorDB.get(RoomEditorDB.STORE_BLOBS, tileData.textureBlobId);
-        if (!blobRecord || !blobRecord.data) return;
-        const tex = await new Promise((resolve, reject) => {
-            new THREE.TextureLoader().load(blobRecord.data, resolve, undefined, reject);
+        const cached = await _getCachedTexture(tileData.textureBlobId);
+        if (!cached) return;
+        const tileSize = tileData.tileSize || 1;
+        const mat = _createSharedMaterial(cached, {
+            repeatX: 1 / tileSize, repeatY: 1 / tileSize
         });
-        tex.colorSpace = THREE.SRGBColorSpace; tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
-        tex.repeat.set(1 / (tileData.tileSize || 1), 1 / (tileData.tileSize || 1));
-        const tile = new THREE.Mesh(
-            new THREE.PlaneGeometry(1, 1),
-            new THREE.MeshStandardMaterial({ map: tex, side: THREE.DoubleSide, roughness: 0.5, metalness: 0 })
-        );
+        const tile = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), mat);
         tile.rotation.x = Math.PI / 2;
         tile.position.set(tileData.x, wallHeight - 0.02, tileData.z);
         tile.receiveShadow = true;
-        tile.userData = { type: 'ceiling-tile', isEnvironment: true, textureDataURL: blobRecord.data, tileSize: tileData.tileSize || 1 };
+        tile.userData = { type: 'ceiling-tile', isEnvironment: true, textureDataURL: cached.dataURL, tileSize };
         scene.add(tile);
     } catch (e) { console.warn('⚠️ Échec restauration dalle de plafond:', e); }
 }
@@ -798,14 +881,10 @@ async function restoreCeilingTile(tileData) {
 async function restoreFloorPolygon(polyData) {
     if (!polyData.textureBlobId || !polyData.polygonPoints) return;
     try {
-        const blobRecord = await RoomEditorDB.get(RoomEditorDB.STORE_BLOBS, polyData.textureBlobId);
-        if (!blobRecord || !blobRecord.data) return;
+        const cached = await _getCachedTexture(polyData.textureBlobId);
+        if (!cached) return;
         const polygon = polyData.polygonPoints;
         if (polygon.length < 3) return;
-        const tex = await new Promise((resolve, reject) => {
-            new THREE.TextureLoader().load(blobRecord.data, resolve, undefined, reject);
-        });
-        tex.colorSpace = THREE.SRGBColorSpace; tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
         const shape = new THREE.Shape();
         shape.moveTo(polygon[0].x, -polygon[0].z);
         for (let i = 1; i < polygon.length; i++) shape.lineTo(polygon[i].x, -polygon[i].z);
@@ -816,12 +895,12 @@ async function restoreFloorPolygon(polyData) {
         const tileSize = polyData.tileSize || 1;
         for (let i = 0; i < posAttr.count; i++) uvAttr.setXY(i, posAttr.getX(i) / tileSize, -posAttr.getY(i) / tileSize);
         uvAttr.needsUpdate = true;
-        const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({
-            map: tex, side: THREE.DoubleSide, roughness: 0.5, metalness: 0,
+        const mat = _createSharedMaterial(cached, {
             polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1
-        }));
+        });
+        const mesh = new THREE.Mesh(geometry, mat);
         mesh.rotation.x = -Math.PI / 2; mesh.position.y = 0.05; mesh.receiveShadow = true;
-        mesh.userData = { type: 'floor-polygon', isEnvironment: true, textureDataURL: blobRecord.data, tileSize, polygonPoints: polygon };
+        mesh.userData = { type: 'floor-polygon', isEnvironment: true, textureDataURL: cached.dataURL, tileSize, polygonPoints: polygon };
         scene.add(mesh);
     } catch (e) { console.warn('⚠️ Échec restauration polygone de sol:', e); }
 }
@@ -829,14 +908,10 @@ async function restoreFloorPolygon(polyData) {
 async function restoreCeilingPolygon(polyData) {
     if (!polyData.textureBlobId || !polyData.polygonPoints) return;
     try {
-        const blobRecord = await RoomEditorDB.get(RoomEditorDB.STORE_BLOBS, polyData.textureBlobId);
-        if (!blobRecord || !blobRecord.data) return;
+        const cached = await _getCachedTexture(polyData.textureBlobId);
+        if (!cached) return;
         const polygon = polyData.polygonPoints;
         if (polygon.length < 3) return;
-        const tex = await new Promise((resolve, reject) => {
-            new THREE.TextureLoader().load(blobRecord.data, resolve, undefined, reject);
-        });
-        tex.colorSpace = THREE.SRGBColorSpace; tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
         const shape = new THREE.Shape();
         shape.moveTo(polygon[0].x, polygon[0].z);
         for (let i = 1; i < polygon.length; i++) shape.lineTo(polygon[i].x, polygon[i].z);
@@ -847,11 +922,10 @@ async function restoreCeilingPolygon(polyData) {
         const tileSize = polyData.tileSize || 1;
         for (let i = 0; i < posAttr.count; i++) uvAttr.setXY(i, posAttr.getX(i) / tileSize, posAttr.getY(i) / tileSize);
         uvAttr.needsUpdate = true;
-        const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({
-            map: tex, side: THREE.DoubleSide, roughness: 0.5, metalness: 0
-        }));
+        const mat = _createSharedMaterial(cached, {});
+        const mesh = new THREE.Mesh(geometry, mat);
         mesh.rotation.x = Math.PI / 2; mesh.position.y = wallHeight - 0.02; mesh.receiveShadow = true;
-        mesh.userData = { type: 'ceiling-polygon', isEnvironment: true, textureDataURL: blobRecord.data, tileSize, polygonPoints: polygon };
+        mesh.userData = { type: 'ceiling-polygon', isEnvironment: true, textureDataURL: cached.dataURL, tileSize, polygonPoints: polygon };
         scene.add(mesh);
     } catch (e) { console.warn('⚠️ Échec restauration polygone de plafond:', e); }
 }
@@ -904,6 +978,31 @@ function loadObjectFromURL(url, data) {
         model.userData.fileName = data.fileName;
         if (data.fileData) model.userData.fileData = data.fileData;
         if (data.customRoughness !== undefined) model.userData.customRoughness = data.customRoughness;
+        if (data.customBrightness !== undefined) model.userData.customBrightness = data.customBrightness;
+        if (data.customExposure !== undefined) model.userData.customExposure = data.customExposure;
+        if (data.customContrast !== undefined) model.userData.customContrast = data.customContrast;
+        if (data.customOffset !== undefined) model.userData.customOffset = data.customOffset;
+        if (data.customGamma !== undefined) model.userData.customGamma = data.customGamma;
+
+        // Appliquer roughness personnalisé
+        if (data.customRoughness !== undefined) {
+            model.traverse(function(child) {
+                if (child.isMesh && child.material && child.material.roughness !== undefined) {
+                    child.material.roughness = data.customRoughness;
+                    child.material.needsUpdate = true;
+                }
+            });
+        }
+
+        // Appliquer les réglages visuels (luminosité, exposition, contraste, offset, gamma)
+        var _hasVisual = (data.customBrightness || data.customExposure || data.customContrast || data.customOffset || data.customGamma);
+        if (_hasVisual) {
+            console.log('🎨 Réglages visuels pour ' + data.editorName + ':', JSON.stringify({
+                brightness: data.customBrightness, exposure: data.customExposure,
+                contrast: data.customContrast, offset: data.customOffset, gamma: data.customGamma
+            }));
+        }
+        _applyVisualSettings(model);
 
         if (data.isCharacter) {
             model.userData.isCharacter = true;
@@ -1202,6 +1301,10 @@ async function loadProjectFromLocalStorage() {
 
     loadCustomLightsFromStorage();
     if (typeof loadPermanentObjects === 'function') loadPermanentObjects();
+
+    // Invalider le cache de collision pour inclure les murs/objets fraîchement chargés
+    if (typeof invalidateCollisionCache === 'function') invalidateCollisionCache();
+    freezeStaticObjects();
 }
 
 async function loadProjectFromIndexedDB(projectData) {
@@ -1356,6 +1459,34 @@ async function loadProjectFromIndexedDB(projectData) {
     }
 
     console.log('📂 Projet chargé depuis IndexedDB !');
+    console.log(`🎨 Cache textures: ${_textureCacheStats.misses} images chargées, ${_textureCacheStats.hits} réutilisées (${_textureCache.size} uniques)`);
+
+    // Invalider le cache de collision pour inclure les murs/objets fraîchement chargés
+    if (typeof invalidateCollisionCache === 'function') invalidateCollisionCache();
+    // Figer les matrices des objets statiques (gros gain perf: skip updateMatrixWorld par frame)
+    freezeStaticObjects();
+}
+
+// Désactive matrixAutoUpdate pour les objets statiques (murs, sol, mobilier)
+// Les personnages animés (isCharacter) gardent matrixAutoUpdate = true
+function freezeStaticObjects() {
+    if (typeof scene === 'undefined' || !scene) return;
+    scene.traverse(child => {
+        if (!child.isMesh && !child.isGroup) return;
+        // Ne pas figer les personnages animés
+        if (child.userData.isCharacter) return;
+        if (child.userData.isCollisionProxy) return;
+        // Ne pas figer les gizmos/helpers interactifs
+        if (child.userData.isGizmo) return;
+        // Vérifier les parents (enfants de personnages)
+        let p = child.parent;
+        while (p) {
+            if (p.userData.isCharacter) return;
+            p = p.parent;
+        }
+        child.matrixAutoUpdate = false;
+        child.updateMatrix();
+    });
 }
 
 // ==================== GAME INTERACTION SYSTEM ====================
@@ -1389,17 +1520,21 @@ function findCharacterByRef(characterRef) {
     return null;
 }
 
+// Vecteurs pré-alloués pour getZoneDistance (zéro allocation par frame)
+const _zdVec3 = new THREE.Vector3();
+
 function getZoneDistance(zone, cameraPos) {
     const sm = zone.surfaceMode || 'floor';
-    if (sm === 'wall' || sm === 'object' || sm === 'character') {
-        const cx = (zone.bounds.minX + zone.bounds.maxX) / 2;
-        const cy = zone.y;
-        const cz = (zone.bounds.minZ + zone.bounds.maxZ) / 2;
-        return cameraPos.distanceTo(new THREE.Vector3(cx, cy, cz));
-    }
     const cx = (zone.bounds.minX + zone.bounds.maxX) / 2;
     const cz = (zone.bounds.minZ + zone.bounds.maxZ) / 2;
-    return new THREE.Vector2(cameraPos.x, cameraPos.z).distanceTo(new THREE.Vector2(cx, cz));
+    if (sm === 'wall' || sm === 'object' || sm === 'character') {
+        _zdVec3.set(cx, zone.y, cz);
+        return cameraPos.distanceTo(_zdVec3);
+    }
+    // Distance 2D XZ — calcul direct sans allocation
+    const dx = cameraPos.x - cx;
+    const dz = cameraPos.z - cz;
+    return Math.sqrt(dx * dx + dz * dz);
 }
 
 // --- Hotspot turquoise pulsatile ---
@@ -1421,29 +1556,40 @@ function _createInteractionHotspot(position, radius) {
     return hotspot;
 }
 
+// Cache bone thorax par UUID (évite traverse() à chaque frame)
+const _chestBoneCache = new Map();
+const _chestWorldPos = new THREE.Vector3(); // Pré-alloué
+const _chestFallbackBox = new THREE.Box3(); // Pré-alloué
+
 function _getCharacterChestPosition(char) {
-    const worldPos = new THREE.Vector3();
-    const chestBoneNames = ['spine1', 'spine2', 'chest', 'Spine1', 'Spine2', 'Chest', 'spine_01', 'spine_02', 'Spine', 'upperchest', 'UpperChest'];
-    let chestBone = null;
-    char.traverse(child => {
-        if (child.isBone && !chestBone) {
-            const n = child.name.toLowerCase();
-            for (const cn of chestBoneNames) {
-                if (n === cn.toLowerCase() || n.includes('spine1') || n.includes('spine2') || n.includes('chest')) {
+    // Chercher dans le cache
+    let chestBone = _chestBoneCache.get(char.uuid);
+    if (chestBone === undefined) {
+        // Première fois : traverse + cache le résultat
+        chestBone = null;
+        char.traverse(child => {
+            if (child.isBone && !chestBone) {
+                const n = child.name.toLowerCase();
+                if (n.includes('spine1') || n.includes('spine2') || n.includes('chest') || n.includes('spine_01') || n.includes('spine_02')) {
                     chestBone = child;
-                    break;
                 }
             }
-        }
-    });
-    if (chestBone) {
-        chestBone.getWorldPosition(worldPos);
-        return worldPos;
+        });
+        _chestBoneCache.set(char.uuid, chestBone || null);
     }
-    const box = new THREE.Box3().setFromObject(char);
-    const h = box.max.y - box.min.y;
-    worldPos.set((box.min.x + box.max.x) / 2, box.min.y + h * 0.6, (box.min.z + box.max.z) / 2);
-    return worldPos;
+    if (chestBone) {
+        chestBone.getWorldPosition(_chestWorldPos);
+        return _chestWorldPos;
+    }
+    // Fallback : 60% de la hauteur
+    _chestFallbackBox.setFromObject(char);
+    const h = _chestFallbackBox.max.y - _chestFallbackBox.min.y;
+    _chestWorldPos.set(
+        (_chestFallbackBox.min.x + _chestFallbackBox.max.x) / 2,
+        _chestFallbackBox.min.y + h * 0.6,
+        (_chestFallbackBox.min.z + _chestFallbackBox.max.z) / 2
+    );
+    return _chestWorldPos;
 }
 
 function _updateInteractionHotspots() {

@@ -1939,6 +1939,30 @@ function updateObjectInfo() {
         roughnessValue.textContent = '-';
     }
 
+    // Mettre à jour les contrôles visuels (luminosité, exposition, contraste, offset, gamma)
+    const visualSliders = [
+        { id: 'brightness-slider', valueId: 'brightness-value', key: 'customBrightness', defaultVal: 0 },
+        { id: 'exposure-slider', valueId: 'exposure-value', key: 'customExposure', defaultVal: 1.0 },
+        { id: 'contrast-slider', valueId: 'contrast-value', key: 'customContrast', defaultVal: 1.0 },
+        { id: 'offset-slider', valueId: 'offset-value', key: 'customOffset', defaultVal: 0 },
+        { id: 'gamma-slider', valueId: 'gamma-value', key: 'customGamma', defaultVal: 1.0 }
+    ];
+    visualSliders.forEach(({ id, valueId, key, defaultVal }) => {
+        const slider = document.getElementById(id);
+        const valEl = document.getElementById(valueId);
+        if (slider) {
+            if (hasMaterial) {
+                const val = obj.userData[key] !== undefined ? obj.userData[key] : defaultVal;
+                slider.value = val;
+                valEl.textContent = val.toFixed(2);
+                slider.disabled = false;
+            } else {
+                slider.disabled = true;
+                valEl.textContent = defaultVal.toFixed(2);
+            }
+        }
+    });
+
     // Mettre à jour l'étiquette de dimensions
     showDimensionsLabel(obj);
 }
