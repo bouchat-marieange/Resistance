@@ -18,3 +18,24 @@ export_scene.js
 Thumbs.db
 Desktop.ini
 .DS_Store
+
+# Node
+node_modules/
+package-lock.json
+
+# Fichiers sources originaux (avant optimisation Draco)
+3D/perso/nabydance-original.glb
+3D/perso/nabydance_old.glb
+
+# Bibliothèque de référence externe (PDF/DOCX/TXT) — non versionnée
+*.pdf
+*.docx
+20240529_CHILLPLAY-INT-Web.pdf
+chillplay.txt
+gene2024_conso.txt
+gene2024_pratiques.txt
+regard_ia_2026.txt
+regard_ia_guide.txt
+ritpu_decamps_zanichelli_2025.txt
+Voici la correspondance de tous les.txt
+lancer serveur local.txt
