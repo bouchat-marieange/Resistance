@@ -291,13 +291,70 @@ function simpleHash(str) {
     return Math.abs(hash).toString(36);
 }
 
+// Liste exhaustive des slots de texture d'un MeshStandardMaterial / MeshPhysicalMaterial
+// + autres matériaux courants. Les slots absents sur certains matériaux sont ignorés.
+const _TEXTURE_SLOTS = [
+    'map', 'normalMap', 'roughnessMap', 'metalnessMap', 'emissiveMap',
+    'aoMap', 'displacementMap', 'bumpMap', 'alphaMap', 'envMap',
+    'lightMap', 'specularMap', 'gradientMap', 'matcap',
+    'clearcoatMap', 'clearcoatNormalMap', 'clearcoatRoughnessMap',
+    'sheenColorMap', 'sheenRoughnessMap', 'transmissionMap', 'thicknessMap'
+];
+
+// Dispose une texture en vérifiant qu'elle n'est pas encore en cache partagé.
+// Les textures du _textureCache sont partagées et ne doivent PAS être disposées
+// à chaque objet détruit — elles le seront via clearTextureCache() en fin de vie.
+function _disposeTextureIfNotCached(tex) {
+    if (!tex || !tex.dispose) return;
+    for (const cached of _textureCache.values()) {
+        if (cached.texture === tex) return; // encore partagée, on garde
+    }
+    tex.dispose();
+}
+
 function disposeMaterial(material) {
     if (!material) return;
     if (Array.isArray(material)) {
-        material.forEach(m => { if (m && m.dispose) m.dispose(); });
-    } else if (material.dispose) {
-        material.dispose();
+        material.forEach(m => disposeMaterial(m));
+        return;
     }
+    // Dispose toutes les textures attachées au matériau
+    for (const slot of _TEXTURE_SLOTS) {
+        if (material[slot]) {
+            _disposeTextureIfNotCached(material[slot]);
+            material[slot] = null;
+        }
+    }
+    if (material.dispose) material.dispose();
+}
+
+// Nettoie en profondeur un Object3D (modèle GLB, groupe, mesh, ...).
+// Détache du parent, dispose geometries + matériaux + textures pour chaque
+// descendant. À appeler à la place de scene.remove(obj) quand on veut
+// réellement libérer la mémoire GPU.
+function disposeObject3D(root) {
+    if (!root) return;
+    root.traverse(child => {
+        if (child.isMesh || child.isSkinnedMesh) {
+            if (child.geometry) child.geometry.dispose();
+            if (child.material) disposeMaterial(child.material);
+        } else if (child.isSprite) {
+            if (child.material) disposeMaterial(child.material);
+        }
+    });
+    if (root.parent) root.parent.remove(root);
+}
+
+// Vide le cache de textures partagées et libère leur mémoire GPU.
+// À n'appeler qu'en toute fin de vie de la scène (beforeunload, changement
+// de salle) — sinon on casse les matériaux encore en scène.
+function clearTextureCache() {
+    for (const entry of _textureCache.values()) {
+        if (entry && entry.texture && entry.texture.dispose) entry.texture.dispose();
+    }
+    _textureCache.clear();
+    _textureCacheStats.hits = 0;
+    _textureCacheStats.misses = 0;
 }
 
 function measureCharacterByBones(model) {
@@ -1315,7 +1372,11 @@ async function loadProjectFromIndexedDB(projectData) {
         if (wall.mesh) { scene.remove(wall.mesh); if (wall.mesh.geometry) wall.mesh.geometry.dispose(); disposeMaterial(wall.mesh.material); }
     }
     floorPlanWalls.length = 0;
-    for (const obj of [...importedObjects]) { scene.remove(obj); const idx = selectableObjects.indexOf(obj); if (idx > -1) selectableObjects.splice(idx, 1); }
+    for (const obj of [...importedObjects]) {
+        const idx = selectableObjects.indexOf(obj);
+        if (idx > -1) selectableObjects.splice(idx, 1);
+        disposeObject3D(obj); // retire de la scène + dispose geo/mat/textures de tout le sous-arbre
+    }
     importedObjects.length = 0;
     for (const room of [...floorPlanRooms]) {
         if (room.mesh) { scene.remove(room.mesh); if (room.mesh.geometry) room.mesh.geometry.dispose(); if (room.mesh.material) room.mesh.material.dispose(); }
@@ -1956,5 +2017,33 @@ function closeAllOverlays() {
     closeImageLightbox();
     closeTextLightbox();
 }
+
+// ==================== CLEANUP DE FIN DE VIE ====================
+// Libère la mémoire GPU quand l'utilisateur quitte la page ou change de salle.
+// Sinon les textures, géométries et matériaux restent alloués côté WebGL jusqu'à
+// ce que le GC récupère le contexte — ce qui peut mettre 30+ secondes et laisser
+// la mémoire gonflée si l'utilisateur enchaîne plusieurs salles.
+function disposeSceneAndRelease() {
+    try {
+        if (typeof scene !== 'undefined' && scene) {
+            // Dispose tous les enfants restants de la scène
+            const children = [...scene.children];
+            for (const child of children) disposeObject3D(child);
+        }
+        clearTextureCache();
+        if (typeof renderer !== 'undefined' && renderer) {
+            if (renderer.renderLists && renderer.renderLists.dispose) renderer.renderLists.dispose();
+            if (renderer.dispose) renderer.dispose();
+            if (renderer.forceContextLoss) renderer.forceContextLoss();
+        }
+    } catch (e) {
+        // Page en train de mourir — on n'a pas besoin de gérer l'erreur
+    }
+}
+
+// beforeunload : navigation vers une autre page / fermeture d'onglet
+// pagehide : équivalent plus fiable sur iOS et pour bfcache
+window.addEventListener('beforeunload', disposeSceneAndRelease);
+window.addEventListener('pagehide', disposeSceneAndRelease);
 
 console.log('✅ scene-loader.js chargé (mode jeu léger)');
