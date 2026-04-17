@@ -289,12 +289,17 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/loaders/DRACOLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/controls/OrbitControls.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/utils/BufferGeometryUtils.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/polygon-clipping@0.15.7/dist/polygon-clipping.umd.min.js"></script>
 
 <!-- Scene Loader (reconstruction scène sans éditeur) -->
 <script src="scene-loader.js"></script>
+
+<!-- Systeme de controles configurables (clavier + manette PS4) -->
+<script src="game/input-config.js"></script>
+<script src="game/gamepad-manager.js"></script>
 
 <script>
 /**
@@ -680,6 +685,11 @@ function createDoor() {
 
 function loadBabyModel() {
     const loader = new THREE.GLTFLoader();
+    // Attache le decoder Draco (meme chemin que room_1.html pour coherence)
+    const dracoLoader = new THREE.DRACOLoader();
+    dracoLoader.setDecoderPath('https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/libs/draco/');
+    loader.setDRACOLoader(dracoLoader);
+
     const url = resolveURL('3D/perso/baby.glb');
 
     loader.load(url,
