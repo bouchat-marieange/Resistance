@@ -503,7 +503,7 @@ var wallHeight = 2.5;
 var PLAYER_EYE_HEIGHT = 1.50;
 var spawnPosition = null;
 var spawnRotationY = 0;
-var currentRoomName = 'room_1';
+var currentRoomName = 'sas_securite';
 var interactionZones = [];
 var hoveredZones = new Set();
 var proximityTriggeredZones = new Set();
@@ -615,7 +615,7 @@ function init() {
 
     // Configurer la position et orientation de la caméra selon le mur d'entrée
     if (entryWall === '3') {
-        // Arrivée depuis room_2 mur 3 → Face au mur 3 de room_1 (mur sud)
+        // Arrivée depuis la_villa mur 3 → Face au mur 3 de sas_securite (mur sud)
         camera.position.set(0, baseEyeHeight, -25);
         camera.lookAt(0, baseEyeHeight, 100);
     } else {
@@ -2009,7 +2009,7 @@ function getMasterVolume(category) {
 }
 
 // Initialiser le ScoreManager
-ScoreManager.init('room_1');
+ScoreManager.init('sas_securite');
 
 /**
  * ============================================
@@ -2026,7 +2026,7 @@ setTimeout(async () => {
     }, 15000);
 
     try {
-        currentRoomName = 'room_1';
+        currentRoomName = 'sas_securite';
 
         // Bootstrap: charger les données de scène depuis fichiers/IndexedDB
         await bootstrapFromFiles();

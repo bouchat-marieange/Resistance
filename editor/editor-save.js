@@ -470,6 +470,57 @@ async function saveProject() {
     }
 })();
 
+// Migration narrative TFE (18/04/2026) : room_1 → sas_securite, room_2 → la_villa
+// Doit etre executee cote editeur aussi car editor.html ne charge pas scene-loader.js.
+(function migrateTFENarrativeKeysLS_editor() {
+    const renames = [
+        ['room_1', 'sas_securite'],
+        ['room_2', 'la_villa']
+    ];
+    const suffixes = ['_importedObjects', '_customLights'];
+    for (const [oldName, newName] of renames) {
+        for (const suffix of suffixes) {
+            const oldKey = oldName + suffix;
+            const newKey = newName + suffix;
+            const oldVal = localStorage.getItem(oldKey);
+            if (oldVal && !localStorage.getItem(newKey)) {
+                localStorage.setItem(newKey, oldVal);
+                localStorage.removeItem(oldKey);
+            }
+        }
+        const oldFP = 'floorPlan_' + oldName;
+        const newFP = 'floorPlan_' + newName;
+        const oldFPVal = localStorage.getItem(oldFP);
+        if (oldFPVal && !localStorage.getItem(newFP)) {
+            localStorage.setItem(newFP, oldFPVal);
+            localStorage.removeItem(oldFP);
+        }
+    }
+})();
+
+async function migrateTFENarrativeKeysIDB_editor() {
+    if (typeof RoomEditorDB === 'undefined' || !RoomEditorDB) return;
+    const renames = [
+        ['project_room_1', 'project_sas_securite'],
+        ['project_room_2', 'project_la_villa']
+    ];
+    for (const [oldId, newId] of renames) {
+        try {
+            const oldRec = await RoomEditorDB.get(RoomEditorDB.STORE_PROJECTS, oldId);
+            if (!oldRec) continue;
+            const newRec = await RoomEditorDB.get(RoomEditorDB.STORE_PROJECTS, newId);
+            if (newRec) {
+                await RoomEditorDB.delete(RoomEditorDB.STORE_PROJECTS, oldId);
+                continue;
+            }
+            oldRec.id = newId;
+            await RoomEditorDB.put(RoomEditorDB.STORE_PROJECTS, oldRec);
+            await RoomEditorDB.delete(RoomEditorDB.STORE_PROJECTS, oldId);
+            console.log('[migration TFE editor] IndexedDB: ' + oldId + ' -> ' + newId);
+        } catch (e) { /* silent */ }
+    }
+}
+
 // Charger le projet au démarrage
 async function loadProjectOnStartup() {
     console.log('🚀 loadProjectOnStartup() appelé');
@@ -477,6 +528,9 @@ async function loadProjectOnStartup() {
         console.warn('⚠️ Scene non initialisée, impossible de charger le projet');
         return;
     }
+
+    // Migration narrative TFE : room_1/room_2 → sas_securite/la_villa dans IndexedDB
+    await migrateTFENarrativeKeysIDB_editor();
 
     console.log('🔄 Chargement du projet...');
 

@@ -2,7 +2,7 @@
  * Debug logger — silencieux par defaut en jeu.
  *
  * Active les logs avec :
- *   - URL param  : ?debug=1    (ex: room_1.html?debug=1)
+ *   - URL param  : ?debug=1    (ex: sas_securite.html?debug=1)
  *   - localStorage : localStorage.setItem('resistance_debug', '1')
  *
  * Par defaut console.log / .info / .debug sont muets en mode jeu.

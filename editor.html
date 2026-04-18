@@ -357,10 +357,13 @@ function populateRoomList() {
     const listEl = document.getElementById('room-list');
     listEl.innerHTML = '';
 
-    // Rooms connues par défaut
+    // Rooms connues par défaut (ordre narratif TFE)
     const defaultRooms = [
-        { name: 'room_1', title: 'Chambre de Naby' },
-        { name: 'room_2', title: 'Room 2' }
+        { name: 'cocoon_nexus', title: 'Cocoon du Nexus' },
+        { name: 'salle_controle_nexus', title: 'Salle de contrôle du Nexus' },
+        { name: 'hall_entree_nexus', title: 'Hall d\'entrée du Nexus' },
+        { name: 'la_villa', title: 'La Villa' },
+        { name: 'sas_securite', title: 'Sas de sécurité — Naby' }
     ];
 
     // Rooms enregistrées dans localStorage
@@ -519,7 +522,7 @@ async function selectRoom(name, title) {
 
 function initScene() {
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xb3e5fc); // Ciel bleu clair (même que room_1)
+    scene.background = new THREE.Color(0xb3e5fc); // Ciel bleu clair (même que sas_securite)
 
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     camera.position.set(0, 5, 10);
@@ -528,7 +531,7 @@ function initScene() {
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Limiter à 2x pour la perf
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFShadowMap; // PCFShadowMap (léger, même que room_1)
+    renderer.shadowMap.type = THREE.PCFShadowMap; // PCFShadowMap (léger, même que sas_securite)
     renderer.shadowMap.autoUpdate = false; // Mise à jour manuelle des ombres (perf++)
     renderer.physicallyCorrectLights = true; // Atténuation réaliste des lumières
     document.body.appendChild(renderer.domElement);

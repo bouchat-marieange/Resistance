@@ -301,7 +301,7 @@ function initEditor() {
         if (type === 'link' || type === 'teleport') {
             document.getElementById('zone-action-value-field').style.display = 'block';
             document.getElementById('zone-action-value').placeholder =
-                type === 'link' ? 'URL ex: ./room_2.html' : 'Coordonnées x,y,z';
+                type === 'link' ? 'URL ex: ./la_villa.html' : 'Coordonnées x,y,z';
         } else if (type === 'message') {
             document.getElementById('zone-action-value-field').style.display = 'block';
             document.getElementById('zone-action-value').placeholder = 'Texte du message';

@@ -1170,6 +1170,60 @@ function loadCustomLightsFromStorage() {
     }
 })();
 
+// Migration narrative TFE (18/04/2026) : room_1 → sas_securite, room_2 → la_villa
+// Renomme les clés localStorage pour que les donnees editeur existantes soient retrouvees
+// par les nouveaux fichiers HTML nommes selon la narration.
+(function migrateTFENarrativeKeysLS() {
+    const renames = [
+        ['room_1', 'sas_securite'],
+        ['room_2', 'la_villa']
+    ];
+    const suffixes = ['_importedObjects', '_customLights'];
+    for (const [oldName, newName] of renames) {
+        for (const suffix of suffixes) {
+            const oldKey = oldName + suffix;
+            const newKey = newName + suffix;
+            const oldVal = localStorage.getItem(oldKey);
+            if (oldVal && !localStorage.getItem(newKey)) {
+                localStorage.setItem(newKey, oldVal);
+                localStorage.removeItem(oldKey);
+            }
+        }
+        const oldFP = 'floorPlan_' + oldName;
+        const newFP = 'floorPlan_' + newName;
+        const oldFPVal = localStorage.getItem(oldFP);
+        if (oldFPVal && !localStorage.getItem(newFP)) {
+            localStorage.setItem(newFP, oldFPVal);
+            localStorage.removeItem(oldFP);
+        }
+    }
+})();
+
+// Migration narrative TFE - IndexedDB (async, appelee en debut de loadProjectOnStartup)
+async function migrateTFENarrativeKeysIDB() {
+    if (typeof RoomEditorDB === 'undefined' || !RoomEditorDB) return;
+    const renames = [
+        ['project_room_1', 'project_sas_securite'],
+        ['project_room_2', 'project_la_villa']
+    ];
+    for (const [oldId, newId] of renames) {
+        try {
+            const oldRec = await RoomEditorDB.get(RoomEditorDB.STORE_PROJECTS, oldId);
+            if (!oldRec) continue;
+            const newRec = await RoomEditorDB.get(RoomEditorDB.STORE_PROJECTS, newId);
+            if (newRec) {
+                // Nouvelle version deja presente : on supprime juste l'ancienne
+                await RoomEditorDB.delete(RoomEditorDB.STORE_PROJECTS, oldId);
+                continue;
+            }
+            oldRec.id = newId;
+            await RoomEditorDB.put(RoomEditorDB.STORE_PROJECTS, oldRec);
+            await RoomEditorDB.delete(RoomEditorDB.STORE_PROJECTS, oldId);
+            console.log('[migration TFE] IndexedDB: ' + oldId + ' -> ' + newId);
+        } catch (e) { /* silent — IDB indispo ou racing */ }
+    }
+}
+
 async function bootstrapFromFiles() {
     try {
         const existing = await RoomEditorDB.get(RoomEditorDB.STORE_PROJECTS, 'project_' + currentRoomName);
@@ -1211,6 +1265,9 @@ async function bootstrapFromFiles() {
 async function loadProjectOnStartup() {
     console.log('🚀 loadProjectOnStartup() appelé');
     if (typeof scene === 'undefined' || !scene) { console.warn('⚠️ Scene non initialisée'); return; }
+
+    // Migration narrative TFE : room_1/room_2 → sas_securite/la_villa dans IndexedDB
+    await migrateTFENarrativeKeysIDB();
 
     let idbData = null;
     try {

@@ -2173,7 +2173,7 @@ function copyCoordinates() {
         // Effacer l'historique après validation
         clearHistory();
 
-        alert('📋 Coordonnées copiées dans le presse-papiers !\n\nL\'historique a été effacé.\nVous pouvez maintenant me coller ce code pour que je l\'intègre définitivement dans room_1.html');
+        alert('📋 Coordonnées copiées dans le presse-papiers !\n\nL\'historique a été effacé.\nVous pouvez maintenant me coller ce code pour que je l\'intègre définitivement dans sas_securite.html');
     }).catch(err => {
         console.error('Erreur lors de la copie:', err);
         alert('❌ Erreur lors de la copie. Vérifiez la console.');

@@ -322,15 +322,15 @@ let characterCollisionProxies = [];
 let savedNabyTransform = null;
 let nabyRawHeight = null;
 // _cinematicPlaying et _currentCinematicZone sont déjà déclarés dans scene-loader.js
-let mixer; // Animation mixer (non utilisé dans room_2 mais référencé par l'éditeur)
+let mixer; // Animation mixer (non utilisé dans la_villa mais référencé par l'éditeur)
 let isMoving = false;
 let collisionCacheCounter = 0;
 
 // Nom de la pièce pour la sauvegarde
-currentRoomName = 'room_2';
+currentRoomName = 'la_villa';
 
 // Initialiser le ScoreManager
-ScoreManager.init('room_2');
+ScoreManager.init('la_villa');
 
 // Limites de la pièce pour le blocage caméra
 const ROOM_LIMIT = 98;
@@ -404,10 +404,10 @@ function updateGameVolume() {
     }
 }
 
-function createCharacterCollisionProxy(character) { /* stub - pas de collision proxy dans room_2 */ }
+function createCharacterCollisionProxy(character) { /* stub - pas de collision proxy dans la_villa */ }
 function removeCharacterCollisionProxy(character) { /* stub */ }
 function updateCharacterCollisionProxy(entry) { /* stub */ }
-function loadPermanentObjects() { /* stub - pas d'objets permanents dans room_2 */ }
+function loadPermanentObjects() { /* stub - pas d'objets permanents dans la_villa */ }
 
 // Toggle volume popup
 document.getElementById('volume-icon').addEventListener('click', function() {
@@ -685,7 +685,7 @@ function createDoor() {
 
 function loadBabyModel() {
     const loader = new THREE.GLTFLoader();
-    // Attache le decoder Draco (meme chemin que room_1.html pour coherence)
+    // Attache le decoder Draco (meme chemin que sas_securite.html pour coherence)
     const dracoLoader = new THREE.DRACOLoader();
     dracoLoader.setDecoderPath('https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/libs/draco/');
     loader.setDRACOLoader(dracoLoader);
@@ -1060,7 +1060,7 @@ function showDoorKnock() {
 }
 
 function goToRoom1() {
-    window.location.href = 'room_1.html?wall=3';
+    window.location.href = 'sas_securite.html?wall=3';
 }
 
 function resetGame() {
@@ -1115,7 +1115,7 @@ setTimeout(async () => {
     }, 15000);
 
     try {
-        currentRoomName = 'room_2';
+        currentRoomName = 'la_villa';
         await bootstrapFromFiles();
         await loadProjectOnStartup();
     } catch (e) {

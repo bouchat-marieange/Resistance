@@ -1176,8 +1176,9 @@ function saveAndClose() {
 }
 
 function goBack() {
-    // Retourner vers le jeu (page precedente ou room_1.html)
-    if (document.referrer && document.referrer.includes('room_')) {
+    // Retourner vers le jeu (page precedente ou point d'entree cocoon_nexus.html)
+    const gamePages = ['cocoon_nexus', 'salle_controle_nexus', 'hall_entree_nexus', 'la_villa', 'sas_securite', 'room_model', 'room_'];
+    if (document.referrer && gamePages.some(function (p) { return document.referrer.includes(p); })) {
         window.location.href = document.referrer;
     } else {
         window.history.back();

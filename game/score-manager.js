@@ -3,7 +3,7 @@
  * SCORE MANAGER - Résistance
  * ============================================
  * Gestion des scores cross-rooms liés au profil utilisateur.
- * Inclure ce script dans chaque page de jeu (room_1.html, room_2.html, room_model.html, etc.)
+ * Inclure ce script dans chaque page de jeu (cocoon_nexus.html, sas_securite.html, la_villa.html, room_model.html, etc.)
  *
  * API:
  *   ScoreManager.getActivePseudo()         - Pseudo du joueur actif
