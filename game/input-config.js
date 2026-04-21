@@ -76,7 +76,8 @@ const InputConfig = (function() {
         aim:       { type: 'button', index: 6 },               // L2
         grab:      { type: 'button', index: 7 },               // R2
         door:      { type: 'button', index: 5 },               // R1
-        map:       { type: 'button', index: 14 },              // D-pad Gauche
+        map:       { type: 'button', index: 11 },              // R3 (clic stick droit) → toggle carte
+        notebook:  { type: 'button', index: 17 },              // Touchpad → toggle carnet
         hints:     { type: 'button', index: 10 },              // L3 (clic stick gauche)
         inventory: { type: 'button', index: 9 },               // Options
         pause:     { type: 'button', index: 8 }                // Share
@@ -87,7 +88,8 @@ const InputConfig = (function() {
         0: 'Croix (X)', 1: 'Rond (O)', 2: 'Carré', 3: 'Triangle',
         4: 'L1', 5: 'R1', 6: 'L2', 7: 'R2',
         8: 'Share', 9: 'Options', 10: 'L3', 11: 'R3',
-        12: 'Haut', 13: 'Bas', 14: 'Gauche', 15: 'Droite', 16: 'PS'
+        12: 'Haut', 13: 'Bas', 14: 'Gauche', 15: 'Droite', 16: 'PS',
+        17: 'Touchpad'
     };
 
     const GAMEPAD_AXIS_LABELS = {

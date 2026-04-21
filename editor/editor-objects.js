@@ -309,15 +309,21 @@ function initEditorObjectsListeners() {
                     }
                 });
 
-                // Setup animations si présentes
+                // Setup animations si présentes.
+                // En mode éditeur : on initialise le mixer et on évalue la frame 0
+                // (pose idle naturelle) mais on met l'action en pause pour pouvoir
+                // positionner/rotater/scaler le personnage sans qu'il bouge.
+                // L'animation reprend automatiquement en mode jeu via scene-loader.js.
                 let charMixer = null;
                 if (gltf.animations && gltf.animations.length > 0) {
                     charMixer = new THREE.AnimationMixer(model);
                     const action = charMixer.clipAction(gltf.animations[0]);
                     action.play();
+                    action.paused = true;       // figé dans l'éditeur
+                    charMixer.update(0);        // évaluer frame 0 (pose idle, pas T-pose)
                     model.userData.mixer = charMixer;
                     model.userData.animations = gltf.animations;
-                    console.log(`🎬 ${gltf.animations.length} animation(s) détectée(s) pour ${charName}`);
+                    console.log(`🎬 ${gltf.animations.length} animation(s) détectée(s) pour ${charName} (pausée en mode éditeur)`);
                 }
 
                 // Marquer le modèle comme personnage importé
@@ -1039,8 +1045,8 @@ function getObjectIcon(obj) {
         return `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="${iconColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>`;
     }
 
-    // Personnage
-    if (name.includes('Naby')) {
+    // Personnage (Naby codée en dur, ou tout objet marqué isCharacter via le bouton personnage)
+    if (obj.userData.isCharacter || name.includes('Naby')) {
         return `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="${iconColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"/><path d="m9 20 3-6 3 6"/><path d="m6 8 6 2 6-2"/><path d="M12 10v4"/></svg>`;
     }
 

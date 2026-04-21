@@ -39,3 +39,6 @@ regard_ia_guide.txt
 ritpu_decamps_zanichelli_2025.txt
 Voici la correspondance de tous les.txt
 lancer serveur local.txt
+
+# Raccourci local pour lancer le serveur de test (Windows)
+lancer-serveur.bat

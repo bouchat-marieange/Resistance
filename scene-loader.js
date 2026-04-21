@@ -789,7 +789,9 @@ function updateFootstepAudio(delta) {
     if (!isMoving && wasMoving) stopAllFootstepAudio();
     wasMoving = isMoving;
     if (!isMoving) return;
-    const isSprinting = typeof keysPressed !== 'undefined' && !!keysPressed['shift'];
+    const kbSprint  = typeof keysPressed !== 'undefined' && !!keysPressed['shift'];
+    const gpSprint  = typeof GamepadManager !== 'undefined' && GamepadManager.connected && GamepadManager.getActionValue('run') > 0.5;
+    const isSprinting = kbSprint || gpSprint;
     if (typeof _footstepWasSprinting !== 'undefined' && isSprinting !== _footstepWasSprinting) {
         _footstepWasSprinting = isSprinting;
         if (isSprinting) {
@@ -1078,13 +1080,21 @@ function loadObjectFromURL(url, data) {
                 model.userData.referenceWidthAtScale1 = size.x / sy;
                 model.userData.referenceDepthAtScale1 = size.z / sy;
             }
-            if (gltf.animations && gltf.animations.length > 0) {
-                const charMixer = new THREE.AnimationMixer(model);
-                charMixer.clipAction(gltf.animations[0]).play();
-                model.userData.mixer = charMixer;
-                model.userData.animations = gltf.animations;
-            }
             importedCharacters.push(model);
+        }
+
+        // Créer un AnimationMixer pour tout objet GLB ayant des animations,
+        // qu'il soit marqué isCharacter ou non (ex : Raya importée comme objet standard).
+        // L'objet est ajouté à importedCharacters pour que la boucle animate() l'update.
+        if (gltf.animations && gltf.animations.length > 0) {
+            const objMixer = new THREE.AnimationMixer(model);
+            objMixer.clipAction(gltf.animations[0]).play();
+            model.userData.mixer = objMixer;
+            model.userData.animations = gltf.animations;
+            console.log('🎬 Animation auto-démarrée pour ' + data.editorName + ' (' + gltf.animations[0].name + ', ' + gltf.animations[0].duration.toFixed(2) + 's)');
+            if (!importedCharacters.includes(model)) {
+                importedCharacters.push(model);
+            }
         }
 
         scene.add(model);
