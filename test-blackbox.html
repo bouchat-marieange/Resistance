@@ -652,73 +652,109 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 18px;
+      gap: 12px;
       background: url('images/Images jeu Nexus/background-jeu-nexus-web.png') center/cover;
-      padding: 24px 20px;
+      padding: 14px 20px 12px;
     }
     #phase-intro.active { display: flex; }
 
+    /* Calque verre dépoli semi-transparent derrière le texte */
+    .intro-text-block {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 7px;
+      padding: 14px 32px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.60);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255,255,255,0.78);
+      max-width: 600px;
+      text-align: center;
+    }
     .intro-title {
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 1.4rem;
+      font-size: clamp(1.15rem, 2.4vw, 1.65rem);
       color: #1a2638;
       letter-spacing: .22em;
-      text-align: center;
-      max-width: 640px;
+      line-height: 1.15;
     }
     .intro-desc {
-      font-size: .62rem;
-      color: rgba(0,0,0,0.42);
-      text-align: center;
-      max-width: 480px;
+      font-size: clamp(.62rem, 1.1vw, .74rem);
+      color: rgba(0,0,0,0.58);
       line-height: 1.8;
       letter-spacing: .03em;
     }
+
+    /* Rangée des cartes */
     .intro-cards-row {
       display: flex;
       align-items: center;
-      gap: 26px;
+      gap: min(32px, 2.5vw);
     }
     .intro-card-wrap {
       position: relative;
-      width: 145px;
+      /* hauteur calculée sur l'espace restant — cartes grandes */
+      height: clamp(240px, calc(90vh - 230px), 590px);
+      width: auto;
       filter: drop-shadow(8px 8px 6px rgba(0,0,0,0.10));
     }
-    .intro-card-wrap .card-img { display: block; width: 100%; height: auto; border-radius: 10px; }
+    .intro-card-wrap .card-img {
+      display: block;
+      height: 100%;
+      width: auto;
+      border-radius: 10px;
+    }
     .intro-card-bottom {
       position: absolute;
       bottom: 0; left: 0; right: 0;
-      padding: 0 10px 13px 11px;
+      padding: 0 9% 6% 9%;
     }
-    .intro-icons { display: flex; gap: 3px; align-items: center; flex-wrap: wrap; }
-    .intro-icons svg { width: 13px; height: 13px; stroke: rgba(0,0,0,0.4); stroke-width: 1.5; }
+    .intro-icons { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
+    .intro-icons svg { width: 20px; height: 20px; stroke: rgba(0,0,0,0.58); stroke-width: 1.5; }
     .intro-qmarks {
       font-family: 'JetBrains Mono', monospace;
-      font-size: .75rem;
-      color: rgba(0,0,0,0.28);
+      font-size: clamp(.75rem, 1.5vw, 1.05rem);
+      color: rgba(0,0,0,0.48);
       letter-spacing: .06em;
       font-weight: 700;
     }
     .intro-arrow {
-      width: 76px;
-      height: auto;
+      height: clamp(28px, 4.5vh, 56px);
+      width: auto;
       flex-shrink: 0;
     }
+
+    /* Bouton futuriste — verre dépoli + contour néon turquoise */
     .intro-start-btn {
-      background: #00B4D8;
-      border: none;
-      color: #fff;
-      padding: 11px 36px;
+      position: relative;
+      background: rgba(255,255,255,0.13);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1.5px solid #00E5FF;
+      color: #00B4D8;
+      padding: 12px 44px;
       font-family: 'JetBrains Mono', monospace;
-      font-size: .76rem;
-      letter-spacing: .18em;
+      font-size: .78rem;
+      letter-spacing: .22em;
       border-radius: 4px;
       cursor: pointer;
-      transition: all .2s;
-      filter: drop-shadow(4px 4px 5px rgba(0,180,216,0.30));
-      margin-top: 6px;
+      transition: all .28s ease;
+      box-shadow: 0 0 12px rgba(0,229,255,0.38),
+                  0 0 3px  rgba(0,229,255,0.20),
+                  inset 0 0 20px rgba(0,229,255,0.07);
+      margin-top: 4px;
     }
-    .intro-start-btn:hover { background: #0098b8; transform: translateY(-1px); }
+    .intro-start-btn:hover {
+      background: rgba(0,229,255,0.14);
+      border-color: #00E5FF;
+      color: #00E5FF;
+      transform: translateY(-2px);
+      box-shadow: 0 0 26px rgba(0,229,255,0.65),
+                  0 0 8px  rgba(0,229,255,0.38),
+                  inset 0 0 28px rgba(0,229,255,0.13);
+    }
 
     /* ===================== PHASE CHOIX — écran 0-2 ===================== */
     /* Barre d'info en haut du center-zone — visible seulement en phase choix */
@@ -826,7 +862,17 @@
 
 <!-- ==================== INTRO OVERLAY (écran 0-1 — but du jeu) ==================== -->
 <div id="phase-intro" class="active">
-  <div class="intro-title">PROTOCOLE DE DÉCRYPTAGE DES CODES D'ACCÈS</div>
+
+  <!-- Calque verre dépoli : titre + description -->
+  <div class="intro-text-block">
+    <div class="intro-title">PROTOCOLE DE DÉCRYPTAGE DES CODES D'ACCÈS</div>
+    <div class="intro-desc">
+      Chaque carte d'activation dissimule un code de 6 caractères crypté en icônes.<br>
+      Déchiffrez-le pour déverrouiller la porte du Nexus.
+    </div>
+  </div>
+
+  <!-- Cartes + flèche -->
   <div class="intro-cards-row">
 
     <!-- Carte input : code crypté en icônes -->
@@ -844,16 +890,15 @@
     <div class="intro-card-wrap">
       <img src="images/Images jeu Nexus/Code-ouverture-Nexus-web.png" class="card-img" draggable="false" alt="">
       <div class="intro-card-bottom">
-        <div class="intro-qmarks">?&nbsp;&nbsp;?&nbsp;&nbsp;?&nbsp;&nbsp;?&nbsp;&nbsp;?&nbsp;&nbsp;?</div>
+        <div class="intro-qmarks">? ? ? ? ? ?</div>
       </div>
     </div>
 
   </div>
-  <div class="intro-desc">
-    Chaque carte d'activation dissimule un code de 6 caractères crypté en icônes.<br>
-    Déchiffrez-le pour déverrouiller la porte du Nexus.
-  </div>
+
+  <!-- Bouton futuriste néon -->
   <button class="intro-start-btn" onclick="goToChoice()">DÉCRYPTER ▸</button>
+
 </div>
 
 <!-- ==================== NEXUS SCENE ==================== -->
