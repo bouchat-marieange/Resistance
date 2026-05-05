@@ -721,11 +721,35 @@
       letter-spacing: .18em;
       font-weight: 700;
     }
-    .intro-arrow {
-      height: clamp(28px, 4.5vh, 56px);
-      width: auto;
+    /* Flèche CSS animée — remplace l'image PNG */
+    .intro-arrow-css {
+      display: flex;
+      align-items: center;
+      gap: clamp(5px, 0.8vw, 10px);
       flex-shrink: 0;
     }
+    .intro-arrow-css span {
+      display: block;
+      width:  clamp(16px, 2.4vw, 30px);
+      height: clamp(16px, 2.4vw, 30px);
+      border-right: clamp(2.5px, 0.35vw, 4px) solid #00E5FF;
+      border-top:   clamp(2.5px, 0.35vw, 4px) solid #00E5FF;
+      transform: rotate(45deg);
+    }
+    /* Animation séquentielle gauche → droite */
+    @keyframes arrowFlow {
+      0%, 100% {
+        opacity: 0.18;
+        filter: drop-shadow(0 0 0px transparent);
+      }
+      50% {
+        opacity: 1;
+        filter: drop-shadow(0 0 7px #00E5FF) drop-shadow(0 0 14px rgba(0,229,255,0.5));
+      }
+    }
+    .intro-arrow-css span:nth-child(1) { animation: arrowFlow 1.5s ease-in-out infinite 0s; }
+    .intro-arrow-css span:nth-child(2) { animation: arrowFlow 1.5s ease-in-out infinite 0.25s; }
+    .intro-arrow-css span:nth-child(3) { animation: arrowFlow 1.5s ease-in-out infinite 0.5s; }
 
     /* Bouton futuriste — verre dépoli arrondi + contour néon turquoise */
     .intro-start-btn {
@@ -738,15 +762,16 @@
       );
       backdrop-filter: blur(14px);
       -webkit-backdrop-filter: blur(14px);
-      border: 1.5px solid rgba(0,229,255,0.65);
-      color: #00B4D8;
+      border: 1.5px solid rgba(0,229,255,0.75);
+      color: #00E5FF;
       padding: 13px 46px;
       font-family: 'JetBrains Mono', monospace;
-      font-size: .78rem;
+      font-size: .82rem;
       letter-spacing: .22em;
       border-radius: 20px;
       cursor: pointer;
       transition: all .28s ease;
+      text-shadow: 0 0 10px rgba(0,229,255,0.75), 0 0 22px rgba(0,229,255,0.35);
       box-shadow: 0 0 14px rgba(0,229,255,0.35),
                   0 0 4px  rgba(0,229,255,0.18),
                   inset 0 1px 0 rgba(255,255,255,0.50),
@@ -756,17 +781,18 @@
     .intro-start-btn:hover {
       background: linear-gradient(
         168deg,
-        rgba(0,229,255,0.22) 0%,
-        rgba(0,200,230,0.12) 48%,
-        rgba(0,229,255,0.09) 100%
+        rgba(0,229,255,0.24) 0%,
+        rgba(0,200,230,0.14) 48%,
+        rgba(0,229,255,0.10) 100%
       );
       border-color: #00E5FF;
-      color: #00E5FF;
+      color: #fff;
+      text-shadow: 0 0 12px rgba(0,229,255,1), 0 0 28px rgba(0,229,255,0.6);
       transform: translateY(-2px);
       box-shadow: 0 0 28px rgba(0,229,255,0.65),
                   0 0 8px  rgba(0,229,255,0.40),
                   inset 0 1px 0 rgba(255,255,255,0.55),
-                  inset 0 0 30px rgba(0,229,255,0.13);
+                  inset 0 0 30px rgba(0,229,255,0.14);
     }
 
     /* ===================== PHASE CHOIX — écran 0-2 ===================== */
@@ -896,8 +922,12 @@
       </div>
     </div>
 
-    <!-- Flèche turquoise -->
-    <img src="images/Images jeu Nexus/fleche turquoise.png" class="intro-arrow" draggable="false" alt="→">
+    <!-- Flèche CSS animée -->
+    <div class="intro-arrow-css">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
 
     <!-- Carte output : caractères inconnus -->
     <div class="intro-card-wrap">
