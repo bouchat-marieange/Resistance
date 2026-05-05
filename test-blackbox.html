@@ -484,7 +484,7 @@
   <!-- SIDEBAR LEXIQUE -->
   <div id="lexicon-panel">
     <div class="lex-title">// LEXIQUE D'ACCÈS</div>
-    <div class="lex-click-hint">
+    <div class="lex-click-hint" id="lex-hint">
       <i data-lucide="mouse-pointer-2"></i>
       Cliquez pour marquer une icône identifiée
     </div>
@@ -751,6 +751,8 @@ function showPhase(id) {
   document.getElementById('alarm-overlay').classList.remove('active');
   const el = document.getElementById('phase-' + id);
   if (el) el.classList.add('active');
+  // Remet le hint neutre quand on quitte la phase cerveau
+  if (id !== 'brain') setLexHint(false);
 }
 
 // ============================================================
@@ -758,15 +760,61 @@ function showPhase(id) {
 // ============================================================
 function buildLexicon() {
   const grid = document.getElementById('lex-grid');
-  // Aucune surbrillance automatique — le joueur marque lui-même
   grid.innerHTML = LEXICON.map(e =>
     `<div class="lex-cell" data-char="${e.char}" title="${e.char}"
-          onclick="this.classList.toggle('marked')">
+          onclick="onLexCellClick(this, '${e.char}')">
        <i data-lucide="${e.icon}"></i>
        <span class="lex-char">${e.char}</span>
      </div>`
   ).join('');
   lucide.createIcons();
+}
+
+// Clic sur une cellule du lexique :
+// - Toggle le marquage visuel (toujours)
+// - En phase cerveau : remplit ou vide la case correspondante dans le tableau
+function onLexCellClick(cell, char) {
+  const wasMarked = cell.classList.contains('marked');
+  cell.classList.toggle('marked');
+  const nowMarked = !wasMarked;
+
+  // Hors phase cerveau : marquage visuel uniquement
+  if (getActivePhase() !== 'brain') return;
+
+  // Trouve les positions de ce caractère dans INPUT_CHARS
+  INPUT_CHARS.forEach((c, i) => {
+    if (c !== char) return;
+
+    if (inputMode === 'gamepad') {
+      // Mode manette : mise à jour du buffer gpBrainChars
+      if (nowMarked) {
+        gpBrainChars[i] = char;
+      } else {
+        if (gpBrainChars[i] === char) gpBrainChars[i] = '';
+      }
+      updateGpBrainDisplay();
+    } else {
+      // Mode clavier : mise à jour du champ texte
+      const input = document.getElementById(`bi-${i}`);
+      if (!input) return;
+      if (nowMarked) {
+        input.value = char;
+        input.classList.remove('ok', 'bad');
+        // Anime brièvement la case pour signaler le remplissage
+        input.style.transition = 'color .15s';
+        input.style.color = '#00E5FF';
+        setTimeout(() => { input.style.color = ''; }, 300);
+      } else {
+        // Démarcage : vide la case si elle contenait ce caractère
+        if (input.value === char) {
+          input.value = '';
+          input.classList.remove('ok', 'bad');
+        }
+      }
+    }
+  });
+
+  checkBrainFilled();
 }
 
 // ============================================================
@@ -1008,14 +1056,32 @@ function buildBrainTable() {
       <span class="decode-idx">${i+1}/6</span>
     </div>
   `).join('');
+
   // Bouton grisé au départ
   document.getElementById('validate-btn').disabled = true;
   // Reset état manette
   gpBrainRow = 0;
   gpBrainChars = ['','','','','',''];
+  // Réinitialise les marques du lexique (départ propre)
+  document.querySelectorAll('.lex-cell.marked').forEach(c => c.classList.remove('marked'));
+  // Met à jour le hint du lexique pour signaler la fonctionnalité de remplissage
+  setLexHint(true);
+
   lucide.createIcons();
   if (inputMode === 'gamepad') updateGpBrainFocus();
   else setTimeout(() => document.getElementById('bi-0')?.focus(), 100);
+}
+
+// Met à jour le texte d'aide du lexique selon la phase active
+function setLexHint(brainMode) {
+  const hint = document.getElementById('lex-hint');
+  if (!hint) return;
+  if (brainMode) {
+    hint.innerHTML = `<i data-lucide="mouse-pointer-2"></i> Cliquez une icône → remplit la case correspondante`;
+  } else {
+    hint.innerHTML = `<i data-lucide="mouse-pointer-2"></i> Cliquez pour marquer une icône identifiée`;
+  }
+  lucide.createIcons();
 }
 
 function onBrainInput(idx, el) {
@@ -1096,7 +1162,7 @@ function computeScore() {
   return {
     pts: 15, lv: 'lv-low', tier: 'LUCIDITÉ FAIBLE',
     reason: "Vous avez accepté sans vérifier alors que vous en aviez les moyens. "
-          + "Vous avez eu de la chance cette fois — l'IA se trompe une fois sur trois."
+          + "Vous avez eu de la chance cette fois — l'IA peut se tromper. Vérifier reste votre meilleure protection."
   };
 }
 
