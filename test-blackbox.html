@@ -780,64 +780,71 @@
     }
 
     /* ===================== PHASE CHOIX — écran 0-2 ===================== */
-    /* Barre d'info en haut du center-zone — visible seulement en phase choix */
+
+    /* Texte d'intro — au-dessus, sans fond ni bloc */
     #choice-info-bar {
       display: none;
       flex-shrink: 0;
-      background: rgba(255,255,255,0.95);
-      border: 1.5px solid rgba(0,180,215,0.30);
-      border-radius: 8px;
-      padding: 10px 14px;
       flex-direction: column;
-      gap: 5px;
-      filter: drop-shadow(4px 4px 4px rgba(0,0,0,0.07));
+      align-items: center;
+      gap: 4px;
+      text-align: center;
+      padding: 16px 20px 0;
     }
     body[data-phase="choice"] #choice-info-bar { display: flex; }
 
     .choice-bar-title {
-      font-size: .52rem;
-      color: #aaa;
-      letter-spacing: .18em;
-      text-align: center;
-      padding-bottom: 3px;
-      border-bottom: 1px solid rgba(0,0,0,0.05);
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(.95rem, 1.7vw, 1.25rem);
+      color: #1a2638;
+      letter-spacing: .22em;
     }
-    .choice-code-line {
-      display: flex;
-      align-items: flex-start;
-      gap: 8px;
-      font-size: .6rem;
-      padding: 5px 10px;
-      border-radius: 4px;
-      line-height: 1.55;
-      color: rgba(0,0,0,0.55);
+    .choice-bar-desc {
+      font-size: clamp(.56rem, 1vw, .65rem);
+      color: rgba(0,0,0,0.48);
+      line-height: 1.75;
+      letter-spacing: .02em;
     }
-    .choice-code-line.ok  { background: rgba(0,153,68,0.05);  border: 1px solid rgba(0,153,68,0.15); }
-    .choice-code-line.bad { background: rgba(180,70,0,0.04);  border: 1px solid rgba(180,70,0,0.12); }
-    .cc-icon { flex-shrink: 0; font-weight: 700; }
-    .choice-code-line.ok  .cc-icon { color: #009944; }
-    .choice-code-line.bad .cc-icon { color: #bb3300; }
+    .choice-bar-desc .warn-ok  { color: #009944; font-weight: 700; }
+    .choice-bar-desc .warn-bad { color: #bb3300; font-weight: 700; }
     .choice-not-final {
       font-size: .52rem;
       color: #c0c0c0;
-      text-align: center;
       letter-spacing: .04em;
       font-style: italic;
-      padding-top: 1px;
     }
 
-    /* Bouton de choix dans le lex-panel — visible en phase choix */
-    #choice-btn-lex {
-      display: none;
-      flex-shrink: 0;
+    /* Layout côte à côte en phase choix */
+    body[data-phase="choice"] #nexus-scene {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0;
     }
-    body[data-phase="choice"] #choice-btn-lex { display: flex; }
+    body[data-phase="choice"] #card-left-wrap,
+    body[data-phase="choice"] #card-right-wrap { display: none; }
 
-    /* Bouton de choix au-dessus du décodeur — visible en phase choix */
-    #choice-btn-dec {
-      display: none;
-      flex-shrink: 0;
+    body[data-phase="choice"] #center-zone {
+      display: grid;
+      grid-template-columns: 1fr 1.45fr;
+      grid-template-rows: auto 1fr;
+      gap: 8px 40px;
+      max-width: 100%;
+      flex: 1;
+      min-height: 0;
+      padding: 12px 30px 20px;
+      justify-content: unset;
     }
+
+    /* Placement grille */
+    body[data-phase="choice"] #choice-btn-lex { grid-area: 1 / 1; align-self: end; }
+    body[data-phase="choice"] #lex-panel      { grid-area: 2 / 1; min-height: 0; height: 100%; }
+    body[data-phase="choice"] #choice-btn-dec { grid-area: 1 / 2; align-self: end; }
+    body[data-phase="choice"] #decoder-wrap   { grid-area: 2 / 2; align-self: end; width: 100%; }
+
+    /* Boutons de choix — cachés par défaut, visibles en phase choix */
+    #choice-btn-lex { display: none; flex-shrink: 0; }
+    #choice-btn-dec { display: none; flex-shrink: 0; }
+    body[data-phase="choice"] #choice-btn-lex,
     body[data-phase="choice"] #choice-btn-dec { display: flex; }
 
     .choice-method-btn {
@@ -931,6 +938,16 @@
 <!-- ==================== NEXUS SCENE ==================== -->
 <div id="nexus-scene">
 
+  <!-- Titre + texte choix méthode — visible uniquement en phase choix, sans bloc -->
+  <div id="choice-info-bar">
+    <div class="choice-bar-title">CHOISISSEZ VOTRE MÉTHODE DE DÉCRYPTAGE</div>
+    <div class="choice-bar-desc">
+      <span class="warn-ok">✓ Code correct</span> → accès déverrouillé &nbsp;·&nbsp;
+      <span class="warn-bad">✗ Code incorrect</span> → alarme déclenchée, recommencer depuis le début
+    </div>
+    <div class="choice-not-final">Ce choix n'est pas définitif — vous pourrez le modifier par la suite.</div>
+  </div>
+
   <!-- LEFT CARD (input — draggable en phase décodeur) -->
   <div id="card-left-wrap">
     <div id="decoder-card" class="nexus-card">
@@ -945,18 +962,12 @@
   <!-- CENTER ZONE -->
   <div id="center-zone">
 
-    <!-- Barre info + choix méthode (écran 0-2) — visible uniquement en phase choix -->
-    <div id="choice-info-bar">
-      <div class="choice-bar-title">// CHOISISSEZ VOTRE MÉTHODE DE DÉCRYPTAGE</div>
-      <div class="choice-code-line ok">
-        <span class="cc-icon">✓</span>
-        <span><strong>Code correct</strong> → accès au Nexus déverrouillé</span>
-      </div>
-      <div class="choice-code-line bad">
-        <span class="cc-icon">✗</span>
-        <span><strong>Code incorrect</strong> → alarme déclenchée, recommencer depuis le début</span>
-      </div>
-      <div class="choice-not-final">Ce choix n'est pas définitif — vous pourrez le modifier par la suite.</div>
+    <!-- Bouton choix lexique (au-dessus du lexique en phase choix) -->
+    <div id="choice-btn-lex">
+      <button class="choice-method-btn" onclick="chooseBrain()">
+        <i data-lucide="scan-line"></i>
+        Je déchiffre moi-même avec le lexique
+      </button>
     </div>
 
     <!-- LEXIQUE PANEL + colonne déchiffrement (brain mode) -->
@@ -970,14 +981,6 @@
           </span>
         </div>
         <div class="lex-grid" id="lex-grid"></div>
-
-        <!-- Bouton choix lexique — visible uniquement en phase choix -->
-        <div id="choice-btn-lex">
-          <button class="choice-method-btn" onclick="chooseBrain()">
-            <i data-lucide="scan-line"></i>
-            Je déchiffre moi-même avec le lexique
-          </button>
-        </div>
 
       </div>
 
