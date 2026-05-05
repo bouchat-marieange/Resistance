@@ -1189,52 +1189,45 @@ function setInputMode(mode) {
   inputMode = mode;
 
   const badge = document.getElementById('input-mode-badge');
-  const label = document.getElementById('mode-label');
 
   if (mode === 'gamepad') {
     document.body.classList.add('gamepad-mode');
     badge.classList.add('mode-gamepad');
-    badge.querySelector('i').setAttribute('data-lucide', 'gamepad-2');
-    label.textContent = 'MANETTE';
+    // Lucide remplace <i> par <svg> — on reconstruit le HTML à chaque switch
+    badge.innerHTML = `<i data-lucide="gamepad-2"></i><span id="mode-label">MANETTE</span>`;
   } else {
     document.body.classList.remove('gamepad-mode');
     badge.classList.remove('mode-gamepad');
-    badge.querySelector('i').setAttribute('data-lucide', 'keyboard');
-    label.textContent = 'CLAVIER';
+    badge.innerHTML = `<i data-lucide="keyboard"></i><span id="mode-label">CLAVIER</span>`;
   }
   lucide.createIcons();
 }
-
-// Détection connexion/déconnexion manette
-window.addEventListener('gamepadconnected', e => {
-  gpIndex = e.gamepad.index;
-  setInputMode('gamepad');
-  if (!gpLoopId) gpLoop();
-  console.log('[INPUT] Manette connectée :', e.gamepad.id);
-});
-window.addEventListener('gamepaddisconnected', e => {
-  if (e.gamepad.index === gpIndex) {
-    gpIndex = null;
-    setInputMode('keyboard');
-    if (gpLoopId) { cancelAnimationFrame(gpLoopId); gpLoopId = null; }
-  }
-});
 
 // Switch vers clavier dès qu'une touche est pressée
 document.addEventListener('keydown', () => {
   if (inputMode !== 'keyboard') setInputMode('keyboard');
 }, { passive: true });
 
-// Polling manette (API Gamepad requiert polling actif)
+// Polling manette — démarre immédiatement, ne dépend PAS de gamepadconnected
+// (Chrome exige souvent un premier appui avant de déclencher l'événement)
 function gpLoop() {
   gpLoopId = requestAnimationFrame(gpLoop);
-  if (gpIndex === null) return;
 
   const gamepads = navigator.getGamepads();
-  const gp = gamepads[gpIndex];
-  if (!gp) return;
 
-  // Switch vers manette si un bouton est pressé et qu'on est en mode clavier
+  // Cherche une manette active si on n'en a pas encore
+  if (gpIndex === null) {
+    for (let i = 0; i < gamepads.length; i++) {
+      if (gamepads[i]) { gpIndex = i; break; }
+    }
+  }
+  if (gpIndex === null) return;
+
+  const gp = gamepads[gpIndex];
+  // Manette déconnectée
+  if (!gp) { gpIndex = null; setInputMode('keyboard'); return; }
+
+  // Switch vers manette si un bouton est pressé
   const anyPressed = gp.buttons.some(b => b.pressed);
   if (anyPressed && inputMode !== 'gamepad') setInputMode('gamepad');
 
@@ -1410,11 +1403,8 @@ document.addEventListener('DOMContentLoaded', () => {
   initChoicePhase();
   lucide.createIcons();
 
-  // Démarrer le polling si une manette est déjà connectée (page rechargée avec manette branchée)
-  const existing = navigator.getGamepads();
-  for (let i = 0; i < existing.length; i++) {
-    if (existing[i]) { gpIndex = i; setInputMode('gamepad'); gpLoop(); break; }
-  }
+  // Polling démarre immédiatement — détecte manette branchée avant ET après le chargement
+  gpLoop();
 });
 </script>
 </body>
