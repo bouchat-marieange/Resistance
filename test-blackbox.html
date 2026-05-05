@@ -211,7 +211,7 @@
     }
     .lex-cell svg { width: 22px; height: 22px; stroke: #2a3a4a; stroke-width: 1.5; }
     .lex-cell.marked svg { stroke: #00B4D8; }
-    .lex-char { font-size: .58rem; color: #00B4D8; font-weight: 700; letter-spacing: .04em; }
+    .lex-char { font-size: .7rem; color: #00B4D8; font-weight: 700; letter-spacing: .04em; }
     .lex-cell.marked .lex-char { color: #007a99; }
 
     /* ===================== BRAIN DECODE COLUMN ===================== */
@@ -846,14 +846,17 @@
       align-items: end;
     }
 
-    /* Placement grille — même hauteur via align-self: stretch sur la ligne 2 */
+    /* Placement grille — hauteur explicite identique sur les 2 éléments */
     body[data-phase="choice"] #choice-btn-lex { grid-area: 1 / 1; align-self: end; }
-    body[data-phase="choice"] #lex-panel      { grid-area: 2 / 1; min-height: 0; align-self: stretch; }
+    body[data-phase="choice"] #lex-panel      { grid-area: 2 / 1; min-height: 0;
+                                                height: clamp(240px, 54vh, 540px);
+                                                overflow: hidden; }
     body[data-phase="choice"] #choice-btn-dec { grid-area: 1 / 2; align-self: end; }
-    body[data-phase="choice"] #decoder-wrap   { grid-area: 2 / 2; align-self: stretch;
-                                                display: flex; align-items: flex-end; }
-    body[data-phase="choice"] #decoder-img    { width: 100%; height: auto; max-height: 100%;
-                                                object-fit: contain; object-position: bottom; }
+    body[data-phase="choice"] #decoder-wrap   { grid-area: 2 / 2;
+                                                height: clamp(240px, 54vh, 540px);
+                                                display: flex; align-items: flex-end;
+                                                justify-content: center; overflow: hidden; }
+    body[data-phase="choice"] #decoder-img    { height: 100%; width: auto; max-width: 100%; }
 
     /* Boutons de choix — cachés par défaut, visibles en phase choix */
     #choice-btn-lex { display: none; flex-shrink: 0; }
@@ -861,29 +864,49 @@
     body[data-phase="choice"] #choice-btn-lex,
     body[data-phase="choice"] #choice-btn-dec { display: flex; }
 
+    /* Boutons de choix — même style que le bouton DÉCRYPTER écran 0-1 */
     .choice-method-btn {
-      background: transparent;
-      border: 1.5px solid rgba(0,180,215,0.38);
-      color: #00B4D8;
-      padding: 8px 12px;
+      background: linear-gradient(
+        168deg,
+        rgba(255,255,255,0.30) 0%,
+        rgba(200,244,255,0.12) 48%,
+        rgba(0,229,255,0.07) 100%
+      );
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1.5px solid rgba(0,229,255,0.65);
+      color: #1a2638;
+      padding: 11px 20px;
       font-family: 'JetBrains Mono', monospace;
-      font-size: .65rem;
-      letter-spacing: .12em;
-      border-radius: 5px;
+      font-size: .72rem;
+      font-weight: 700;
+      letter-spacing: .14em;
+      border-radius: 20px;
       cursor: pointer;
-      transition: all .2s;
+      transition: all .28s ease;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
       width: 100%;
+      box-shadow: 0 0 14px rgba(0,229,255,0.30),
+                  inset 0 1px 0 rgba(255,255,255,0.50),
+                  inset 0 0 20px rgba(0,229,255,0.06);
     }
     .choice-method-btn:hover {
-      background: rgba(0,180,215,0.08);
-      border-color: #00B4D8;
-      box-shadow: 0 0 10px rgba(0,180,215,0.12);
+      background: linear-gradient(
+        168deg,
+        rgba(0,229,255,0.18) 0%,
+        rgba(0,200,230,0.10) 48%,
+        rgba(0,229,255,0.08) 100%
+      );
+      border-color: #00E5FF;
+      transform: translateY(-1px);
+      box-shadow: 0 0 22px rgba(0,229,255,0.55),
+                  inset 0 1px 0 rgba(255,255,255,0.55),
+                  inset 0 0 26px rgba(0,229,255,0.11);
     }
-    .choice-method-btn svg { width: 14px; height: 14px; stroke: #00B4D8; stroke-width: 1.5; }
+    .choice-method-btn svg { width: 15px; height: 15px; stroke: #00B4D8; stroke-width: 1.5; }
   </style>
 </head>
 <body data-phase="intro">
