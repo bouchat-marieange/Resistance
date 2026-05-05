@@ -835,8 +835,10 @@
 
     body[data-phase="choice"] #center-zone {
       display: grid;
-      grid-template-columns: 1fr 1.45fr;
-      grid-template-rows: auto 1fr;
+      /* 0.78fr : ratio calculé pour égaliser les hauteurs naturelles lex/déco
+         (lex hauteur ≈ largeur + header ; déco hauteur = largeur / 1.777) */
+      grid-template-columns: 0.78fr 1.45fr;
+      grid-template-rows: auto auto;
       gap: 8px 40px;
       max-width: 100%;
       flex: 1;
@@ -846,17 +848,12 @@
       align-items: end;
     }
 
-    /* Placement grille — hauteur explicite identique sur les 2 éléments */
+    /* Placement grille — hauteurs naturelles, pas de troncage */
     body[data-phase="choice"] #choice-btn-lex { grid-area: 1 / 1; align-self: end; }
-    body[data-phase="choice"] #lex-panel      { grid-area: 2 / 1; min-height: 0;
-                                                height: clamp(240px, 54vh, 540px);
-                                                overflow: hidden; }
+    body[data-phase="choice"] #lex-panel      { grid-area: 2 / 1; min-height: 0; }
     body[data-phase="choice"] #choice-btn-dec { grid-area: 1 / 2; align-self: end; }
-    body[data-phase="choice"] #decoder-wrap   { grid-area: 2 / 2;
-                                                height: clamp(240px, 54vh, 540px);
-                                                display: flex; align-items: flex-end;
-                                                justify-content: center; overflow: hidden; }
-    body[data-phase="choice"] #decoder-img    { height: 100%; width: auto; max-width: 100%; }
+    body[data-phase="choice"] #decoder-wrap   { grid-area: 2 / 2; }
+    body[data-phase="choice"] #decoder-img    { width: 100%; height: auto; }
 
     /* Boutons de choix — cachés par défaut, visibles en phase choix */
     #choice-btn-lex { display: none; flex-shrink: 0; }
@@ -866,21 +863,15 @@
 
     /* Boutons de choix — même style que le bouton DÉCRYPTER écran 0-1 */
     .choice-method-btn {
-      background: linear-gradient(
-        168deg,
-        rgba(255,255,255,0.30) 0%,
-        rgba(200,244,255,0.12) 48%,
-        rgba(0,229,255,0.07) 100%
-      );
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      border: 1.5px solid rgba(0,229,255,0.65);
+      background: #ffffff;
+      border: 1.5px solid rgba(0,229,255,0.75);
       color: #1a2638;
       padding: 11px 20px;
       font-family: 'JetBrains Mono', monospace;
       font-size: .72rem;
       font-weight: 700;
       letter-spacing: .14em;
+      text-transform: uppercase;
       border-radius: 20px;
       cursor: pointer;
       transition: all .28s ease;
@@ -889,22 +880,21 @@
       justify-content: center;
       gap: 8px;
       width: 100%;
-      box-shadow: 0 0 14px rgba(0,229,255,0.30),
+      text-shadow: none;
+      box-shadow: 0 0 14px rgba(0,229,255,0.35),
+                  0 0 4px rgba(0,229,255,0.18),
                   inset 0 1px 0 rgba(255,255,255,0.50),
-                  inset 0 0 20px rgba(0,229,255,0.06);
+                  inset 0 0 22px rgba(0,229,255,0.06);
     }
     .choice-method-btn:hover {
-      background: linear-gradient(
-        168deg,
-        rgba(0,229,255,0.18) 0%,
-        rgba(0,200,230,0.10) 48%,
-        rgba(0,229,255,0.08) 100%
-      );
+      background: #f0feff;
       border-color: #00E5FF;
-      transform: translateY(-1px);
+      color: #1a2638;
+      transform: translateY(-2px);
       box-shadow: 0 0 22px rgba(0,229,255,0.55),
-                  inset 0 1px 0 rgba(255,255,255,0.55),
-                  inset 0 0 26px rgba(0,229,255,0.11);
+                  0 0 8px rgba(0,229,255,0.25),
+                  inset 0 1px 0 rgba(255,255,255,0.60),
+                  inset 0 0 26px rgba(0,229,255,0.10);
     }
     .choice-method-btn svg { width: 15px; height: 15px; stroke: #00B4D8; stroke-width: 1.5; }
   </style>
