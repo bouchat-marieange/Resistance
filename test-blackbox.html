@@ -10,9 +10,8 @@
     * { margin:0; padding:0; box-sizing:border-box; }
 
     body {
-      background: #000a14;
       font-family: 'JetBrains Mono', monospace;
-      color: #fff;
+      color: #1a2638;
       height: 100vh;
       overflow: hidden;
     }
@@ -38,428 +37,614 @@
     .dev-btn.active { background:#ff00ff22; border-color:#ff00ff; color:#ff00ff; }
     #dev-info { margin-left:auto; color:#00E5FF66; font-size:.6rem; white-space:nowrap; }
 
-    /* ===================== LAYOUT ===================== */
-    #main-layout {
+    /* ===================== NEXUS SCENE ===================== */
+    #nexus-scene {
       position: fixed;
       top: 40px; left: 0; right: 0; bottom: 0;
       display: flex;
+      flex-direction: row;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 16px;
+      padding: 14px 18px 18px;
+      background: url('images/Images jeu Nexus/background-jeu-nexus-web.png') center/cover;
     }
 
-    #bg-layer {
-      position: absolute; inset: 0; z-index: 0;
-      background: #000a14;
-      /* background-image: url('assets/nexus-bg.jpg'); background-size:cover; */
-    }
-    #bg-overlay {
-      position: absolute; inset: 0; z-index: 1;
-      background: rgba(0,5,20,.90);
-    }
-
-    /* ===================== LEXICON SIDEBAR ===================== */
-    #lexicon-panel {
-      position: relative; z-index: 10;
-      width: 196px; min-width: 196px;
-      background: rgba(0,8,20,.97);
-      border-right: 1px solid #00E5FF18;
-      display: flex; flex-direction: column;
-      padding: 10px 8px;
-      overflow: hidden;
-    }
-
-    .lex-title {
-      font-size:.58rem; color:#00E5FF55; letter-spacing:.18em;
-      text-align:center; padding-bottom:5px;
-      border-bottom:1px solid #00E5FF11;
+    /* ===================== CARDS ===================== */
+    #card-left-wrap, #card-right-wrap {
       flex-shrink: 0;
+      align-self: flex-end;
+    }
+    .nexus-card {
+      position: relative;
+      width: 148px;
+      filter: drop-shadow(8px 8px 6px rgba(0,0,0,0.10));
+      user-select: none;
+    }
+    .nexus-card .card-img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: 10px;
+    }
+    /* Input card draggable state */
+    #decoder-card { cursor: default; }
+    body[data-phase="decoder"] #decoder-card { cursor: grab; }
+    #decoder-card.dragging { opacity: .2; cursor: grabbing; }
+
+    /* Card bottom overlay (icons or code) */
+    .card-bottom {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      padding: 0 10px 13px 11px;
+    }
+    .card-label {
+      font-size: .44rem;
+      color: rgba(0,0,0,0.32);
+      letter-spacing: .1em;
+      margin-bottom: 4px;
+    }
+    .card-icons {
+      display: flex;
+      gap: 3px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .card-icons svg {
+      width: 13px; height: 13px;
+      stroke: rgba(0,0,0,0.4);
+      stroke-width: 1.5;
+    }
+    .card-code-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .78rem;
+      color: rgba(0,0,0,0.18);
+      letter-spacing: .05em;
+      font-weight: 700;
+      transition: color .6s;
+    }
+    .card-code-val.revealed {
+      color: #1a2638;
+      animation: codeReveal .7s forwards;
+    }
+    @keyframes codeReveal { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:translateY(0)} }
+
+    /* ===================== CENTER ZONE ===================== */
+    #center-zone {
+      position: relative;
+      flex: 0 1 560px;
+      max-width: 560px;
+      min-width: 280px;
+      align-self: stretch;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      gap: 10px;
     }
 
-    /* Hint cliquable sous le titre */
-    .lex-click-hint {
-      font-size: .52rem;
-      color: #00E5FF2a;
-      text-align: center;
-      padding: 5px 4px 4px;
-      line-height: 1.45;
-      flex-shrink: 0;
+    /* ===================== LEXIQUE PANEL ===================== */
+    #lex-panel {
+      flex: 1;
+      min-height: 0;
+      background: rgba(255,255,255,0.95);
+      border: 1.5px solid rgba(0,180,215,0.35);
+      border-radius: 10px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      filter: drop-shadow(8px 8px 6px rgba(0,0,0,0.10));
     }
-    .lex-click-hint svg {
+    /* Brain mode: side-by-side */
+    body[data-phase="brain"] #lex-panel { flex-direction: row; }
+    body[data-phase="brain"] #lex-panel-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+
+    #lex-panel-main {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .lex-panel-header {
+      flex-shrink: 0;
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      padding-bottom: 5px;
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+      flex-wrap: wrap;
+    }
+    .lex-panel-title {
+      font-size: .58rem;
+      color: #1a2638;
+      letter-spacing: .18em;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    #lex-hint {
+      font-size: .5rem;
+      color: #999;
+      letter-spacing: .05em;
+    }
+    #lex-hint svg {
       width: 9px; height: 9px;
-      stroke: #00E5FF33;
-      stroke-width: 2;
+      stroke: #bbb; stroke-width: 2;
       vertical-align: middle;
       margin-right: 2px;
     }
 
-    /* La grille remplit tout l'espace restant */
+    /* Lex grid — 6 colonnes × 6 lignes */
     .lex-grid {
       flex: 1;
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      grid-template-rows: repeat(9, 1fr);
+      grid-template-columns: repeat(6, 1fr);
+      grid-template-rows: repeat(6, 1fr);
       gap: 3px;
-      min-height: 0; /* important pour que flex:1 fonctionne */
+      min-height: 0;
     }
-
     .lex-cell {
-      display: flex; flex-direction: column; align-items: center;
-      justify-content: center;
-      background: rgba(0,229,255,.03);
-      border: 1px solid #00E5FF0d;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.018);
+      border: 1px solid rgba(0,0,0,0.07);
       border-radius: 4px;
       cursor: pointer;
-      transition: all .18s;
+      transition: all .16s;
       user-select: none;
     }
-    .lex-cell:hover { background:rgba(0,229,255,.10); border-color:#00E5FF33; }
-
-    /* Marquage manuel par clic */
+    .lex-cell:hover { background: rgba(0,180,215,0.08); border-color: rgba(0,180,215,0.28); }
     .lex-cell.marked {
-      background: rgba(0,229,255,.18);
-      border-color: #00E5FF77;
-      box-shadow: 0 0 6px rgba(0,229,255,.25);
+      background: rgba(0,180,215,0.12);
+      border-color: rgba(0,180,215,0.55);
+      box-shadow: 0 0 4px rgba(0,180,215,0.15);
     }
-    .lex-cell svg { width:18px; height:18px; stroke:#00E5FF44; stroke-width:1.5; }
-    .lex-cell.marked svg { stroke:#00E5FF; }
-    .lex-char { font-size:.68rem; color:#ffffff2a; margin-top:2px; font-weight:700; }
-    .lex-cell.marked .lex-char { color:#00E5FFbb; }
+    .lex-cell svg { width: 15px; height: 15px; stroke: #888; stroke-width: 1.5; }
+    .lex-cell.marked svg { stroke: #00B4D8; }
+    .lex-char { font-size: .5rem; color: #ccc; margin-top: 1px; font-weight: 700; }
+    .lex-cell.marked .lex-char { color: #00B4D8; }
 
-    /* ===================== GAME AREA ===================== */
-    #game-area {
-      position: relative; z-index: 10;
-      flex: 1; display: flex;
-      align-items: center; justify-content: center;
-      overflow-y: auto; padding: 20px;
+    /* ===================== BRAIN DECODE COLUMN ===================== */
+    #brain-decode-col {
+      display: none;
+      flex-direction: column;
+      gap: 6px;
+      width: 182px;
+      flex-shrink: 0;
+      padding-left: 12px;
+      border-left: 1px solid rgba(0,0,0,0.06);
     }
+    body[data-phase="brain"] #brain-decode-col { display: flex; }
 
-    .bb-phase { display:none; flex-direction:column; align-items:center; gap:20px; width:100%; max-width:640px; }
-    .bb-phase.active { display:flex; }
-
-    .bb-phase-title {
-      font-size:.68rem; color:#00E5FF55; letter-spacing:.18em; text-align:center;
+    .brain-col-title {
+      font-size: .55rem;
+      color: #1a2638;
+      letter-spacing: .15em;
+      font-weight: 700;
+      padding-bottom: 4px;
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+      flex-shrink: 0;
     }
-
-    /* Message d'avertissement phase 0 */
-    .bb-choice-warning {
-      background: rgba(255, 90, 0, .07);
-      border: 1px solid rgba(255,80,0,.2);
-      border-radius: 5px;
-      padding: 11px 18px;
-      font-size: .68rem;
-      color: #ff9966aa;
-      text-align: center;
-      max-width: 500px;
-      line-height: 1.65;
-    }
-    .bb-choice-warning .warn-ok  { color: #00E5FFaa; font-weight:700; }
-    .bb-choice-warning .warn-bad { color: #ff6644aa; font-weight:700; }
-
-    /* ===================== CARDS ===================== */
-    .bb-card {
-      background: rgba(8,18,36,.96);
-      border: 1px solid #00E5FF;
-      border-radius: 8px; padding: 14px 20px;
-      text-align: center;
-      box-shadow: 0 0 20px rgba(0,229,255,.18);
-      transition: all .2s;
-    }
-    .bb-card.dim { border-color:#00E5FF44; box-shadow:none; }
-    .bb-card-label { font-size:.58rem; color:#00E5FF44; letter-spacing:.22em; margin-bottom:8px; }
-
-    .bb-card-icons { display:flex; justify-content:center; gap:8px; align-items:center; }
-    .bb-card-icons svg { width:26px; height:26px; stroke:#00E5FF; stroke-width:1.5; }
-
-    .bb-card.draggable { cursor:grab; }
-    .bb-card.draggable:hover { box-shadow:0 0 28px rgba(0,229,255,.45); transform:translateY(-2px); }
-    .bb-card.dragging { opacity:.3; cursor:grabbing; }
-
-    .bb-code-result {
-      font-size:1.9rem; letter-spacing:.55em; color:#00E5FF;
-      font-weight:700; padding: 2px 0;
-    }
-    .bb-code-result.error { color:#ffaa44; }
-    .bb-code-count { font-size:.58rem; color:#ffffff22; margin-top:4px; }
-
-    /* ===================== CHOICE BUTTONS ===================== */
-    .bb-choice-row { display:flex; gap:14px; flex-wrap:wrap; justify-content:center; }
-    .bb-choice-btn {
-      background:transparent; border:1px solid #00E5FF33;
-      color:#ffffffbb; padding:16px 22px; border-radius:6px;
-      cursor:pointer; font-family:'JetBrains Mono',monospace;
-      font-size:.76rem; line-height:1.55; text-align:center;
-      transition:all .2s; min-width:190px;
-    }
-    .bb-choice-btn:hover {
-      border-color:#00E5FF; background:rgba(0,229,255,.07);
-      color:#fff; box-shadow:0 0 14px rgba(0,229,255,.18);
-    }
-    .bb-choice-btn .btn-ico { display:block; margin-bottom:7px; }
-    .bb-choice-btn .btn-ico svg { width:28px; height:28px; stroke:#00E5FF; stroke-width:1.5; }
-    .bb-choice-btn .btn-desc { display:block; font-size:.62rem; color:#ffffff44; margin-top:5px; }
-
-    /* ===================== DECODER MACHINE ===================== */
-    .bb-arena-row { display:flex; align-items:center; gap:28px; flex-wrap:wrap; justify-content:center; }
-
-    #decoder-machine {
-      width:150px; height:110px;
-      border:2px dashed #00E5FF2a; border-radius:10px;
-      display:flex; flex-direction:column; align-items:center;
-      justify-content:center; gap:6px;
-      color:#00E5FF33; font-size:.6rem; letter-spacing:.12em;
-      text-align:center; transition:all .2s;
-      background:rgba(0,229,255,.015);
-    }
-    #decoder-machine svg { width:28px; height:28px; stroke:#00E5FF2a; stroke-width:1.5; transition:all .2s; }
-    #decoder-machine.drag-over {
-      border-color:#00E5FF; background:rgba(0,229,255,.09);
-      color:#00E5FF; box-shadow:0 0 18px rgba(0,229,255,.28);
-    }
-    #decoder-machine.drag-over svg { stroke:#00E5FF; }
-    #decoder-machine.active {
-      border-style:solid; border-color:#00E5FFaa;
-      background:rgba(0,229,255,.12); color:#00E5FF;
-    }
-    .drag-hint { font-size:.6rem; color:#00E5FF33; display:flex; align-items:center; gap:5px; }
-    .drag-hint svg { width:16px; height:16px; stroke:#00E5FF22; stroke-width:1.5; }
-
-    /* ===================== NEURAL NET CANVAS ===================== */
-    #nn-canvas { border:1px solid #00E5FF18; border-radius:6px; max-width:100%; }
-    .processing-label {
-      font-size:.7rem; color:#00E5FF44; letter-spacing:.13em;
-      animation: blink 1s infinite;
-    }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
-
-    /* ===================== ACTION BUTTONS ===================== */
-    .bb-actions { display:flex; flex-direction:column; gap:8px; width:100%; max-width:390px; }
-    .bb-btn {
-      background:transparent; border:1px solid #00E5FF2a;
-      color:#ffffffbb; padding:11px 16px; border-radius:4px;
-      cursor:pointer; font-family:'JetBrains Mono',monospace;
-      font-size:.75rem; text-align:left; transition:all .2s;
-      display:flex; align-items:center; gap:10px;
-    }
-    .bb-btn:hover { border-color:#00E5FF; background:rgba(0,229,255,.07); color:#fff; }
-    .bb-btn svg { width:16px; height:16px; stroke:#00E5FF55; stroke-width:1.5; flex-shrink:0; }
-    .bb-btn:hover svg { stroke:#00E5FF; }
-
-    /* ===================== CONFIRM LAYOUT ===================== */
-    .confirm-cards {
-      display:flex; gap:20px; align-items:center;
-      flex-wrap:wrap; justify-content:center;
-    }
-    .confirm-arrow { font-size:1.4rem; color:#00E5FF33; }
-
-    /* ===================== COMPARE LAYOUT ===================== */
-    .compare-cols { display:flex; gap:18px; flex-wrap:wrap; justify-content:center; }
-    .compare-col { display:flex; flex-direction:column; align-items:center; gap:6px; }
-    .compare-col-label { font-size:.62rem; color:#ffffff44; letter-spacing:.13em; }
-
-    #compare-notice {
-      font-size:.7rem; text-align:center; padding:9px 18px;
-      border-radius:4px;
-    }
-    #compare-notice.same { background:rgba(0,229,255,.07); color:#00E5FF88; border:1px solid #00E5FF18; }
-    #compare-notice.diff { background:rgba(255,100,0,.07); color:#ff9955; border:1px solid #ff664418; }
-
-    /* ===================== BRAIN TABLE ===================== */
-    .brain-hint {
-      font-size:.68rem; color:#ffffff44; text-align:center; line-height:1.6;
-    }
-    .brain-hint strong { color:#00E5FFaa; }
-
     #brain-ai-notice {
-      display:none;
-      background:rgba(255,110,0,.07); border:1px solid #ff770028;
-      border-radius:5px; padding:10px 14px;
-      font-size:.68rem; color:#ffaa66; text-align:center; max-width:380px;
+      display: none;
+      background: rgba(200,90,0,.05);
+      border: 1px solid rgba(200,90,0,.14);
+      border-radius: 4px;
+      padding: 6px 9px;
+      font-size: .55rem;
+      color: #b05c00;
+      line-height: 1.5;
+      flex-shrink: 0;
     }
-
-    .decode-table { display:flex; flex-direction:column; gap:6px; width:100%; max-width:360px; }
+    .brain-hint-sm {
+      font-size: .54rem;
+      color: #aaa;
+      line-height: 1.5;
+      flex-shrink: 0;
+    }
+    .decode-table { display: flex; flex-direction: column; gap: 4px; flex: 1; }
     .decode-row {
-      display:flex; align-items:center; gap:10px;
-      background:rgba(0,229,255,.04); border:1px solid #00E5FF0e;
-      border-radius:6px; padding:9px 14px;
+      display: flex; align-items: center; gap: 6px;
+      background: rgba(0,0,0,0.02);
+      border: 1px solid rgba(0,0,0,0.06);
+      border-radius: 5px;
+      padding: 4px 7px;
     }
-    .decode-row svg { width:20px; height:20px; stroke:#00E5FF; stroke-width:1.5; flex-shrink:0; }
-    .decode-arrow { color:#00E5FF2a; font-size:.75rem; }
+    .decode-row svg { width: 15px; height: 15px; stroke: #777; stroke-width: 1.5; flex-shrink: 0; }
+    .decode-arrow { color: rgba(0,0,0,0.22); font-size: .6rem; }
     .decode-input {
-      background:transparent; border:none;
-      border-bottom:1.5px solid #00E5FF33;
-      color:#00E5FF; font-size:1.15rem;
-      font-family:'JetBrains Mono',monospace;
-      width:42px; text-align:center;
-      text-transform:uppercase; outline:none;
-      padding-bottom:3px; transition:border-color .2s;
+      background: transparent; border: none;
+      border-bottom: 1.5px solid rgba(0,180,215,0.4);
+      color: #1a2638; font-size: .95rem;
+      font-family: 'JetBrains Mono', monospace;
+      width: 30px; text-align: center;
+      text-transform: uppercase; outline: none;
+      padding-bottom: 2px; transition: border-color .2s;
     }
-    .decode-input:focus { border-color:#00E5FF; }
-    .decode-input.ok   { color:#00ff88; border-color:#00ff8855; }
-    .decode-input.bad  { color:#ff5533; border-color:#ff553355; }
-    .decode-idx { font-size:.55rem; color:#ffffff18; margin-left:auto; }
+    .decode-input:focus { border-color: #00B4D8; }
+    .decode-input.ok  { color: #009944; border-color: rgba(0,153,68,.4); }
+    .decode-input.bad { color: #dd3311; border-color: rgba(221,51,17,.4); }
+    .decode-idx { font-size: .48rem; color: rgba(0,0,0,0.18); margin-left: auto; }
 
-    /* Bouton valider — toujours visible, grisé tant que incomplet */
     #validate-btn {
       background: transparent;
-      border: 1px solid #ffffff18;
-      color: #ffffff22;
-      padding: 11px 36px;
-      font-family:'JetBrains Mono',monospace; font-size:.82rem;
-      letter-spacing:.18em;
+      border: 1px solid rgba(0,0,0,0.12);
+      color: rgba(0,0,0,0.25);
+      padding: 7px 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .7rem;
+      letter-spacing: .12em;
       cursor: not-allowed;
       border-radius: 4px;
       transition: all .3s;
+      flex-shrink: 0;
+      align-self: stretch;
     }
-    /* Actif quand tous les champs sont remplis */
     #validate-btn:not(:disabled) {
-      border-color: #00E5FF;
-      color: #00E5FF;
+      border-color: #00B4D8;
+      color: #00B4D8;
       cursor: pointer;
-      box-shadow: 0 0 16px rgba(0,229,255,.28);
+      box-shadow: 0 0 8px rgba(0,180,216,.12);
     }
-    #validate-btn:not(:disabled):hover {
-      background: #00E5FF;
-      color: #000;
-      box-shadow: 0 0 24px rgba(0,229,255,.5);
+    #validate-btn:not(:disabled):hover { background: #00B4D8; color: #fff; }
+
+    /* ===================== DECODER DEVICE ===================== */
+    #decoder-wrap {
+      position: relative;
+      flex-shrink: 0;
+      filter: drop-shadow(8px 8px 6px rgba(0,0,0,0.10));
+    }
+    #decoder-img {
+      display: block;
+      width: 100%;
+      height: auto;
     }
 
-    /* ===================== SUCCESS ===================== */
-    #phase-success {
-      position:fixed; inset:40px 0 0 0; z-index:100;
-      display:none; flex-direction:column; align-items:center;
-      justify-content:center; gap:14px;
-      background:rgba(0,5,15,.97);
-    }
-    #phase-success.active { display:flex; }
-    .success-title {
-      font-family:'Bebas Neue',sans-serif; font-size:3.8rem;
-      color:#00E5FF; letter-spacing:.15em;
-      animation:fadeUp .8s forwards;
-    }
-    .success-sub { font-size:.78rem; color:#ffffff44; letter-spacing:.18em; animation:fadeUp .8s .3s both; }
-    @keyframes fadeUp { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
-
-    /* Score Lucidité */
-    .score-block {
-      display:flex; flex-direction:column; align-items:center; gap:7px;
-      animation:fadeUp .8s .55s both;
-      margin-top:4px;
-    }
-    .score-header { font-size:.6rem; color:#00E5FF44; letter-spacing:.22em; }
-    .score-bar-wrap {
-      width:260px; height:5px;
-      background:rgba(255,255,255,.07); border-radius:3px; overflow:hidden;
-    }
-    .score-bar {
-      height:100%; border-radius:3px; width:0%;
-      background:linear-gradient(to right,#ff8844,#ffcc44,#00E5FF);
-      transition: width 1.2s cubic-bezier(.4,0,.2,1);
-    }
-    .score-pts-row { display:flex; align-items:baseline; gap:6px; }
-    .score-pts {
-      font-family:'Bebas Neue',sans-serif; font-size:2.4rem;
-      color:#00E5FF; letter-spacing:.1em;
-    }
-    .score-max { font-size:.7rem; color:#00E5FF44; }
-    .score-tier { font-size:.6rem; letter-spacing:.2em; margin-top:-2px; }
-    .score-tier.lv-max  { color:#00E5FF; }
-    .score-tier.lv-high { color:#44ddbb; }
-    .score-tier.lv-mid  { color:#ffaa44; }
-    .score-tier.lv-low  { color:#ff7744; }
-    .score-reason {
-      font-size:.65rem; color:#ffffff44; text-align:center;
-      max-width:380px; line-height:1.6; margin-top:2px;
-      animation:fadeUp .8s .85s both;
+    /* Screen overlay — calibrated on 1980×1114 image */
+    #decoder-screen {
+      position: absolute;
+      left: 10.8%; top: 21%;
+      width: 78.2%; height: 53%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      border-radius: 3px;
     }
 
-    /* ===================== INPUT MODE INDICATOR ===================== */
-    #input-mode-badge {
-      position: fixed;
-      bottom: 14px; right: 16px;
-      z-index: 500;
-      display: flex; align-items: center; gap: 7px;
-      background: rgba(0,5,15,.85);
-      border: 1px solid #00E5FF18;
-      border-radius: 20px;
-      padding: 5px 12px;
-      font-size: .58rem; color: #00E5FF44;
-      letter-spacing: .12em;
-      transition: all .3s;
-      pointer-events: none;
-    }
-    #input-mode-badge svg { width:13px; height:13px; stroke:#00E5FF44; stroke-width:1.5; }
-    #input-mode-badge.mode-gamepad { border-color:#00E5FF44; color:#00E5FFaa; }
-    #input-mode-badge.mode-gamepad svg { stroke:#00E5FFaa; }
-
-    /* Hints de navigation manette */
-    .gp-hints {
+    .dscreen-state {
       display: none;
-      gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center;
-      font-size: .6rem; color: #00E5FF55;
+      width: 100%; height: 100%;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
     }
-    body.gamepad-mode .gp-hints { display: flex; }
-    body.gamepad-mode .keyboard-hints { display: none; }
+    .dscreen-state.active { display: flex; }
 
-    /* Bouton manette stylisé (pastille) */
+    /* Idle */
+    #dscreen-idle { gap: 5px; }
+    #dscreen-idle svg { width: 22px; height: 22px; stroke: #00B4D8; stroke-width: 1.5; }
+    .dscreen-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.05rem;
+      color: #00B4D8;
+      letter-spacing: .14em;
+    }
+    .dscreen-sub {
+      font-size: .48rem;
+      color: rgba(0,180,216,0.5);
+      letter-spacing: .1em;
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    /* Reading */
+    #dscreen-reading { gap: 6px; }
+    #dscreen-reading svg { width: 20px; height: 20px; stroke: #00B4D8; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Wrong card */
+    #dscreen-wrong-card { gap: 5px; padding: 10px; text-align: center; }
+    #dscreen-wrong-card svg { width: 20px; height: 20px; stroke: #F08C42; }
+    #dscreen-wrong-card .dscreen-title { font-size: .95rem; color: #F08C42; }
+    #dscreen-wrong-card .dscreen-sub { font-size: .45rem; line-height: 1.6; }
+
+    /* Neural net canvas */
+    #nn-canvas { display: none; width: 100%; height: 100%; background: transparent; }
+    #nn-canvas.active { display: block; }
+
+    /* Success on decoder screen */
+    #dscreen-success {
+      position: relative;
+      overflow: hidden;
+      background: #eaf7f0;
+    }
+    #dscreen-success .vagues-anim {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+      opacity: 0.55;
+    }
+    .dscreen-success-content {
+      position: relative; z-index: 1;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 3px;
+    }
+    .dscreen-check { font-size: 1.5rem; color: #009944; font-weight: 700; }
+    .dscreen-success-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: .95rem; color: #006633;
+      letter-spacing: .14em;
+    }
+
+    /* Drop zone overlay */
+    #decoder-machine {
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      pointer-events: none;
+      border-radius: 12px;
+      transition: background .15s, border .15s;
+    }
+    body[data-phase="decoder"] #decoder-machine { pointer-events: auto; }
+    #decoder-machine.drag-over {
+      background: rgba(0,180,215,0.06);
+      border: 2px solid rgba(0,180,215,0.35);
+    }
+
+    /* ===================== OVERLAY PANELS ===================== */
+    .bb-phase { display: none; }
+    .nexus-overlay {
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+      position: absolute;
+      inset: 0;
+      z-index: 30;
+      background: rgba(255,255,255,0.97);
+      border: 1.5px solid rgba(0,180,215,0.35);
+      border-radius: 10px;
+      padding: 16px 18px;
+      overflow-y: auto;
+      filter: drop-shadow(8px 8px 6px rgba(0,0,0,0.10));
+    }
+    .bb-phase.active { display: flex; }
+    .nexus-overlay.active { display: flex; }
+
+    .ovl-title {
+      font-size: .56rem;
+      color: #aaa;
+      letter-spacing: .18em;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    /* Choice */
+    .bb-choice-warning {
+      background: rgba(180,70,0,.04);
+      border: 1px solid rgba(180,70,0,.13);
+      border-radius: 5px;
+      padding: 10px 14px;
+      font-size: .6rem;
+      color: rgba(0,0,0,0.5);
+      text-align: center;
+      line-height: 1.65;
+      flex-shrink: 0;
+    }
+    .warn-ok  { color: #008844; font-weight: 700; }
+    .warn-bad { color: #bb3300; font-weight: 700; }
+    .bb-choice-row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+    .bb-choice-btn {
+      background: transparent;
+      border: 1px solid rgba(0,180,215,0.28);
+      color: #1a2638;
+      padding: 14px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .7rem;
+      line-height: 1.5;
+      text-align: center;
+      transition: all .2s;
+      min-width: 160px;
+      flex: 1;
+    }
+    .bb-choice-btn:hover {
+      border-color: #00B4D8;
+      background: rgba(0,180,215,0.05);
+      box-shadow: 0 0 10px rgba(0,180,215,0.1);
+    }
+    .btn-ico { display: block; margin-bottom: 6px; }
+    .btn-ico svg { width: 24px; height: 24px; stroke: #00B4D8; stroke-width: 1.5; }
+    .btn-desc { display: block; font-size: .56rem; color: #bbb; margin-top: 4px; }
+
+    /* Small card (confirm/compare panels) */
+    .nx-card-sm {
+      background: rgba(0,180,215,0.04);
+      border: 1px solid rgba(0,180,215,0.22);
+      border-radius: 6px;
+      padding: 9px 12px;
+      text-align: center;
+      min-width: 85px;
+    }
+    .nx-card-sm.dim { border-color: rgba(0,0,0,0.07); background: rgba(0,0,0,0.02); }
+    .nx-card-sm-label { font-size: .5rem; color: #bbb; letter-spacing: .18em; margin-bottom: 5px; }
+
+    .bb-card-icons { display: flex; justify-content: center; gap: 5px; align-items: center; }
+    .bb-card-icons svg { width: 18px; height: 18px; stroke: #888; stroke-width: 1.5; }
+
+    .bb-code-result {
+      font-size: 1.45rem;
+      letter-spacing: .35em;
+      color: #00B4D8;
+      font-weight: 700;
+      font-family: 'Bebas Neue', sans-serif;
+    }
+    .bb-code-result.error { color: #E07020; }
+    .bb-code-count { font-size: .5rem; color: #bbb; margin-top: 2px; }
+
+    .confirm-cards { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; justify-content: center; flex-shrink: 0; }
+    .confirm-arrow { font-size: 1.2rem; color: rgba(0,0,0,0.2); }
+
+    .compare-cols { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; flex-shrink: 0; }
+    .compare-col { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+    .compare-col-label { font-size: .56rem; color: #bbb; letter-spacing: .12em; }
+
+    #compare-notice {
+      font-size: .62rem; text-align: center;
+      padding: 7px 12px; border-radius: 4px; flex-shrink: 0;
+    }
+    #compare-notice.same { background: rgba(0,180,215,0.05); color: #0088aa; border: 1px solid rgba(0,180,215,0.14); }
+    #compare-notice.diff { background: rgba(190,90,0,0.05); color: #a05500; border: 1px solid rgba(190,90,0,0.12); }
+
+    /* Action buttons */
+    .bb-actions { display: flex; flex-direction: column; gap: 7px; }
+    .bb-btn {
+      background: transparent;
+      border: 1px solid rgba(0,180,215,0.2);
+      color: #1a2638;
+      padding: 10px 13px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .68rem;
+      text-align: left;
+      transition: all .2s;
+      display: flex; align-items: center; gap: 9px;
+    }
+    .bb-btn:hover { border-color: #00B4D8; background: rgba(0,180,215,0.05); }
+    .bb-btn svg { width: 13px; height: 13px; stroke: rgba(0,180,215,0.55); stroke-width: 1.5; flex-shrink: 0; }
+    .bb-btn:hover svg { stroke: #00B4D8; }
+
+    /* ===================== SUCCESS PANEL ===================== */
+    .success-panel { align-items: center; justify-content: center; }
+    .success-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 2.4rem;
+      color: #00B4D8;
+      letter-spacing: .15em;
+      animation: fadeUp .8s forwards;
+    }
+    .success-sub {
+      font-size: .68rem;
+      color: #999;
+      letter-spacing: .15em;
+      animation: fadeUp .8s .3s both;
+    }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+
+    .score-block {
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      animation: fadeUp .8s .55s both;
+    }
+    .score-header { font-size: .54rem; color: #bbb; letter-spacing: .2em; }
+    .score-bar-wrap { width: 200px; height: 4px; background: rgba(0,0,0,0.06); border-radius: 2px; overflow: hidden; }
+    .score-bar { height: 100%; border-radius: 2px; width: 0%; background: linear-gradient(to right,#ff8844,#ffcc44,#00B4D8); transition: width 1.2s cubic-bezier(.4,0,.2,1); }
+    .score-pts-row { display: flex; align-items: baseline; gap: 5px; }
+    .score-pts { font-family: 'Bebas Neue', sans-serif; font-size: 2rem; color: #00B4D8; }
+    .score-max { font-size: .64rem; color: #bbb; }
+    .score-tier { font-size: .56rem; letter-spacing: .2em; }
+    .score-tier.lv-max  { color: #00B4D8; }
+    .score-tier.lv-high { color: #22bb88; }
+    .score-tier.lv-mid  { color: #dd9900; }
+    .score-tier.lv-low  { color: #cc5522; }
+    .score-reason { font-size: .58rem; color: #888; text-align: center; max-width: 340px; line-height: 1.6; margin-top: 2px; animation: fadeUp .8s .85s both; }
+
+    .nx-btn-replay {
+      background: transparent;
+      border: 1px solid rgba(0,180,215,0.38);
+      color: #00B4D8;
+      padding: 9px 22px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .7rem;
+      cursor: pointer;
+      border-radius: 4px;
+      letter-spacing: .14em;
+      transition: all .2s;
+      display: flex; align-items: center; gap: 8px;
+      margin-top: 6px;
+    }
+    .nx-btn-replay:hover { background: rgba(0,180,215,0.08); }
+    .nx-btn-replay svg { width: 13px; height: 13px; stroke: #00B4D8; stroke-width: 1.5; }
+
+    /* ===================== GAMEPAD STYLES ===================== */
     .gp-btn {
       display: inline-flex; align-items: center; justify-content: center;
-      width: 20px; height: 20px; border-radius: 50%;
-      background: rgba(0,229,255,.12); border: 1px solid #00E5FF55;
-      font-size: .58rem; font-weight: 700; color: #00E5FFcc;
-      flex-shrink: 0;
+      width: 17px; height: 17px; border-radius: 50%;
+      background: rgba(0,180,215,0.1); border: 1px solid rgba(0,180,215,0.4);
+      font-size: .52rem; font-weight: 700; color: #00B4D8; flex-shrink: 0;
     }
     .gp-dpad {
       display: inline-flex; align-items: center; justify-content: center;
-      width: 20px; height: 20px;
-      font-size: .7rem; color: #00E5FF88;
+      width: 17px; height: 17px;
+      font-size: .65rem; color: #999;
     }
-
-    /* Curseur de focus manette dans le tableau cerveau */
-    .decode-row.gp-focus {
-      background: rgba(0,229,255,.12);
-      border-color: #00E5FF66;
-      box-shadow: 0 0 10px rgba(0,229,255,.2);
-    }
+    .decode-row.gp-focus { background: rgba(0,180,215,0.08); border-color: rgba(0,180,215,0.38); }
     .gp-char-display {
       display: none;
-      font-size: 1.15rem; font-family: 'JetBrains Mono', monospace;
-      color: #00E5FF; min-width: 42px; text-align: center;
-      border-bottom: 1.5px solid #00E5FF44; padding-bottom: 3px;
+      font-size: .95rem; font-family: 'JetBrains Mono', monospace;
+      color: #1a2638; min-width: 28px; text-align: center;
+      border-bottom: 1.5px solid rgba(0,180,215,0.4); padding-bottom: 2px;
     }
     body.gamepad-mode .decode-input { display: none; }
     body.gamepad-mode .gp-char-display { display: block; }
 
-    /* Hints manette sous le tableau cerveau */
     #brain-gp-hints {
-      display: none;
-      flex-direction: column; align-items: center; gap: 6px;
-      font-size: .6rem; color: #00E5FF44;
+      display: none; flex-direction: column; align-items: center;
+      gap: 4px; font-size: .52rem; color: #bbb; flex-shrink: 0;
     }
     body.gamepad-mode #brain-gp-hints { display: flex; }
-    .gp-hint-row { display: flex; align-items: center; gap: 6px; }
+    .gp-hint-row { display: flex; align-items: center; gap: 5px; }
+
+    /* ===================== INPUT MODE BADGE ===================== */
+    #input-mode-badge {
+      position: fixed;
+      bottom: 12px; right: 14px;
+      z-index: 500;
+      display: flex; align-items: center; gap: 6px;
+      background: rgba(255,255,255,0.92);
+      border: 1px solid rgba(0,180,215,0.18);
+      border-radius: 16px;
+      padding: 5px 10px;
+      font-size: .54rem; color: #bbb;
+      letter-spacing: .1em;
+      transition: all .3s;
+      pointer-events: none;
+    }
+    #input-mode-badge svg { width: 12px; height: 12px; stroke: #ccc; stroke-width: 1.5; }
+    #input-mode-badge.mode-gamepad { border-color: rgba(0,180,215,0.38); color: #00B4D8; }
+    #input-mode-badge.mode-gamepad svg { stroke: #00B4D8; }
 
     /* ===================== ALARM ===================== */
     #alarm-overlay {
-      display:none; position:fixed; inset:40px 0 0 0; z-index:200;
-      flex-direction:column; align-items:center; justify-content:center; gap:16px;
-      background:rgba(255,8,0,.10); border:2px solid rgba(255,20,0,.25);
+      display: none; position: fixed; inset: 40px 0 0 0; z-index: 200;
+      flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+      background: rgba(255,255,255,0.98);
+      border-top: 3px solid rgba(220,40,0,.45);
     }
-    #alarm-overlay.active { display:flex; }
+    #alarm-overlay.active { display: flex; }
+    #alarm-overlay::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse at center, rgba(220,30,0,.03) 0%, transparent 70%);
+      pointer-events: none;
+    }
     .alarm-title {
-      font-family:'Bebas Neue',sans-serif; font-size:2.6rem;
-      color:#ff3333; letter-spacing:.14em;
-      animation:pulse .6s infinite alternate;
+      font-family: 'Bebas Neue', sans-serif; font-size: 2.4rem;
+      color: #dd2211; letter-spacing: .14em;
+      animation: pulse .6s infinite alternate;
     }
-    #alarm-msg { font-size:.68rem; color:#ff666677; letter-spacing:.08em; text-align:center; max-width:400px; }
+    #alarm-msg { font-size: .64rem; color: #cc3322; letter-spacing: .06em; text-align: center; max-width: 420px; line-height: 1.65; }
     .alarm-retry {
-      background:transparent; border:1px solid #ff3333; color:#ff3333;
-      padding:9px 28px; font-family:'JetBrains Mono',monospace;
-      font-size:.78rem; cursor:pointer; border-radius:3px;
-      letter-spacing:.14em; transition:all .2s; margin-top:4px;
+      background: transparent; border: 1px solid #dd2211; color: #dd2211;
+      padding: 8px 24px; font-family: 'JetBrains Mono', monospace;
+      font-size: .72rem; cursor: pointer; border-radius: 3px;
+      letter-spacing: .14em; transition: all .2s; margin-top: 4px;
     }
-    .alarm-retry:hover { background:rgba(255,0,0,.13); }
+    .alarm-retry:hover { background: rgba(200,30,10,.06); }
     @keyframes pulse { from{opacity:.45} to{opacity:1} }
   </style>
 </head>
-<body>
+<body data-phase="choice">
 
 <!-- ==================== DEV TOOLBAR ==================== -->
 <div id="dev-toolbar">
@@ -473,42 +658,109 @@
   <button class="dev-btn" onclick="devGoTo('success',this)">✓&nbsp;Succès</button>
   <button class="dev-btn" onclick="devGoTo('alarm',this)">⚡&nbsp;Alarme</button>
   <button class="dev-btn" style="color:#ff6666aa;border-color:#ff666622" onclick="location.reload()">↺&nbsp;Reset</button>
-  <span id="dev-info">CODE : NEXUS7 &nbsp;|&nbsp; 1/3 chance d'erreur IA</span>
+  <span id="dev-info">CODE : … &nbsp;|&nbsp; 1/3 chance d'erreur IA</span>
 </div>
 
-<!-- ==================== MAIN LAYOUT ==================== -->
-<div id="main-layout">
-  <div id="bg-layer"></div>
-  <div id="bg-overlay"></div>
+<!-- ==================== NEXUS SCENE ==================== -->
+<div id="nexus-scene">
 
-  <!-- SIDEBAR LEXIQUE -->
-  <div id="lexicon-panel">
-    <div class="lex-title">// LEXIQUE D'ACCÈS</div>
-    <div class="lex-click-hint" id="lex-hint">
-      <i data-lucide="mouse-pointer-2"></i>
-      Cliquez pour marquer une icône identifiée
+  <!-- LEFT CARD (input — draggable en phase décodeur) -->
+  <div id="card-left-wrap">
+    <div id="decoder-card" class="nexus-card">
+      <img src="images/Images jeu Nexus/Carte-activation-cryptée-web.png" class="card-img" draggable="false" alt="Carte activation">
+      <div class="card-bottom">
+        <div class="card-label">ACTIVATION NEXUS</div>
+        <div class="card-icons" id="decoder-icons"></div>
+      </div>
     </div>
-    <div class="lex-grid" id="lex-grid"></div>
   </div>
 
-  <!-- ZONE DE JEU -->
-  <div id="game-area">
+  <!-- CENTER ZONE -->
+  <div id="center-zone">
 
-    <!-- ===== PHASE 0 : CHOIX INITIAL ===== -->
-    <div id="phase-choice" class="bb-phase active">
-      <div class="bb-phase-title">// AUTHENTIFICATION NEXUS — CODE D'ACCÈS REQUIS</div>
+    <!-- LEXIQUE PANEL + colonne déchiffrement (brain mode) -->
+    <div id="lex-panel">
 
-      <!-- Message d'avertissement -->
+      <div id="lex-panel-main">
+        <div class="lex-panel-header">
+          <span class="lex-panel-title">// LEXIQUE D'ACCÈS</span>
+          <span id="lex-hint">
+            <i data-lucide="mouse-pointer-2"></i> Cliquez pour marquer une icône identifiée
+          </span>
+        </div>
+        <div class="lex-grid" id="lex-grid"></div>
+      </div>
+
+      <!-- Colonne déchiffrement — visible uniquement en mode cerveau -->
+      <div id="brain-decode-col">
+        <div class="brain-col-title">// DÉCHIFFREMENT</div>
+        <div id="brain-ai-notice"></div>
+        <div class="brain-hint-sm">Remplissez les 6 cases puis validez.</div>
+        <div class="decode-table" id="decode-table"></div>
+        <button id="validate-btn" disabled onclick="validateBrain()">VALIDER ▸</button>
+        <div id="brain-gp-hints">
+          <div class="gp-hint-row"><span class="gp-dpad">↕</span> Ligne &nbsp;·&nbsp; <span class="gp-dpad">↔</span> Caractère</div>
+          <div class="gp-hint-row"><span class="gp-btn">A</span> Confirmer &nbsp;·&nbsp; <span class="gp-btn">B</span> Effacer</div>
+        </div>
+      </div>
+
+    </div><!-- /lex-panel -->
+
+    <!-- DÉCODEUR PHYSIQUE -->
+    <div id="decoder-wrap">
+      <img src="images/Images jeu Nexus/decodeur-ecran-vierge-web.png" id="decoder-img" draggable="false" alt="Décodeur">
+
+      <!-- Écran du décodeur — contenu superposé -->
+      <div id="decoder-screen">
+
+        <!-- État 1 : repos/attente carte -->
+        <div class="dscreen-state active" id="dscreen-idle">
+          <i data-lucide="lock"></i>
+          <div class="dscreen-title">DÉCODEUR IA</div>
+          <div class="dscreen-sub" id="dscreen-idle-sub">Insérer carte activation</div>
+        </div>
+
+        <!-- État 2 : lecture carte -->
+        <div class="dscreen-state" id="dscreen-reading">
+          <i data-lucide="loader"></i>
+          <div class="dscreen-sub">LECTURE CARTE…</div>
+        </div>
+
+        <!-- État 3 : réseau neuronal (canvas) -->
+        <canvas class="dscreen-state" id="nn-canvas" width="580" height="200"></canvas>
+
+        <!-- État 4 : carte incorrecte -->
+        <div class="dscreen-state" id="dscreen-wrong-card">
+          <i data-lucide="alert-triangle"></i>
+          <div class="dscreen-title">CARTE INCORRECTE</div>
+          <div class="dscreen-sub">Insérer la carte d'activation cryptée<br><small style="opacity:.65">(motif organique blanc)</small></div>
+        </div>
+
+        <!-- État 5 : succès — vagues.gif -->
+        <div class="dscreen-state" id="dscreen-success">
+          <img src="images/Images jeu Nexus/vagues.gif" class="vagues-anim" alt="">
+          <div class="dscreen-success-content">
+            <div class="dscreen-check">✓</div>
+            <div class="dscreen-success-title">ACCÈS AUTORISÉ</div>
+          </div>
+        </div>
+
+      </div><!-- /decoder-screen -->
+
+      <!-- Zone de drop (invisible, activée en phase décodeur) -->
+      <div id="decoder-machine"></div>
+
+    </div><!-- /decoder-wrap -->
+
+    <!-- ========== PANELS FLOTTANTS (position:absolute) ========== -->
+
+    <!-- Phase 0 : Choix initial -->
+    <div id="phase-choice" class="bb-phase nexus-overlay active">
+      <div class="ovl-title">// AUTHENTIFICATION NEXUS — CODE D'ACCÈS REQUIS</div>
       <div class="bb-choice-warning">
         <span class="warn-ok">✓ Code correct</span> → accès au Nexus déverrouillé &nbsp;·&nbsp;
-        <span class="warn-bad">✗ Code incorrect</span> → alarme déclenchée, porte verrouillée, recommencer depuis le début
+        <span class="warn-bad">✗ Code incorrect</span> → alarme déclenchée, recommencer depuis le début
       </div>
-
-      <div class="bb-card">
-        <div class="bb-card-label">// CARTE D'ACCÈS ENCODÉE</div>
-        <div class="bb-card-icons" id="choice-icons"></div>
-      </div>
-
       <div class="bb-choice-row">
         <button class="bb-choice-btn" onclick="chooseDecoder()">
           <span class="btn-ico"><i data-lucide="cpu"></i></span>
@@ -518,74 +770,28 @@
         <button class="bb-choice-btn" onclick="chooseBrain()">
           <span class="btn-ico"><i data-lucide="scan-line"></i></span>
           Je déchiffre moi-même
-          <span class="btn-desc">Utilisez le lexique à gauche</span>
+          <span class="btn-desc">Consultez le lexique</span>
         </button>
       </div>
     </div>
 
-    <!-- ===== PHASE 1A : CERVEAU ===== -->
-    <div id="phase-brain" class="bb-phase">
-      <div class="bb-phase-title">// DÉCHIFFREMENT MANUEL — CONSULTEZ LE LEXIQUE</div>
-      <div id="brain-ai-notice"></div>
-      <div class="brain-hint">
-        Chaque symbole correspond à un caractère.<br>
-        <strong>Remplissez les 6 cases</strong> — le bouton s'activera automatiquement.
-      </div>
-      <div class="decode-table" id="decode-table"></div>
+    <!-- Phase 1B : Décodeur (marqueur d'état — sans contenu visuel propre) -->
+    <div id="phase-decoder" class="bb-phase"></div>
 
-      <!-- Hints spécifiques manette (cachés en mode clavier) -->
-      <div id="brain-gp-hints">
-        <div class="gp-hint-row">
-          <span class="gp-dpad">↕</span> Changer de ligne
-          &nbsp;·&nbsp;
-          <span class="gp-dpad">↔</span> Cycler les caractères
-        </div>
-        <div class="gp-hint-row">
-          <span class="gp-btn">A</span> Confirmer &nbsp;·&nbsp;
-          <span class="gp-btn">B</span> Effacer
-        </div>
-      </div>
+    <!-- Phase 2 : Traitement (canvas dans l'écran décodeur) -->
+    <div id="phase-processing" class="bb-phase"></div>
 
-      <button id="validate-btn" disabled onclick="validateBrain()">VALIDER ▸</button>
-    </div>
-
-    <!-- ===== PHASE 1B : DÉCODEUR ===== -->
-    <div id="phase-decoder" class="bb-phase">
-      <div class="bb-phase-title">// GLISSEZ LA CARTE SUR LE DÉCODEUR POUR LANCER L'ANALYSE</div>
-      <div class="bb-arena-row">
-        <div id="decoder-card" draggable="true" class="bb-card draggable">
-          <div class="bb-card-label">// CARTE D'ACCÈS</div>
-          <div class="bb-card-icons" id="decoder-icons"></div>
-        </div>
-        <div class="drag-hint">
-          <i data-lucide="arrow-right"></i>
-          GLISSER
-        </div>
-        <div id="decoder-machine">
-          <i data-lucide="cpu"></i>
-          <div>DÉCODEUR IA</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ===== PHASE 2 : TRAITEMENT ===== -->
-    <div id="phase-processing" class="bb-phase">
-      <div class="bb-phase-title">// ANALYSE EN COURS — BOÎTE NOIRE ACTIVE</div>
-      <canvas id="nn-canvas" width="580" height="200"></canvas>
-      <div class="processing-label">CALCUL PONDÉRATIONS… PROPAGATION… OPTIMISATION…</div>
-    </div>
-
-    <!-- ===== PHASE 3 : CONFIRMATION ===== -->
-    <div id="phase-confirm" class="bb-phase">
-      <div class="bb-phase-title">// ANALYSE TERMINÉE — QUE FAITES-VOUS ?</div>
+    <!-- Phase 3 : Confirmation -->
+    <div id="phase-confirm" class="bb-phase nexus-overlay">
+      <div class="ovl-title">// ANALYSE TERMINÉE — QUE FAITES-VOUS ?</div>
       <div class="confirm-cards">
-        <div class="bb-card dim">
-          <div class="bb-card-label">// INPUT — ENCODÉ</div>
+        <div class="nx-card-sm dim">
+          <div class="nx-card-sm-label">// INPUT ENCODÉ</div>
           <div class="bb-card-icons" id="confirm-input-icons"></div>
         </div>
         <div class="confirm-arrow">→</div>
-        <div class="bb-card">
-          <div class="bb-card-label">// OUTPUT — CODE IA</div>
+        <div class="nx-card-sm">
+          <div class="nx-card-sm-label">// RÉSULTAT IA</div>
           <div class="bb-code-result" id="confirm-code"></div>
           <div class="bb-code-count" id="confirm-count"></div>
         </div>
@@ -606,65 +812,69 @@
       </div>
     </div>
 
-    <!-- ===== PHASE 4 : COMPARAISON ===== -->
-    <div id="phase-compare" class="bb-phase">
-      <div class="bb-phase-title">// DEUX ANALYSES DISPONIBLES — LAQUELLE CHOISIR ?</div>
+    <!-- Phase 4 : Comparaison -->
+    <div id="phase-compare" class="bb-phase nexus-overlay">
+      <div class="ovl-title">// DEUX ANALYSES DISPONIBLES — LAQUELLE CHOISIR ?</div>
       <div class="compare-cols">
         <div class="compare-col">
           <div class="compare-col-label">ANALYSE 1</div>
-          <div class="bb-card">
-            <div class="bb-card-label">// PREMIÈRE ANALYSE</div>
-            <div class="bb-code-result" id="cmp-code1"></div>
-          </div>
+          <div class="nx-card-sm"><div class="bb-code-result" id="cmp-code1"></div></div>
         </div>
         <div class="compare-col">
           <div class="compare-col-label">ANALYSE 2</div>
-          <div class="bb-card">
-            <div class="bb-card-label">// DEUXIÈME ANALYSE</div>
-            <div class="bb-code-result" id="cmp-code2"></div>
-          </div>
+          <div class="nx-card-sm"><div class="bb-code-result" id="cmp-code2"></div></div>
         </div>
       </div>
       <div id="compare-notice"></div>
       <div class="bb-actions">
         <button class="bb-btn" onclick="trustCode(1)">
-          <i data-lucide="check"></i>
-          Je fais confiance à l'analyse 1
+          <i data-lucide="check"></i> Je fais confiance à l'analyse 1
         </button>
         <button class="bb-btn" onclick="trustCode(2)">
-          <i data-lucide="check"></i>
-          Je fais confiance à l'analyse 2
+          <i data-lucide="check"></i> Je fais confiance à l'analyse 2
         </button>
         <button class="bb-btn" onclick="verifyMyself()">
-          <i data-lucide="search"></i>
-          Je vérifie moi-même avec le lexique
+          <i data-lucide="search"></i> Je vérifie moi-même avec le lexique
         </button>
       </div>
     </div>
 
-  </div><!-- /game-area -->
-</div><!-- /main-layout -->
+    <!-- Phase 1A : Cerveau (marqueur d'état — colonne déchiffrement dans lex-panel) -->
+    <div id="phase-brain" class="bb-phase"></div>
 
-<!-- ==================== SUCCESS ==================== -->
-<div id="phase-success">
-  <div class="success-title">✓ ACCÈS AUTORISÉ</div>
-  <div class="success-sub">DÉVERROUILLAGE DU NEXUS EN COURS…</div>
-
-  <div class="score-block" id="score-block">
-    <div class="score-header">// INDICE DE LUCIDITÉ</div>
-    <div class="score-bar-wrap"><div class="score-bar" id="score-bar"></div></div>
-    <div class="score-pts-row">
-      <span class="score-pts" id="score-pts">0</span>
-      <span class="score-max">/ 100</span>
+    <!-- Phase Succès -->
+    <div id="phase-success" class="bb-phase nexus-overlay success-panel">
+      <div class="success-title">✓ ACCÈS AUTORISÉ</div>
+      <div class="success-sub">DÉVERROUILLAGE DU NEXUS EN COURS…</div>
+      <div class="score-block" id="score-block">
+        <div class="score-header">// INDICE DE LUCIDITÉ</div>
+        <div class="score-bar-wrap"><div class="score-bar" id="score-bar"></div></div>
+        <div class="score-pts-row">
+          <span class="score-pts" id="score-pts">0</span>
+          <span class="score-max">/ 100</span>
+        </div>
+        <div class="score-tier" id="score-tier"></div>
+        <div class="score-reason" id="score-reason"></div>
+      </div>
+      <button class="nx-btn-replay" onclick="location.reload()">
+        <i data-lucide="rotate-ccw"></i> Rejouer
+      </button>
     </div>
-    <div class="score-tier" id="score-tier"></div>
-    <div class="score-reason" id="score-reason"></div>
+
+  </div><!-- /center-zone -->
+
+  <!-- RIGHT CARD (output — révèle le code déchiffré au succès) -->
+  <div id="card-right-wrap">
+    <div id="card-output" class="nexus-card">
+      <img src="images/Images jeu Nexus/Code-ouverture-Nexus-web.png" class="card-img" draggable="false" alt="Code ouverture">
+      <div class="card-bottom">
+        <div class="card-label">CODE OUVERTURE</div>
+        <div class="card-code-val" id="output-card-code">· · · · · ·</div>
+      </div>
+    </div>
   </div>
 
-  <button class="bb-btn" style="margin-top:10px;justify-content:center;width:200px" onclick="location.reload()">
-    <i data-lucide="rotate-ccw"></i> Rejouer
-  </button>
-</div>
+</div><!-- /nexus-scene -->
 
 <!-- ==================== INPUT MODE BADGE ==================== -->
 <div id="input-mode-badge">
@@ -672,7 +882,7 @@
   <span id="mode-label">CLAVIER</span>
 </div>
 
-<!-- ==================== ALARM ==================== -->
+<!-- ==================== ALARM OVERLAY ==================== -->
 <div id="alarm-overlay">
   <div class="alarm-title">🚨 CODE INCORRECT</div>
   <div id="alarm-msg"></div>
@@ -682,7 +892,7 @@
 <!-- ==================== SCRIPT ==================== -->
 <script>
 // ============================================================
-// LEXIQUE — 36 entrées (0–9 + A–Z)
+// LEXIQUE — 36 entrées (0–9 + A–Z) — ordre 6×6 ligne par ligne
 // ============================================================
 const LEXICON = [
   {char:'0', icon:'moon'},       {char:'1', icon:'rocket'},
@@ -708,15 +918,44 @@ const LEXICON = [
 // ============================================================
 // CONFIG JEU
 // ============================================================
-const INPUT_CHARS  = ['N','E','X','U','S','7'];
-const CORRECT_CODE = 'NEXUS7';
+const CHARSET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 
+/** Génère un code correct aléatoire : 6 caractères uniques tirés de CHARSET */
+function generateCorrectCode() {
+  const pool = CHARSET.split('');
+  let code = '';
+  for (let i = 0; i < 6; i++) {
+    const idx = Math.floor(Math.random() * pool.length);
+    code += pool.splice(idx, 1)[0];
+  }
+  return code;
+}
+
+let CORRECT_CODE = generateCorrectCode();
+let INPUT_CHARS  = CORRECT_CODE.split('');
+
+/**
+ * Code produit par l'IA :
+ *   1/3 → correct
+ *   1/3 → code + 1 caractère supplémentaire (longueur 7 : erreur flagrante)
+ *   1/3 → 2 caractères du code inversés (longueur 6 : erreur subtile)
+ */
 function generateAICode() {
   const r = Math.random();
-  if (r < 1/3) return CORRECT_CODE;            // correct
-  if (r < 2/3) return CORRECT_CODE + '4';      // erreur : caractère en trop → NEXUS74
+  if (r < 1/3) return CORRECT_CODE;
+  if (r < 2/3) {
+    // Caractère en trop — différent du dernier caractère du code
+    let extra;
+    do { extra = CHARSET[Math.floor(Math.random() * CHARSET.length)]; }
+    while (extra === CORRECT_CODE[5]);
+    return CORRECT_CODE + extra;
+  }
+  // Inversion de deux positions différentes
   const a = CORRECT_CODE.split('');
-  [a[4], a[5]] = [a[5], a[4]];                 // erreur : inversion → NEXU7S
+  const i = Math.floor(Math.random() * 6);
+  let j;
+  do { j = Math.floor(Math.random() * 6); } while (j === i);
+  [a[i], a[j]] = [a[j], a[i]];
   return a.join('');
 }
 
@@ -728,7 +967,7 @@ let aiCode2 = null;
 let secondRun = false;
 let alarmReturnPhase = 'confirm';
 let decoderBound = false;
-let playerPath = []; // trace des décisions : 'brain','decoder','verify','relaunch','accept','trust'
+let playerPath = []; // 'brain','decoder','verify','relaunch','accept','trust'
 
 // ============================================================
 // UTILS
@@ -742,21 +981,67 @@ function iconsHtml(chars) {
   return chars.map(c => `<i data-lucide="${getIcon(c)}"></i>`).join('');
 }
 
+function formatCode(code) {
+  return code.slice(0,2) + '-' + code.slice(2,4) + '-' + code.slice(4,6);
+}
+
+// ============================================================
+// DECODER SCREEN STATE MANAGEMENT
+// ============================================================
+function updateDecoderScreen(state) {
+  document.querySelectorAll('.dscreen-state').forEach(s => s.classList.remove('active'));
+  document.getElementById('nn-canvas').classList.remove('active');
+  if (state === 'processing') {
+    document.getElementById('nn-canvas').classList.add('active');
+  } else if (state) {
+    const el = document.getElementById('dscreen-' + state);
+    if (el) el.classList.add('active');
+  }
+}
+
+function showWrongCardMsg() {
+  updateDecoderScreen('wrong-card');
+  setTimeout(() => {
+    if (document.body.dataset.phase === 'decoder') updateDecoderScreen('idle');
+  }, 3500);
+}
+
 // ============================================================
 // NAVIGATION PHASES
 // ============================================================
 function showPhase(id) {
   document.querySelectorAll('.bb-phase').forEach(p => p.classList.remove('active'));
-  document.getElementById('phase-success').classList.remove('active');
   document.getElementById('alarm-overlay').classList.remove('active');
+
   const el = document.getElementById('phase-' + id);
   if (el) el.classList.add('active');
-  // Remet le hint neutre quand on quitte la phase cerveau
+
   if (id !== 'brain') setLexHint(false);
+
+  document.body.dataset.phase = id;
+
+  // Écran du décodeur selon la phase
+  if      (id === 'choice' || id === 'decoder') updateDecoderScreen('idle');
+  else if (id === 'processing')                 updateDecoderScreen('processing');
+  else if (id === 'success')                    updateDecoderScreen('success');
+  else                                          updateDecoderScreen(null); // écran sombre
+
+  // Nettoyage outline cartes quand on quitte la phase décodeur
+  if (id !== 'decoder') {
+    const lc = document.getElementById('decoder-card');
+    const rc = document.getElementById('card-output');
+    if (lc) lc.style.outline = '';
+    if (rc) rc.style.outline = '';
+  }
+  // Réinitialise la carte input si on revient au choix
+  if (id === 'choice') {
+    const card = document.getElementById('decoder-card');
+    if (card) { card.style.opacity = '1'; card.draggable = false; }
+  }
 }
 
 // ============================================================
-// LEXIQUE SIDEBAR
+// LEXIQUE
 // ============================================================
 function buildLexicon() {
   const grid = document.getElementById('lex-grid');
@@ -770,58 +1055,53 @@ function buildLexicon() {
   lucide.createIcons();
 }
 
-// Clic sur une cellule du lexique :
-// - Toggle le marquage visuel (toujours)
-// - En phase cerveau : remplit ou vide la case correspondante dans le tableau
 function onLexCellClick(cell, char) {
   const wasMarked = cell.classList.contains('marked');
   cell.classList.toggle('marked');
   const nowMarked = !wasMarked;
 
-  // Hors phase cerveau : marquage visuel uniquement
   if (getActivePhase() !== 'brain') return;
 
-  // Trouve les positions de ce caractère dans INPUT_CHARS
   INPUT_CHARS.forEach((c, i) => {
     if (c !== char) return;
-
     if (inputMode === 'gamepad') {
-      // Mode manette : mise à jour du buffer gpBrainChars
-      if (nowMarked) {
-        gpBrainChars[i] = char;
-      } else {
-        if (gpBrainChars[i] === char) gpBrainChars[i] = '';
-      }
+      if (nowMarked) { gpBrainChars[i] = char; }
+      else           { if (gpBrainChars[i] === char) gpBrainChars[i] = ''; }
       updateGpBrainDisplay();
     } else {
-      // Mode clavier : mise à jour du champ texte
       const input = document.getElementById(`bi-${i}`);
       if (!input) return;
       if (nowMarked) {
         input.value = char;
         input.classList.remove('ok', 'bad');
-        // Anime brièvement la case pour signaler le remplissage
         input.style.transition = 'color .15s';
-        input.style.color = '#00E5FF';
+        input.style.color = '#00B4D8';
         setTimeout(() => { input.style.color = ''; }, 300);
       } else {
-        // Démarcage : vide la case si elle contenait ce caractère
-        if (input.value === char) {
-          input.value = '';
-          input.classList.remove('ok', 'bad');
-        }
+        if (input.value === char) { input.value = ''; input.classList.remove('ok', 'bad'); }
       }
     }
   });
-
   checkBrainFilled();
+}
+
+function setLexHint(brainMode) {
+  const hint = document.getElementById('lex-hint');
+  if (!hint) return;
+  if (brainMode) {
+    hint.innerHTML = `<i data-lucide="mouse-pointer-2"></i> Cliquez une icône → remplit la case`;
+  } else {
+    hint.innerHTML = `<i data-lucide="mouse-pointer-2"></i> Cliquez pour marquer une icône identifiée`;
+  }
+  lucide.createIcons();
 }
 
 // ============================================================
 // PHASE 0 : CHOIX
 // ============================================================
 function initChoicePhase() {
-  document.getElementById('choice-icons').innerHTML = iconsHtml(INPUT_CHARS);
+  // Initialise les icônes sur la carte input (gauche)
+  document.getElementById('decoder-icons').innerHTML = iconsHtml(INPUT_CHARS);
   lucide.createIcons();
 }
 
@@ -839,10 +1119,8 @@ function chooseDecoder() {
   const machine = document.getElementById('decoder-machine');
   machine.className = '';
   machine.style.cssText = '';
-  machine.innerHTML = '<i data-lucide="cpu"></i><div>DÉCODEUR IA</div>';
 
-  document.getElementById('decoder-icons').innerHTML = iconsHtml(INPUT_CHARS);
-  showPhase('decoder');
+  showPhase('decoder'); // appelle updateDecoderScreen('idle')
   lucide.createIcons();
   initDragDecoder();
 }
@@ -852,14 +1130,27 @@ function initDragDecoder() {
   decoderBound = true;
 
   const card    = document.getElementById('decoder-card');
+  const outCard = document.getElementById('card-output');
   const machine = document.getElementById('decoder-machine');
 
+  // Carte input (correcte)
   card.addEventListener('dragstart', e => {
-    e.dataTransfer.setData('text/plain', 'card');
+    e.dataTransfer.setData('text/plain', 'card-input');
     card.classList.add('dragging');
   });
   card.addEventListener('dragend', () => card.classList.remove('dragging'));
 
+  // Carte output (mauvaise carte) — devient draggable en phase décodeur
+  outCard.draggable = true;
+  outCard.addEventListener('dragstart', e => {
+    e.dataTransfer.setData('text/plain', 'card-wrong');
+    outCard.classList.add('dragging');
+  });
+  outCard.addEventListener('dragend', () => {
+    outCard.classList.remove('dragging');
+  });
+
+  // Zone de drop : tout le décodeur
   machine.addEventListener('dragover', e => {
     e.preventDefault();
     machine.classList.add('drag-over');
@@ -868,11 +1159,20 @@ function initDragDecoder() {
   machine.addEventListener('drop', e => {
     e.preventDefault();
     machine.classList.remove('drag-over');
-    machine.classList.add('active');
-    machine.innerHTML = '<i data-lucide="loader"></i><div style="font-size:.6rem">LECTURE…</div>';
-    lucide.createIcons();
+    const cardType = e.dataTransfer.getData('text/plain');
+
+    if (cardType === 'card-wrong') {
+      // Mauvaise carte déposée
+      showWrongCardMsg();
+      outCard.classList.remove('dragging');
+      return;
+    }
+
+    // Carte correcte — lancer le traitement
     card.style.opacity = '.15';
     card.draggable = false;
+    outCard.draggable = false;
+    updateDecoderScreen('reading');
     setTimeout(startProcessing, 700);
   });
 }
@@ -918,7 +1218,7 @@ function runNeuralNet(onDone) {
         layers[li+1].forEach(b => {
           const s = Math.max(0, Math.min(1, p * 5 - li));
           ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
-          ctx.strokeStyle = `rgba(0,229,255,${s * .32})`;
+          ctx.strokeStyle = `rgba(0,180,216,${s * .32})`;
           ctx.lineWidth = .7; ctx.stroke();
         });
       });
@@ -929,17 +1229,17 @@ function runNeuralNet(onDone) {
         const glow = Math.max(0, Math.min(1, p * 5 - li));
         if (glow > 0) {
           const g = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, 14);
-          g.addColorStop(0, `rgba(0,229,255,${glow * .18})`);
+          g.addColorStop(0, `rgba(0,180,216,${glow * .18})`);
           g.addColorStop(1, 'rgba(0,0,0,0)');
           ctx.fillStyle = g;
           ctx.beginPath(); ctx.arc(node.x, node.y, 14, 0, Math.PI*2); ctx.fill();
         }
         ctx.beginPath(); ctx.arc(node.x, node.y, 6, 0, Math.PI*2);
         if      (li === 0)               ctx.fillStyle = '#FF6B35';
-        else if (li === layers.length-1) ctx.fillStyle = glow > 0 ? '#00E5FF' : '#0d1e30';
-        else                             ctx.fillStyle = `rgba(0,180,255,${.12 + glow * .72})`;
+        else if (li === layers.length-1) ctx.fillStyle = glow > 0 ? '#00B4D8' : 'rgba(10,20,35,0.8)';
+        else                             ctx.fillStyle = `rgba(0,180,216,${.12 + glow * .72})`;
         ctx.fill();
-        ctx.strokeStyle = `rgba(0,229,255,${.2 + glow * .55})`;
+        ctx.strokeStyle = `rgba(0,180,216,${.2 + glow * .55})`;
         ctx.lineWidth = .9; ctx.stroke();
       });
     });
@@ -972,7 +1272,7 @@ function acceptResult() {
   } else {
     alarmReturnPhase = 'confirm';
     document.getElementById('alarm-msg').textContent =
-      `Code "${aiCode1}" refusé. L'IA s'est trompée — même avec assurance.`;
+      `Code "${aiCode1}" refusé. L'IA s'est trompée. Vous devez assumer les conséquences si vous validez sans vérifier.`;
     showAlarm();
   }
 }
@@ -1046,42 +1346,24 @@ function buildBrainTable() {
     <div class="decode-row" id="dr-${i}">
       <i data-lucide="${getIcon(c)}"></i>
       <span class="decode-arrow">→</span>
-      <!-- Mode clavier -->
       <input type="text" maxlength="1" id="bi-${i}" class="decode-input"
              placeholder="?" autocomplete="off"
              oninput="onBrainInput(${i}, this)"
              onkeydown="onBrainKey(event,${i})">
-      <!-- Mode manette -->
       <span class="gp-char-display" id="gp-display-${i}">?</span>
       <span class="decode-idx">${i+1}/6</span>
     </div>
   `).join('');
 
-  // Bouton grisé au départ
   document.getElementById('validate-btn').disabled = true;
-  // Reset état manette
   gpBrainRow = 0;
   gpBrainChars = ['','','','','',''];
-  // Réinitialise les marques du lexique (départ propre)
   document.querySelectorAll('.lex-cell.marked').forEach(c => c.classList.remove('marked'));
-  // Met à jour le hint du lexique pour signaler la fonctionnalité de remplissage
   setLexHint(true);
 
   lucide.createIcons();
   if (inputMode === 'gamepad') updateGpBrainFocus();
   else setTimeout(() => document.getElementById('bi-0')?.focus(), 100);
-}
-
-// Met à jour le texte d'aide du lexique selon la phase active
-function setLexHint(brainMode) {
-  const hint = document.getElementById('lex-hint');
-  if (!hint) return;
-  if (brainMode) {
-    hint.innerHTML = `<i data-lucide="mouse-pointer-2"></i> Cliquez une icône → remplit la case correspondante`;
-  } else {
-    hint.innerHTML = `<i data-lucide="mouse-pointer-2"></i> Cliquez pour marquer une icône identifiée`;
-  }
-  lucide.createIcons();
 }
 
 function onBrainInput(idx, el) {
@@ -1108,7 +1390,6 @@ function onBrainKey(e, idx) {
 
 function checkBrainFilled() {
   const filled = INPUT_CHARS.every((_, i) => document.getElementById(`bi-${i}`)?.value);
-  // Active ou désactive le bouton — il reste toujours visible
   document.getElementById('validate-btn').disabled = !filled;
 }
 
@@ -1158,7 +1439,6 @@ function computeScore() {
     pts: 40, lv: 'lv-mid', tier: 'LUCIDITÉ PARTIELLE',
     reason: "Vous avez demandé à l'IA de contrôler sa propre réponse. C'est mieux qu'accepter aveuglément, mais la machine reste juge et partie."
   };
-  // accepted blind
   return {
     pts: 15, lv: 'lv-low', tier: 'LUCIDITÉ FAIBLE',
     reason: "Vous avez accepté sans vérifier alors que vous en aviez les moyens. "
@@ -1173,6 +1453,19 @@ function showSuccess() {
   document.querySelectorAll('.bb-phase').forEach(p => p.classList.remove('active'));
   document.getElementById('alarm-overlay').classList.remove('active');
 
+  document.body.dataset.phase = 'success';
+
+  // Vagues.gif sur l'écran du décodeur
+  updateDecoderScreen('success');
+
+  // Révèle le code déchiffré sur la carte output (droite)
+  const codeEl = document.getElementById('output-card-code');
+  if (codeEl) {
+    codeEl.textContent = formatCode(CORRECT_CODE);
+    codeEl.classList.add('revealed');
+  }
+
+  // Affiche le panel score
   const s = computeScore();
   document.getElementById('score-pts').textContent   = s.pts;
   document.getElementById('score-tier').textContent  = s.tier;
@@ -1181,11 +1474,11 @@ function showSuccess() {
 
   document.getElementById('phase-success').classList.add('active');
   lucide.createIcons();
-  // Lance l'animation de la barre après un tick
   setTimeout(() => { document.getElementById('score-bar').style.width = s.pts + '%'; }, 200);
 }
 
 function showAlarm() {
+  document.querySelectorAll('.bb-phase').forEach(p => p.classList.remove('active'));
   document.getElementById('alarm-overlay').classList.add('active');
 }
 
@@ -1224,7 +1517,7 @@ function devGoTo(phase, btn) {
     case 'compare':
       aiCode1 = generateAICode(); aiCode2 = generateAICode(); showCompare(); break;
     case 'success':
-      showSuccess('Mode développeur — test écran succès.'); break;
+      showSuccess(); break;
     case 'alarm':
       aiCode1 = generateAICode(); showConfirm();
       alarmReturnPhase = 'confirm';
@@ -1235,17 +1528,14 @@ function devGoTo(phase, btn) {
 
 // ============================================================
 // SYSTÈME DE DÉTECTION D'INPUT (manette ↔ clavier)
-// Réutilisable pour tout le jeu — copier dans un fichier input-manager.js
 // ============================================================
-let inputMode = 'keyboard'; // 'keyboard' | 'gamepad'
-let gpIndex   = null;       // index de la manette détectée
-let gpLoopId  = null;       // requestAnimationFrame loop
+let inputMode = 'keyboard';
+let gpIndex   = null;
+let gpLoopId  = null;
 
-// Mapping boutons standard (layout Xbox/PS)
 const GP = { A:0, B:1, X:2, Y:3, LB:4, RB:5, SELECT:8, START:9,
              DPAD_UP:12, DPAD_DOWN:13, DPAD_LEFT:14, DPAD_RIGHT:15 };
 
-// Debounce boutons et axes
 const gpPressed       = {};
 const gpRepeat        = {};
 const GP_REPEAT_DELAY = 160;
@@ -1260,45 +1550,45 @@ function setInputMode(mode) {
     document.body.classList.add('gamepad-mode');
     badge.classList.add('mode-gamepad');
     badge.innerHTML = `<i data-lucide="gamepad-2"></i><span id="mode-label">MANETTE</span>`;
-    // Auto-focus : met en surbrillance le premier élément de la phase courante
     setTimeout(initGpFocus, 60);
   } else {
     document.body.classList.remove('gamepad-mode');
     badge.classList.remove('mode-gamepad');
     badge.innerHTML = `<i data-lucide="keyboard"></i><span id="mode-label">CLAVIER</span>`;
-    // Efface les highlights manette
     document.querySelectorAll('.bb-choice-btn, .bb-btn').forEach(b => {
       b.style.borderColor = '';
       b.style.background  = '';
+    });
+    // Efface outline cartes
+    ['decoder-card','card-output'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.outline = '';
     });
   }
   lucide.createIcons();
 }
 
-// Auto-focus initial quand on entre en mode manette
 function initGpFocus() {
   const phase = getActivePhase();
-  gpChoiceIdx = 0; gpConfirmIdx = 0; gpCompareIdx = 0;
+  gpChoiceIdx = 0; gpConfirmIdx = 0; gpCompareIdx = 0; gpDecoderCardIdx = 0;
   if      (phase === 'choice')  highlightChoiceBtns();
   else if (phase === 'confirm') highlightActionBtns('phase-confirm');
   else if (phase === 'compare') highlightActionBtns('phase-compare');
   else if (phase === 'brain')   updateGpBrainFocus();
+  else if (phase === 'decoder') updateGpDecoderFocus();
 }
 
-// Switch vers clavier dès qu'une touche est pressée
 document.addEventListener('keydown', () => {
   if (inputMode !== 'keyboard') setInputMode('keyboard');
 }, { passive: true });
 
 // ----------------------------------------------------------------
-// POLLING MANETTE — démarre immédiatement (pas d'attente gamepadconnected)
-// Supporte : boutons standards ET axes (stick / D-pad selon le modèle)
+// POLLING MANETTE
 // ----------------------------------------------------------------
 function gpLoop() {
   gpLoopId = requestAnimationFrame(gpLoop);
   const gamepads = navigator.getGamepads();
 
-  // Cherche une manette disponible
   if (gpIndex === null) {
     for (let i = 0; i < gamepads.length; i++) {
       if (gamepads[i]) { gpIndex = i; break; }
@@ -1311,19 +1601,17 @@ function gpLoop() {
 
   const now = Date.now();
 
-  // ---- BOUTONS (standard W3C) ----
   gp.buttons.forEach((btn, i) => {
     const was    = !!gpPressed[i];
-    const is     = btn.pressed || btn.value > 0.5; // inclut triggers analogiques
+    const is     = btn.pressed || btn.value > 0.5;
     const repeat = is && was && (now - (gpRepeat[i] || 0)) > GP_REPEAT_DELAY;
 
     if (is && !was) {
-      // Front montant : 1er appui
-      gpRepeat[i] = now + 350; // délai initial avant répétition
+      gpRepeat[i] = now + 350;
       if (inputMode !== 'gamepad') {
-        setInputMode('gamepad'); // 1er appui = juste activer le mode
+        setInputMode('gamepad');
       } else {
-        onGamepadButton(i);      // déjà en mode manette : action directe
+        onGamepadButton(i);
       }
     } else if (repeat) {
       gpRepeat[i] = now;
@@ -1332,8 +1620,6 @@ function gpLoop() {
     gpPressed[i] = is;
   });
 
-  // ---- AXES (stick gauche + D-pad axe selon le modèle de manette) ----
-  // Axe 0 = LX, Axe 1 = LY, Axe 6 = D-pad X (certaines), Axe 7 = D-pad Y (certaines)
   const T  = 0.45;
   const ax = gp.axes;
   const axNow = {
@@ -1343,11 +1629,9 @@ function gpLoop() {
     down:  (ax[1] !== undefined && ax[1] >  T) || (ax[7] !== undefined && ax[7] >  T)
   };
 
-  // Détecte mouvement sur axe → switch mode si nécessaire
   const axAny = axNow.left || axNow.right || axNow.up || axNow.down;
   if (axAny && inputMode !== 'gamepad') { setInputMode('gamepad'); axisWas = { ...axNow }; return; }
 
-  // Front montant axe uniquement (évite la répétition continue du stick)
   if (axNow.up    && !axisWas.up)    onGamepadButton(GP.DPAD_UP);
   if (axNow.down  && !axisWas.down)  onGamepadButton(GP.DPAD_DOWN);
   if (axNow.left  && !axisWas.left)  onGamepadButton(GP.DPAD_LEFT);
@@ -1355,7 +1639,6 @@ function gpLoop() {
   axisWas = { ...axNow };
 }
 
-// ---- Actions manette par phase ----
 function onGamepadButton(btn) {
   const phase = getActivePhase();
   if (!phase) return;
@@ -1375,12 +1658,9 @@ function getActivePhase() {
   return el.id.replace('phase-', '');
 }
 
-// PHASE 0 : Choix — D-pad gauche/droite ou LB/RB, A = confirmer
-let gpChoiceIdx = 0; // 0 = décodeur, 1 = cerveau
-const GP_CHOICE_BTNS = [
-  () => chooseDecoder(),
-  () => chooseBrain()
-];
+// PHASE 0 : Choix
+let gpChoiceIdx = 0;
+const GP_CHOICE_BTNS = [() => chooseDecoder(), () => chooseBrain()];
 function gpChoice(btn) {
   if (btn === GP.DPAD_LEFT  || btn === GP.DPAD_UP)   { gpChoiceIdx = 0; highlightChoiceBtns(); }
   if (btn === GP.DPAD_RIGHT || btn === GP.DPAD_DOWN)  { gpChoiceIdx = 1; highlightChoiceBtns(); }
@@ -1388,30 +1668,42 @@ function gpChoice(btn) {
 }
 function highlightChoiceBtns() {
   document.querySelectorAll('.bb-choice-btn').forEach((b, i) => {
-    b.style.borderColor = i === gpChoiceIdx ? '#00E5FF' : '';
-    b.style.background  = i === gpChoiceIdx ? 'rgba(0,229,255,.1)' : '';
+    b.style.borderColor = i === gpChoiceIdx ? '#00B4D8' : '';
+    b.style.background  = i === gpChoiceIdx ? 'rgba(0,180,216,.08)' : '';
   });
 }
 
-// PHASE 1B : Décodeur — A = déclenche drop automatique
+// PHASE 1B : Décodeur — D-pad gauche/droite sélectionne la carte, A confirme
+let gpDecoderCardIdx = 0; // 0 = input (correcte), 1 = output (mauvaise)
+
 function gpDecoder(btn) {
+  if (btn === GP.DPAD_LEFT)  { gpDecoderCardIdx = 0; updateGpDecoderFocus(); }
+  if (btn === GP.DPAD_RIGHT) { gpDecoderCardIdx = 1; updateGpDecoderFocus(); }
   if (btn === GP.A || btn === GP.START) {
-    // Simule le drop : déclenche directement le traitement
-    const machine = document.getElementById('decoder-machine');
-    const card    = document.getElementById('decoder-card');
-    machine.classList.add('active');
-    machine.innerHTML = '<i data-lucide="loader"></i><div style="font-size:.6rem">LECTURE…</div>';
-    lucide.createIcons();
-    card.style.opacity = '.15';
-    card.draggable = false;
-    setTimeout(startProcessing, 700);
+    if (gpDecoderCardIdx === 1) {
+      // Mauvaise carte sélectionnée
+      showWrongCardMsg();
+    } else {
+      // Carte correcte — lancer le traitement
+      const card = document.getElementById('decoder-card');
+      card.style.opacity = '.15';
+      card.draggable = false;
+      updateDecoderScreen('reading');
+      setTimeout(startProcessing, 700);
+    }
   }
 }
 
-// PHASE 1A : Cerveau — navigation D-pad + cycle caractères LB/RB
-let gpBrainRow = 0;         // ligne active (0–5)
-const CHARSET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-let gpBrainChars = ['','','','','',''];  // valeurs saisies
+function updateGpDecoderFocus() {
+  const lc = document.getElementById('decoder-card');
+  const rc = document.getElementById('card-output');
+  if (lc) { lc.style.outline = gpDecoderCardIdx === 0 ? '2px solid #00B4D8' : ''; lc.style.outlineOffset = '3px'; }
+  if (rc) { rc.style.outline = gpDecoderCardIdx === 1 ? '2px solid #00B4D8' : ''; rc.style.outlineOffset = '3px'; }
+}
+
+// PHASE 1A : Cerveau
+let gpBrainRow = 0;
+let gpBrainChars = ['','','','','',''];
 
 function gpBrain(btn) {
   const maxRow = INPUT_CHARS.length - 1;
@@ -1432,9 +1724,8 @@ function gpBrain(btn) {
     updateGpBrainDisplay();
   }
   if (btn === GP.A) {
-    // Confirmer et passer à la ligne suivante
     if (gpBrainRow < maxRow) { gpBrainRow++; updateGpBrainFocus(); }
-    else { // dernière ligne : tenter validation
+    else {
       syncGpBrainToInputs();
       if (!document.getElementById('validate-btn').disabled) validateBrain();
     }
@@ -1459,7 +1750,6 @@ function updateGpBrainDisplay() {
   for (let i = 0; i < INPUT_CHARS.length; i++) {
     const display = document.getElementById(`gp-display-${i}`);
     if (display) display.textContent = gpBrainChars[i] || '?';
-    // Sync aussi les vrais inputs pour checkBrainFilled
     const input = document.getElementById(`bi-${i}`);
     if (input) input.value = gpBrainChars[i] || '';
   }
@@ -1473,7 +1763,7 @@ function syncGpBrainToInputs() {
   }
 }
 
-// PHASE 3 : Confirmation — D-pad ↑↓ + A
+// PHASE 3 : Confirmation
 let gpConfirmIdx = 0;
 const gpConfirmActions = [acceptResult, relaunchDecoder, verifyMyself];
 function gpConfirm(btn) {
@@ -1483,7 +1773,7 @@ function gpConfirm(btn) {
   if (btn === GP.A) gpConfirmActions[gpConfirmIdx]();
 }
 
-// PHASE 4 : Comparaison — D-pad + A
+// PHASE 4 : Comparaison
 let gpCompareIdx = 0;
 const gpCompareActions = [() => trustCode(1), () => trustCode(2), verifyMyself];
 function gpCompare(btn) {
@@ -1497,8 +1787,8 @@ function highlightActionBtns(phaseId) {
   const btns = document.querySelectorAll(`#${phaseId} .bb-btn`);
   const activeIdx = phaseId === 'phase-confirm' ? gpConfirmIdx : gpCompareIdx;
   btns.forEach((b, i) => {
-    b.style.borderColor = i === activeIdx ? '#00E5FF' : '';
-    b.style.background  = i === activeIdx ? 'rgba(0,229,255,.1)' : '';
+    b.style.borderColor = i === activeIdx ? '#00B4D8' : '';
+    b.style.background  = i === activeIdx ? 'rgba(0,180,216,.08)' : '';
   });
 }
 
@@ -1506,11 +1796,13 @@ function highlightActionBtns(phaseId) {
 // INIT
 // ============================================================
 document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('dev-info').textContent =
+    `CODE : ${CORRECT_CODE}  |  1/3 chance d'erreur IA`;
+
   buildLexicon();
   initChoicePhase();
   lucide.createIcons();
 
-  // Polling démarre immédiatement — détecte manette branchée avant ET après le chargement
   gpLoop();
 });
 </script>
