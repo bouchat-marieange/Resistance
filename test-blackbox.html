@@ -370,6 +370,72 @@
       animation:fadeUp .8s .85s both;
     }
 
+    /* ===================== INPUT MODE INDICATOR ===================== */
+    #input-mode-badge {
+      position: fixed;
+      bottom: 14px; right: 16px;
+      z-index: 500;
+      display: flex; align-items: center; gap: 7px;
+      background: rgba(0,5,15,.85);
+      border: 1px solid #00E5FF18;
+      border-radius: 20px;
+      padding: 5px 12px;
+      font-size: .58rem; color: #00E5FF44;
+      letter-spacing: .12em;
+      transition: all .3s;
+      pointer-events: none;
+    }
+    #input-mode-badge svg { width:13px; height:13px; stroke:#00E5FF44; stroke-width:1.5; }
+    #input-mode-badge.mode-gamepad { border-color:#00E5FF44; color:#00E5FFaa; }
+    #input-mode-badge.mode-gamepad svg { stroke:#00E5FFaa; }
+
+    /* Hints de navigation manette */
+    .gp-hints {
+      display: none;
+      gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center;
+      font-size: .6rem; color: #00E5FF55;
+    }
+    body.gamepad-mode .gp-hints { display: flex; }
+    body.gamepad-mode .keyboard-hints { display: none; }
+
+    /* Bouton manette stylisé (pastille) */
+    .gp-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 20px; height: 20px; border-radius: 50%;
+      background: rgba(0,229,255,.12); border: 1px solid #00E5FF55;
+      font-size: .58rem; font-weight: 700; color: #00E5FFcc;
+      flex-shrink: 0;
+    }
+    .gp-dpad {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 20px; height: 20px;
+      font-size: .7rem; color: #00E5FF88;
+    }
+
+    /* Curseur de focus manette dans le tableau cerveau */
+    .decode-row.gp-focus {
+      background: rgba(0,229,255,.12);
+      border-color: #00E5FF66;
+      box-shadow: 0 0 10px rgba(0,229,255,.2);
+    }
+    .gp-char-display {
+      display: none;
+      font-size: 1.15rem; font-family: 'JetBrains Mono', monospace;
+      color: #00E5FF; min-width: 42px; text-align: center;
+      border-bottom: 1.5px solid #00E5FF44; padding-bottom: 3px;
+    }
+    body.gamepad-mode .decode-input { display: none; }
+    body.gamepad-mode .gp-char-display { display: block; }
+
+    /* Hints manette sous le tableau cerveau */
+    #brain-gp-hints {
+      display: none;
+      flex-direction: column; align-items: center; gap: 6px;
+      font-size: .6rem; color: #00E5FF44;
+    }
+    body.gamepad-mode #brain-gp-hints { display: flex; }
+    .gp-hint-row { display: flex; align-items: center; gap: 6px; }
+
     /* ===================== ALARM ===================== */
     #alarm-overlay {
       display:none; position:fixed; inset:40px 0 0 0; z-index:200;
@@ -466,6 +532,20 @@
         <strong>Remplissez les 6 cases</strong> — le bouton s'activera automatiquement.
       </div>
       <div class="decode-table" id="decode-table"></div>
+
+      <!-- Hints spécifiques manette (cachés en mode clavier) -->
+      <div id="brain-gp-hints">
+        <div class="gp-hint-row">
+          <span class="gp-dpad">↕</span> Changer de ligne
+          &nbsp;·&nbsp;
+          <span class="gp-dpad">↔</span> Cycler les caractères
+        </div>
+        <div class="gp-hint-row">
+          <span class="gp-btn">A</span> Confirmer &nbsp;·&nbsp;
+          <span class="gp-btn">B</span> Effacer
+        </div>
+      </div>
+
       <button id="validate-btn" disabled onclick="validateBrain()">VALIDER ▸</button>
     </div>
 
@@ -584,6 +664,12 @@
   <button class="bb-btn" style="margin-top:10px;justify-content:center;width:200px" onclick="location.reload()">
     <i data-lucide="rotate-ccw"></i> Rejouer
   </button>
+</div>
+
+<!-- ==================== INPUT MODE BADGE ==================== -->
+<div id="input-mode-badge">
+  <i data-lucide="keyboard"></i>
+  <span id="mode-label">CLAVIER</span>
 </div>
 
 <!-- ==================== ALARM ==================== -->
@@ -909,20 +995,27 @@ function chooseBrain() {
 function buildBrainTable() {
   const table = document.getElementById('decode-table');
   table.innerHTML = INPUT_CHARS.map((c, i) => `
-    <div class="decode-row">
+    <div class="decode-row" id="dr-${i}">
       <i data-lucide="${getIcon(c)}"></i>
       <span class="decode-arrow">→</span>
+      <!-- Mode clavier -->
       <input type="text" maxlength="1" id="bi-${i}" class="decode-input"
              placeholder="?" autocomplete="off"
              oninput="onBrainInput(${i}, this)"
              onkeydown="onBrainKey(event,${i})">
+      <!-- Mode manette -->
+      <span class="gp-char-display" id="gp-display-${i}">?</span>
       <span class="decode-idx">${i+1}/6</span>
     </div>
   `).join('');
   // Bouton grisé au départ
   document.getElementById('validate-btn').disabled = true;
+  // Reset état manette
+  gpBrainRow = 0;
+  gpBrainChars = ['','','','','',''];
   lucide.createIcons();
-  setTimeout(() => document.getElementById('bi-0')?.focus(), 100);
+  if (inputMode === 'gamepad') updateGpBrainFocus();
+  else setTimeout(() => document.getElementById('bi-0')?.focus(), 100);
 }
 
 function onBrainInput(idx, el) {
@@ -1075,12 +1168,253 @@ function devGoTo(phase, btn) {
 }
 
 // ============================================================
+// SYSTÈME DE DÉTECTION D'INPUT (manette ↔ clavier)
+// Réutilisable pour tout le jeu — copier dans un fichier input-manager.js
+// ============================================================
+let inputMode = 'keyboard'; // 'keyboard' | 'gamepad'
+let gpIndex   = null;       // index de la manette détectée
+let gpLoopId  = null;       // requestAnimationFrame loop
+
+// Mapping boutons standard (layout Xbox/PS)
+const GP = { A:0, B:1, X:2, Y:3, LB:4, RB:5, SELECT:8, START:9,
+             DPAD_UP:12, DPAD_DOWN:13, DPAD_LEFT:14, DPAD_RIGHT:15 };
+
+// Debounce : éviter répétitions rapides
+const gpPressed  = {};       // état précédent des boutons
+const GP_REPEAT_DELAY = 180; // ms entre répétitions (tenu enfoncé)
+const gpRepeat   = {};
+
+function setInputMode(mode) {
+  if (inputMode === mode) return;
+  inputMode = mode;
+
+  const badge = document.getElementById('input-mode-badge');
+  const label = document.getElementById('mode-label');
+
+  if (mode === 'gamepad') {
+    document.body.classList.add('gamepad-mode');
+    badge.classList.add('mode-gamepad');
+    badge.querySelector('i').setAttribute('data-lucide', 'gamepad-2');
+    label.textContent = 'MANETTE';
+  } else {
+    document.body.classList.remove('gamepad-mode');
+    badge.classList.remove('mode-gamepad');
+    badge.querySelector('i').setAttribute('data-lucide', 'keyboard');
+    label.textContent = 'CLAVIER';
+  }
+  lucide.createIcons();
+}
+
+// Détection connexion/déconnexion manette
+window.addEventListener('gamepadconnected', e => {
+  gpIndex = e.gamepad.index;
+  setInputMode('gamepad');
+  if (!gpLoopId) gpLoop();
+  console.log('[INPUT] Manette connectée :', e.gamepad.id);
+});
+window.addEventListener('gamepaddisconnected', e => {
+  if (e.gamepad.index === gpIndex) {
+    gpIndex = null;
+    setInputMode('keyboard');
+    if (gpLoopId) { cancelAnimationFrame(gpLoopId); gpLoopId = null; }
+  }
+});
+
+// Switch vers clavier dès qu'une touche est pressée
+document.addEventListener('keydown', () => {
+  if (inputMode !== 'keyboard') setInputMode('keyboard');
+}, { passive: true });
+
+// Polling manette (API Gamepad requiert polling actif)
+function gpLoop() {
+  gpLoopId = requestAnimationFrame(gpLoop);
+  if (gpIndex === null) return;
+
+  const gamepads = navigator.getGamepads();
+  const gp = gamepads[gpIndex];
+  if (!gp) return;
+
+  // Switch vers manette si un bouton est pressé et qu'on est en mode clavier
+  const anyPressed = gp.buttons.some(b => b.pressed);
+  if (anyPressed && inputMode !== 'gamepad') setInputMode('gamepad');
+
+  // Dispatch des actions selon la phase active
+  const now = Date.now();
+  gp.buttons.forEach((btn, i) => {
+    const wasPressed = gpPressed[i] || false;
+    const isPressed  = btn.pressed;
+
+    // Front montant OU répétition si tenu enfoncé
+    const isRepeat = isPressed && (now - (gpRepeat[i] || 0)) > GP_REPEAT_DELAY;
+    if ((isPressed && !wasPressed) || (isPressed && wasPressed && isRepeat)) {
+      if (isRepeat) gpRepeat[i] = now;
+      onGamepadButton(i);
+    }
+    if (isPressed && !wasPressed) gpRepeat[i] = now + 400; // délai initial plus long
+    gpPressed[i] = isPressed;
+  });
+}
+
+// ---- Actions manette par phase ----
+function onGamepadButton(btn) {
+  const phase = getActivePhase();
+  if (!phase) return;
+
+  switch (phase) {
+    case 'choice':    gpChoice(btn);    break;
+    case 'decoder':   gpDecoder(btn);   break;
+    case 'brain':     gpBrain(btn);     break;
+    case 'confirm':   gpConfirm(btn);   break;
+    case 'compare':   gpCompare(btn);   break;
+  }
+}
+
+function getActivePhase() {
+  const el = document.querySelector('.bb-phase.active');
+  if (!el) return null;
+  return el.id.replace('phase-', '');
+}
+
+// PHASE 0 : Choix — D-pad gauche/droite ou LB/RB, A = confirmer
+let gpChoiceIdx = 0; // 0 = décodeur, 1 = cerveau
+const GP_CHOICE_BTNS = [
+  () => chooseDecoder(),
+  () => chooseBrain()
+];
+function gpChoice(btn) {
+  if (btn === GP.DPAD_LEFT  || btn === GP.DPAD_UP)   { gpChoiceIdx = 0; highlightChoiceBtns(); }
+  if (btn === GP.DPAD_RIGHT || btn === GP.DPAD_DOWN)  { gpChoiceIdx = 1; highlightChoiceBtns(); }
+  if (btn === GP.A) GP_CHOICE_BTNS[gpChoiceIdx]();
+}
+function highlightChoiceBtns() {
+  document.querySelectorAll('.bb-choice-btn').forEach((b, i) => {
+    b.style.borderColor = i === gpChoiceIdx ? '#00E5FF' : '';
+    b.style.background  = i === gpChoiceIdx ? 'rgba(0,229,255,.1)' : '';
+  });
+}
+
+// PHASE 1B : Décodeur — A = déclenche drop automatique
+function gpDecoder(btn) {
+  if (btn === GP.A || btn === GP.START) {
+    // Simule le drop : déclenche directement le traitement
+    const machine = document.getElementById('decoder-machine');
+    const card    = document.getElementById('decoder-card');
+    machine.classList.add('active');
+    machine.innerHTML = '<i data-lucide="loader"></i><div style="font-size:.6rem">LECTURE…</div>';
+    lucide.createIcons();
+    card.style.opacity = '.15';
+    card.draggable = false;
+    setTimeout(startProcessing, 700);
+  }
+}
+
+// PHASE 1A : Cerveau — navigation D-pad + cycle caractères LB/RB
+let gpBrainRow = 0;         // ligne active (0–5)
+const CHARSET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+let gpBrainChars = ['','','','','',''];  // valeurs saisies
+
+function gpBrain(btn) {
+  const maxRow = INPUT_CHARS.length - 1;
+
+  if (btn === GP.DPAD_UP)   { gpBrainRow = Math.max(0, gpBrainRow - 1); updateGpBrainFocus(); }
+  if (btn === GP.DPAD_DOWN) { gpBrainRow = Math.min(maxRow, gpBrainRow + 1); updateGpBrainFocus(); }
+
+  if (btn === GP.DPAD_RIGHT || btn === GP.RB) {
+    const cur = gpBrainChars[gpBrainRow] || '';
+    const idx = CHARSET.indexOf(cur);
+    gpBrainChars[gpBrainRow] = CHARSET[(idx + 1) % CHARSET.length];
+    updateGpBrainDisplay();
+  }
+  if (btn === GP.DPAD_LEFT || btn === GP.LB) {
+    const cur = gpBrainChars[gpBrainRow] || '';
+    const idx = CHARSET.indexOf(cur);
+    gpBrainChars[gpBrainRow] = CHARSET[(idx - 1 + CHARSET.length) % CHARSET.length];
+    updateGpBrainDisplay();
+  }
+  if (btn === GP.A) {
+    // Confirmer et passer à la ligne suivante
+    if (gpBrainRow < maxRow) { gpBrainRow++; updateGpBrainFocus(); }
+    else { // dernière ligne : tenter validation
+      syncGpBrainToInputs();
+      if (!document.getElementById('validate-btn').disabled) validateBrain();
+    }
+  }
+  if (btn === GP.B) {
+    gpBrainChars[gpBrainRow] = '';
+    updateGpBrainDisplay();
+  }
+  if (btn === GP.START) {
+    syncGpBrainToInputs();
+    if (!document.getElementById('validate-btn').disabled) validateBrain();
+  }
+}
+
+function updateGpBrainFocus() {
+  document.querySelectorAll('.decode-row').forEach((row, i) => {
+    row.classList.toggle('gp-focus', i === gpBrainRow);
+  });
+}
+
+function updateGpBrainDisplay() {
+  for (let i = 0; i < INPUT_CHARS.length; i++) {
+    const display = document.getElementById(`gp-display-${i}`);
+    if (display) display.textContent = gpBrainChars[i] || '?';
+    // Sync aussi les vrais inputs pour checkBrainFilled
+    const input = document.getElementById(`bi-${i}`);
+    if (input) input.value = gpBrainChars[i] || '';
+  }
+  checkBrainFilled();
+}
+
+function syncGpBrainToInputs() {
+  for (let i = 0; i < INPUT_CHARS.length; i++) {
+    const input = document.getElementById(`bi-${i}`);
+    if (input) input.value = gpBrainChars[i] || '';
+  }
+}
+
+// PHASE 3 : Confirmation — D-pad ↑↓ + A
+let gpConfirmIdx = 0;
+const gpConfirmActions = [acceptResult, relaunchDecoder, verifyMyself];
+function gpConfirm(btn) {
+  const max = gpConfirmActions.length - 1;
+  if (btn === GP.DPAD_UP)   { gpConfirmIdx = Math.max(0, gpConfirmIdx - 1); highlightActionBtns('phase-confirm'); }
+  if (btn === GP.DPAD_DOWN) { gpConfirmIdx = Math.min(max, gpConfirmIdx + 1); highlightActionBtns('phase-confirm'); }
+  if (btn === GP.A) gpConfirmActions[gpConfirmIdx]();
+}
+
+// PHASE 4 : Comparaison — D-pad + A
+let gpCompareIdx = 0;
+const gpCompareActions = [() => trustCode(1), () => trustCode(2), verifyMyself];
+function gpCompare(btn) {
+  const max = gpCompareActions.length - 1;
+  if (btn === GP.DPAD_UP)   { gpCompareIdx = Math.max(0, gpCompareIdx - 1); highlightActionBtns('phase-compare'); }
+  if (btn === GP.DPAD_DOWN) { gpCompareIdx = Math.min(max, gpCompareIdx + 1); highlightActionBtns('phase-compare'); }
+  if (btn === GP.A) gpCompareActions[gpCompareIdx]();
+}
+
+function highlightActionBtns(phaseId) {
+  const btns = document.querySelectorAll(`#${phaseId} .bb-btn`);
+  const activeIdx = phaseId === 'phase-confirm' ? gpConfirmIdx : gpCompareIdx;
+  btns.forEach((b, i) => {
+    b.style.borderColor = i === activeIdx ? '#00E5FF' : '';
+    b.style.background  = i === activeIdx ? 'rgba(0,229,255,.1)' : '';
+  });
+}
+
+// ============================================================
 // INIT
 // ============================================================
 document.addEventListener('DOMContentLoaded', () => {
   buildLexicon();
   initChoicePhase();
   lucide.createIcons();
+
+  // Démarrer le polling si une manette est déjà connectée (page rechargée avec manette branchée)
+  const existing = navigator.getGamepads();
+  for (let i = 0; i < existing.length; i++) {
+    if (existing[i]) { gpIndex = i; setInputMode('gamepad'); gpLoop(); break; }
+  }
 });
 </script>
 </body>
