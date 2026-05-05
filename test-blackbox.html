@@ -149,29 +149,37 @@
     .lex-panel-header {
       flex-shrink: 0;
       display: flex;
-      align-items: baseline;
-      gap: 8px;
-      padding-bottom: 5px;
-      border-bottom: 1px solid rgba(0,0,0,0.06);
-      flex-wrap: wrap;
+      flex-direction: column;
+      gap: 5px;
+      padding-bottom: 7px;
+      border-bottom: 1.5px solid rgba(0,180,215,0.20);
     }
+    /* Bannière titre style référence */
     .lex-panel-title {
-      font-size: .58rem;
-      color: #1a2638;
+      display: inline-block;
+      align-self: flex-start;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: .82rem;
+      color: #fff;
       letter-spacing: .18em;
-      font-weight: 700;
+      font-weight: 400;
       white-space: nowrap;
+      background: #00B4D8;
+      padding: 4px 22px 4px 10px;
+      clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 100%, 0 100%);
+      margin-left: -12px;
+      margin-top: -10px;
     }
     #lex-hint {
-      font-size: .5rem;
-      color: #999;
-      letter-spacing: .05em;
+      font-size: .52rem;
+      color: #00B4D8;
+      letter-spacing: .04em;
     }
     #lex-hint svg {
-      width: 9px; height: 9px;
-      stroke: #bbb; stroke-width: 2;
+      width: 10px; height: 10px;
+      stroke: #00B4D8; stroke-width: 2;
       vertical-align: middle;
-      margin-right: 2px;
+      margin-right: 3px;
     }
 
     /* Lex grid — 6 colonnes × 6 lignes */
@@ -180,29 +188,31 @@
       display: grid;
       grid-template-columns: repeat(6, 1fr);
       grid-template-rows: repeat(6, 1fr);
-      gap: 3px;
+      gap: 4px;
       min-height: 0;
     }
     .lex-cell {
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
-      background: rgba(0,0,0,0.018);
-      border: 1px solid rgba(0,0,0,0.07);
-      border-radius: 4px;
+      gap: 3px;
+      padding: 4px 2px 5px;
+      background: #fff;
+      border: 1px solid rgba(0,180,215,0.28);
+      border-radius: 6px;
       cursor: pointer;
       transition: all .16s;
       user-select: none;
     }
-    .lex-cell:hover { background: rgba(0,180,215,0.08); border-color: rgba(0,180,215,0.28); }
+    .lex-cell:hover { background: rgba(0,180,215,0.07); border-color: rgba(0,180,215,0.55); }
     .lex-cell.marked {
-      background: rgba(0,180,215,0.12);
-      border-color: rgba(0,180,215,0.55);
-      box-shadow: 0 0 4px rgba(0,180,215,0.15);
+      background: rgba(0,180,215,0.10);
+      border-color: #00B4D8;
+      box-shadow: 0 0 5px rgba(0,180,215,0.18);
     }
-    .lex-cell svg { width: 15px; height: 15px; stroke: #888; stroke-width: 1.5; }
+    .lex-cell svg { width: 22px; height: 22px; stroke: #2a3a4a; stroke-width: 1.5; }
     .lex-cell.marked svg { stroke: #00B4D8; }
-    .lex-char { font-size: .5rem; color: #ccc; margin-top: 1px; font-weight: 700; }
-    .lex-cell.marked .lex-char { color: #00B4D8; }
+    .lex-char { font-size: .58rem; color: #00B4D8; font-weight: 700; letter-spacing: .04em; }
+    .lex-cell.marked .lex-char { color: #007a99; }
 
     /* ===================== BRAIN DECODE COLUMN ===================== */
     #brain-decode-col {
@@ -800,17 +810,17 @@
       letter-spacing: .22em;
     }
     .choice-bar-desc {
-      font-size: clamp(.56rem, 1vw, .65rem);
-      color: rgba(0,0,0,0.48);
+      font-size: clamp(.62rem, 1.1vw, .72rem);
+      color: rgba(0,0,0,0.52);
       line-height: 1.75;
       letter-spacing: .02em;
     }
     .choice-bar-desc .warn-ok  { color: #009944; font-weight: 700; }
     .choice-bar-desc .warn-bad { color: #bb3300; font-weight: 700; }
     .choice-not-final {
-      font-size: .52rem;
-      color: #c0c0c0;
-      letter-spacing: .04em;
+      font-size: clamp(.56rem, 1vw, .65rem);
+      color: rgba(0,0,0,0.48);
+      letter-spacing: .02em;
       font-style: italic;
     }
 
@@ -831,15 +841,19 @@
       max-width: 100%;
       flex: 1;
       min-height: 0;
-      padding: 12px 30px 20px;
+      padding: 10px 30px 18px;
       justify-content: unset;
+      align-items: end;
     }
 
-    /* Placement grille */
+    /* Placement grille — même hauteur via align-self: stretch sur la ligne 2 */
     body[data-phase="choice"] #choice-btn-lex { grid-area: 1 / 1; align-self: end; }
-    body[data-phase="choice"] #lex-panel      { grid-area: 2 / 1; min-height: 0; height: 100%; }
+    body[data-phase="choice"] #lex-panel      { grid-area: 2 / 1; min-height: 0; align-self: stretch; }
     body[data-phase="choice"] #choice-btn-dec { grid-area: 1 / 2; align-self: end; }
-    body[data-phase="choice"] #decoder-wrap   { grid-area: 2 / 2; align-self: end; width: 100%; }
+    body[data-phase="choice"] #decoder-wrap   { grid-area: 2 / 2; align-self: stretch;
+                                                display: flex; align-items: flex-end; }
+    body[data-phase="choice"] #decoder-img    { width: 100%; height: auto; max-height: 100%;
+                                                object-fit: contain; object-position: bottom; }
 
     /* Boutons de choix — cachés par défaut, visibles en phase choix */
     #choice-btn-lex { display: none; flex-shrink: 0; }
