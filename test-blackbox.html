@@ -391,19 +391,14 @@
     #dscreen-reading svg { width: 20px; height: 20px; stroke: #00B4D8; animation: spin 1s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* Wrong card */
-    #dscreen-wrong-card { gap: 5px; padding: 10px; text-align: center; }
-    #dscreen-wrong-card svg { width: 20px; height: 20px; stroke: #F08C42; }
-    #dscreen-wrong-card .dscreen-title { font-size: .95rem; color: #F08C42; }
-    #dscreen-wrong-card .dscreen-sub { font-size: .45rem; line-height: 1.6; }
-
-    /* ⚠ INTOUCHABLE — layout phase décodeur & traitement (cartes latérales + décodeur centré) */
+/* ⚠ INTOUCHABLE — layout phase décodeur & traitement (cartes latérales + décodeur centré) */
     body[data-phase="decoder"] #nexus-scene,
     body[data-phase="processing"] #nexus-scene { align-items: center; }
     body[data-phase="decoder"] #card-left-wrap,
+    body[data-phase="processing"] #card-left-wrap { align-self: center; }
+    /* Carte de sortie masquée en phase décodeur — seule la carte d'activation est visible */
     body[data-phase="decoder"] #card-right-wrap,
-    body[data-phase="processing"] #card-left-wrap,
-    body[data-phase="processing"] #card-right-wrap { align-self: center; }
+    body[data-phase="processing"] #card-right-wrap { display: none; }
     body[data-phase="decoder"] #lex-panel,
     body[data-phase="processing"] #lex-panel { display: none; }
     body[data-phase="decoder"] #center-zone,
@@ -426,18 +421,22 @@
     }
     .decoder-info-text svg { width: 16px; height: 16px; stroke: #00B4D8; stroke-width: 1.5; }
 
-    /* Neural net canvas — contenu du décodeur-screen en mode processing */
-    #dscreen-processing-wrap { flex-direction: column; gap: 0; padding: 5% 0 0; }
+    /* ✎ MODIFIABLE — décodeur agrandi en phase décodeur */
+    body[data-phase="decoder"] #decoder-img,
+    body[data-phase="processing"] #decoder-img { width: clamp(300px, 46vw, 580px); }
+
+    /* Neural net canvas — marge intérieure pour ne pas coller au rebord de l'écran noir */
+    #dscreen-processing-wrap { flex-direction: column; gap: 0; padding: 7% 7% 6%; }
     #dscreen-processing-label {
       font-family: 'Bebas Neue', sans-serif;
-      font-size: clamp(.55rem, 1.8vw, .80rem);
+      font-size: clamp(.52rem, 1.6vw, .76rem);
       color: #00E5FF;
       letter-spacing: .22em;
       text-align: center;
       flex-shrink: 0;
-      padding-bottom: 3px;
+      padding-bottom: 5px;
     }
-    #nn-canvas { width: 100%; height: auto; flex: 1; background: transparent; display: block; }
+    #nn-canvas { width: 100%; height: auto; flex: 1; min-height: 0; background: transparent; display: block; }
 
     /* Success on decoder screen */
     #dscreen-success {
@@ -1158,14 +1157,7 @@
           <canvas id="nn-canvas" width="580" height="200"></canvas>
         </div>
 
-        <!-- État 4 : carte incorrecte -->
-        <div class="dscreen-state" id="dscreen-wrong-card">
-          <i data-lucide="alert-triangle"></i>
-          <div class="dscreen-title">CARTE INCORRECTE</div>
-          <div class="dscreen-sub">Insérer la carte d'activation cryptée<br><small style="opacity:.65">(motif organique blanc)</small></div>
-        </div>
-
-        <!-- État 5 : succès — vagues.gif -->
+        <!-- État 4 : succès — vagues.gif -->
         <div class="dscreen-state" id="dscreen-success">
           <img src="images/Images jeu Nexus/vagues.gif" class="vagues-anim" alt="">
           <div class="dscreen-success-content">
@@ -1409,13 +1401,6 @@ function updateDecoderScreen(state) {
   }
 }
 
-function showWrongCardMsg() {
-  updateDecoderScreen('wrong-card');
-  setTimeout(() => {
-    if (document.body.dataset.phase === 'decoder') updateDecoderScreen('idle');
-  }, 3500);
-}
-
 // ============================================================
 // NAVIGATION PHASES
 // ============================================================
@@ -1436,12 +1421,10 @@ function showPhase(id) {
   else if (id === 'success')                                      updateDecoderScreen('success');
   else                                                            updateDecoderScreen(null); // écran sombre
 
-  // Nettoyage outline cartes quand on quitte la phase décodeur
+  // Nettoyage outline carte quand on quitte la phase décodeur
   if (id !== 'decoder') {
     const lc = document.getElementById('decoder-card');
-    const rc = document.getElementById('card-output');
     if (lc) lc.style.outline = '';
-    if (rc) rc.style.outline = '';
   }
   // Réinitialise la carte input si on revient au choix
   if (id === 'choice') {
@@ -1589,25 +1572,14 @@ function initDragDecoder() {
   decoderBound = true;
 
   const card    = document.getElementById('decoder-card');
-  const outCard = document.getElementById('card-output');
   const machine = document.getElementById('decoder-machine');
 
-  // Carte input (correcte)
+  // Carte d'activation (seule carte draggable)
   card.addEventListener('dragstart', e => {
     e.dataTransfer.setData('text/plain', 'card-input');
     card.classList.add('dragging');
   });
   card.addEventListener('dragend', () => card.classList.remove('dragging'));
-
-  // Carte output (mauvaise carte) — devient draggable en phase décodeur
-  outCard.draggable = true;
-  outCard.addEventListener('dragstart', e => {
-    e.dataTransfer.setData('text/plain', 'card-wrong');
-    outCard.classList.add('dragging');
-  });
-  outCard.addEventListener('dragend', () => {
-    outCard.classList.remove('dragging');
-  });
 
   // Zone de drop : tout le décodeur
   machine.addEventListener('dragover', e => {
@@ -1618,19 +1590,10 @@ function initDragDecoder() {
   machine.addEventListener('drop', e => {
     e.preventDefault();
     machine.classList.remove('drag-over');
-    const cardType = e.dataTransfer.getData('text/plain');
 
-    if (cardType === 'card-wrong') {
-      // Mauvaise carte déposée
-      showWrongCardMsg();
-      outCard.classList.remove('dragging');
-      return;
-    }
-
-    // Carte correcte — lancer le traitement (neural net immédiat)
+    // Lancer le décodage (neural net immédiat)
     card.style.opacity = '.15';
     card.draggable = false;
-    outCard.draggable = false;
     updateDecoderScreen('processing');
     setTimeout(startProcessing, 120);
   });
@@ -2062,17 +2025,15 @@ function setInputMode(mode) {
       b.style.background  = '';
     });
     // Efface outline cartes
-    ['decoder-card','card-output'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.style.outline = '';
-    });
+    const dc = document.getElementById('decoder-card');
+    if (dc) dc.style.outline = '';
   }
   lucide.createIcons();
 }
 
 function initGpFocus() {
   const phase = getActivePhase();
-  gpChoiceIdx = 0; gpConfirmIdx = 0; gpCompareIdx = 0; gpDecoderCardIdx = 0;
+  gpChoiceIdx = 0; gpConfirmIdx = 0; gpCompareIdx = 0;
   if      (phase === 'choice')  highlightChoiceBtns();
   else if (phase === 'confirm') highlightActionBtns('phase-confirm');
   else if (phase === 'compare') highlightActionBtns('phase-compare');
@@ -2181,32 +2142,20 @@ function highlightChoiceBtns() {
   });
 }
 
-// PHASE 1B : Décodeur — D-pad gauche/droite sélectionne la carte, A confirme
-let gpDecoderCardIdx = 0; // 0 = input (correcte), 1 = output (mauvaise)
-
+// PHASE 1B : Décodeur — A / START confirme le glissé de la carte
 function gpDecoder(btn) {
-  if (btn === GP.DPAD_LEFT)  { gpDecoderCardIdx = 0; updateGpDecoderFocus(); }
-  if (btn === GP.DPAD_RIGHT) { gpDecoderCardIdx = 1; updateGpDecoderFocus(); }
   if (btn === GP.A || btn === GP.START) {
-    if (gpDecoderCardIdx === 1) {
-      // Mauvaise carte sélectionnée
-      showWrongCardMsg();
-    } else {
-      // Carte correcte — lancer le traitement
-      const card = document.getElementById('decoder-card');
-      card.style.opacity = '.15';
-      card.draggable = false;
-      updateDecoderScreen('processing');
-      setTimeout(startProcessing, 120);
-    }
+    const card = document.getElementById('decoder-card');
+    card.style.opacity = '.15';
+    card.draggable = false;
+    updateDecoderScreen('processing');
+    setTimeout(startProcessing, 120);
   }
 }
 
 function updateGpDecoderFocus() {
   const lc = document.getElementById('decoder-card');
-  const rc = document.getElementById('card-output');
-  if (lc) { lc.style.outline = gpDecoderCardIdx === 0 ? '2px solid #00B4D8' : ''; lc.style.outlineOffset = '3px'; }
-  if (rc) { rc.style.outline = gpDecoderCardIdx === 1 ? '2px solid #00B4D8' : ''; rc.style.outlineOffset = '3px'; }
+  if (lc) { lc.style.outline = '2px solid #00B4D8'; lc.style.outlineOffset = '3px'; }
 }
 
 // PHASE 1A : Cerveau
