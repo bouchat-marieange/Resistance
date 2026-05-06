@@ -397,9 +397,47 @@
     #dscreen-wrong-card .dscreen-title { font-size: .95rem; color: #F08C42; }
     #dscreen-wrong-card .dscreen-sub { font-size: .45rem; line-height: 1.6; }
 
-    /* Neural net canvas */
-    #nn-canvas { display: none; width: 100%; height: 100%; background: transparent; }
-    #nn-canvas.active { display: block; }
+    /* ⚠ INTOUCHABLE — layout phase décodeur & traitement (cartes latérales + décodeur centré) */
+    body[data-phase="decoder"] #nexus-scene,
+    body[data-phase="processing"] #nexus-scene { align-items: center; }
+    body[data-phase="decoder"] #card-left-wrap,
+    body[data-phase="decoder"] #card-right-wrap,
+    body[data-phase="processing"] #card-left-wrap,
+    body[data-phase="processing"] #card-right-wrap { align-self: center; }
+    body[data-phase="decoder"] #lex-panel,
+    body[data-phase="processing"] #lex-panel { display: none; }
+    body[data-phase="decoder"] #center-zone,
+    body[data-phase="processing"] #center-zone {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 10px;
+    }
+    /* ✎ MODIFIABLE — barre d'instruction au-dessus du décodeur */
+    #decoder-info-bar {
+      display: none; flex-shrink: 0;
+      align-items: center; justify-content: center; gap: 8px;
+      text-align: center;
+    }
+    body[data-phase="decoder"] #decoder-info-bar { display: flex; }
+    .decoder-info-text {
+      font-size: clamp(.58rem, 1vw, .72rem);
+      color: rgba(0,0,0,0.50);
+      letter-spacing: .04em;
+      display: flex; align-items: center; gap: 7px;
+    }
+    .decoder-info-text svg { width: 16px; height: 16px; stroke: #00B4D8; stroke-width: 1.5; }
+
+    /* Neural net canvas — contenu du décodeur-screen en mode processing */
+    #dscreen-processing-wrap { flex-direction: column; gap: 0; padding: 5% 0 0; }
+    #dscreen-processing-label {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(.55rem, 1.8vw, .80rem);
+      color: #00E5FF;
+      letter-spacing: .22em;
+      text-align: center;
+      flex-shrink: 0;
+      padding-bottom: 3px;
+    }
+    #nn-canvas { width: 100%; height: auto; flex: 1; background: transparent; display: block; }
 
     /* Success on decoder screen */
     #dscreen-success {
@@ -1086,6 +1124,14 @@
       </button>
     </div>
 
+    <!-- Barre instruction décodeur — visible uniquement en phase décodeur -->
+    <div id="decoder-info-bar">
+      <div class="decoder-info-text">
+        <i data-lucide="move-horizontal"></i>
+        Glissez la carte d'activation sur le décodeur pour lancer le décodage
+      </div>
+    </div>
+
     <!-- DÉCODEUR PHYSIQUE -->
     <div id="decoder-wrap">
       <img src="images/Images jeu Nexus/decodeur-ecran-vierge-web.png" id="decoder-img" draggable="false" alt="Décodeur">
@@ -1100,14 +1146,17 @@
           <div class="dscreen-sub" id="dscreen-idle-sub">Insérer carte activation</div>
         </div>
 
-        <!-- État 2 : lecture carte -->
+        <!-- État 2 : lecture carte (inutilisé visuellement, garde pour gamepad fallback) -->
         <div class="dscreen-state" id="dscreen-reading">
           <i data-lucide="loader"></i>
           <div class="dscreen-sub">LECTURE CARTE…</div>
         </div>
 
-        <!-- État 3 : réseau neuronal (canvas) -->
-        <canvas class="dscreen-state" id="nn-canvas" width="580" height="200"></canvas>
+        <!-- État 3 : décodage — réseau neuronal + label "DÉCODAGE EN COURS" -->
+        <div class="dscreen-state" id="dscreen-processing-wrap">
+          <div id="dscreen-processing-label">DÉCODAGE EN COURS</div>
+          <canvas id="nn-canvas" width="580" height="200"></canvas>
+        </div>
 
         <!-- État 4 : carte incorrecte -->
         <div class="dscreen-state" id="dscreen-wrong-card">
@@ -1352,9 +1401,8 @@ function formatCode(code) {
 // ============================================================
 function updateDecoderScreen(state) {
   document.querySelectorAll('.dscreen-state').forEach(s => s.classList.remove('active'));
-  document.getElementById('nn-canvas').classList.remove('active');
   if (state === 'processing') {
-    document.getElementById('nn-canvas').classList.add('active');
+    document.getElementById('dscreen-processing-wrap').classList.add('active');
   } else if (state) {
     const el = document.getElementById('dscreen-' + state);
     if (el) el.classList.add('active');
@@ -1579,12 +1627,12 @@ function initDragDecoder() {
       return;
     }
 
-    // Carte correcte — lancer le traitement
+    // Carte correcte — lancer le traitement (neural net immédiat)
     card.style.opacity = '.15';
     card.draggable = false;
     outCard.draggable = false;
-    updateDecoderScreen('reading');
-    setTimeout(startProcessing, 700);
+    updateDecoderScreen('processing');
+    setTimeout(startProcessing, 120);
   });
 }
 
@@ -2148,8 +2196,8 @@ function gpDecoder(btn) {
       const card = document.getElementById('decoder-card');
       card.style.opacity = '.15';
       card.draggable = false;
-      updateDecoderScreen('reading');
-      setTimeout(startProcessing, 700);
+      updateDecoderScreen('processing');
+      setTimeout(startProcessing, 120);
     }
   }
 }
