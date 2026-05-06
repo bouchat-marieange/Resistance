@@ -7,6 +7,17 @@
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Bebas+Neue&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <style>
+/*
+╔══════════════════════════════════════════════════════════════════════╗
+║           CARTE DES ZONES CSS — BLACKBOX (test-blackbox.html)       ║
+╠══════════════════════════════════════════════════════════════════════╣
+║  ✎ MODIFIABLE    → taille, couleur, espacement, police, ombre       ║
+║  ⚠ INTOUCHABLE   → display:none/flex piloté par data-phase=         ║
+║                    ou body.gamepad-mode — toucher = casse le jeu    ║
+║  ★ CALIBRATION   → % positionnant l'écran sur l'image décodeur      ║
+║                    1980×1114 px — ne changer que si l'image change  ║
+╚══════════════════════════════════════════════════════════════════════╝
+*/
     * { margin:0; padding:0; box-sizing:border-box; }
 
     body {
@@ -135,7 +146,7 @@
       gap: 6px;
       filter: drop-shadow(8px 8px 6px rgba(0,0,0,0.10));
     }
-    /* Brain mode: side-by-side */
+    /* ⚠ INTOUCHABLE — layout lex-panel en mode cerveau */
     body[data-phase="brain"] #lex-panel { flex-direction: row; }
     body[data-phase="brain"] #lex-panel-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
 
@@ -214,6 +225,7 @@
     .lex-char { font-size: .7rem; color: #00B4D8; font-weight: 700; letter-spacing: .04em; }
     .lex-cell.marked .lex-char { color: #007a99; }
 
+    /* ⚠ INTOUCHABLE — colonne déchiffrement : display géré par data-phase */
     /* ===================== BRAIN DECODE COLUMN ===================== */
     #brain-decode-col {
       display: none;
@@ -224,7 +236,7 @@
       padding-left: 12px;
       border-left: 1px solid rgba(0,0,0,0.06);
     }
-    body[data-phase="brain"] #brain-decode-col { display: flex; }
+    body[data-phase="brain"] #brain-decode-col { display: flex; } /* ⚠ INTOUCHABLE */
 
     .brain-col-title {
       font-size: .55rem;
@@ -310,7 +322,8 @@
       height: auto;
     }
 
-    /* Screen overlay — calibrated on 1980×1114 image */
+    /* ★ CALIBRATION — % calculés sur l'image décodeur 1980×1114 px
+       Modifier UNIQUEMENT si l'image source du décodeur change */
     #decoder-screen {
       position: absolute;
       left: 10.8%; top: 21%;
@@ -322,6 +335,7 @@
       border-radius: 3px;
     }
 
+    /* ⚠ INTOUCHABLE — états de l'écran décodeur (géré par updateDecoderScreen()) */
     .dscreen-state {
       display: none;
       width: 100%; height: 100%;
@@ -387,7 +401,7 @@
       letter-spacing: .14em;
     }
 
-    /* Drop zone overlay */
+    /* ⚠ INTOUCHABLE — zone de drop drag-and-drop (pointer-events piloté par data-phase) */
     #decoder-machine {
       position: absolute;
       inset: 0;
@@ -402,6 +416,7 @@
       border: 2px solid rgba(0,180,215,0.35);
     }
 
+    /* ⚠ INTOUCHABLE — système d'affichage des phases (display géré par showPhase()) */
     /* ===================== OVERLAY PANELS ===================== */
     .bb-phase { display: none; }
     .nexus-overlay {
@@ -577,6 +592,7 @@
     .nx-btn-replay:hover { background: rgba(0,180,215,0.08); }
     .nx-btn-replay svg { width: 13px; height: 13px; stroke: #00B4D8; stroke-width: 1.5; }
 
+    /* ⚠ INTOUCHABLE — styles manette de jeu (body.gamepad-mode géré par JS) */
     /* ===================== GAMEPAD STYLES ===================== */
     .gp-btn {
       display: inline-flex; align-items: center; justify-content: center;
@@ -625,7 +641,9 @@
     #input-mode-badge.mode-gamepad { border-color: rgba(0,180,215,0.38); color: #00B4D8; }
     #input-mode-badge.mode-gamepad svg { stroke: #00B4D8; }
 
+    /* ⚠ INTOUCHABLE — display:none/flex géré par showAlarm()/dismissAlarm() */
     /* ===================== ALARM ===================== */
+    /* ✎ MODIFIABLE  — couleurs, tailles, polices de l'alarme */
     #alarm-overlay {
       display: none; position: fixed; inset: 40px 0 0 0; z-index: 200;
       flex-direction: column; align-items: center; justify-content: center; gap: 16px;
@@ -653,6 +671,8 @@
     .alarm-retry:hover { background: rgba(200,30,10,.06); }
     @keyframes pulse { from{opacity:.45} to{opacity:1} }
 
+    /* ✎ MODIFIABLE — écran 0-1 : titre, cartes, flèche, bouton DÉCRYPTER */
+    /* ⚠ INTOUCHABLE — display:none/flex géré par goToChoice() */
     /* ===================== PHASE INTRO (écran 0-1) ===================== */
     #phase-intro {
       position: fixed;
@@ -789,6 +809,8 @@
                   inset 0 0 30px rgba(0,229,255,0.14);
     }
 
+    /* ✎ MODIFIABLE — écran 0-2 : barre titre, boutons choix, grille lex/décodeur */
+    /* ⚠ INTOUCHABLE — tous les sélecteurs body[data-phase="choice"] qui suivent */
     /* ===================== PHASE CHOIX — écran 0-2 ===================== */
 
     /* Texte d'intro — au-dessus, sans fond ni bloc */
@@ -824,6 +846,7 @@
       font-style: italic;
     }
 
+    /* ⚠ INTOUCHABLE — restructuration complète du layout en phase choix */
     /* Layout côte à côte en phase choix */
     body[data-phase="choice"] #nexus-scene {
       flex-direction: column;
@@ -855,13 +878,13 @@
     body[data-phase="choice"] #decoder-wrap   { grid-area: 2 / 2; }
     body[data-phase="choice"] #decoder-img    { height: auto; max-width: 100%; }
 
-    /* Boutons de choix — cachés par défaut, visibles en phase choix */
+    /* ⚠ INTOUCHABLE — visibilité boutons choix */
     #choice-btn-lex { display: none; flex-shrink: 0; }
     #choice-btn-dec { display: none; flex-shrink: 0; }
     body[data-phase="choice"] #choice-btn-lex,
     body[data-phase="choice"] #choice-btn-dec { display: flex; }
 
-    /* Boutons de choix — même style que le bouton DÉCRYPTER écran 0-1 */
+    /* ✎ MODIFIABLE — style visuel des boutons de choix */
     .choice-method-btn {
       background: #ffffff;
       border: 1.5px solid rgba(0,229,255,0.75);
