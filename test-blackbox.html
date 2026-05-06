@@ -301,26 +301,35 @@
     .decode-idx { font-size: .48rem; color: rgba(0,0,0,0.18); margin-left: auto; }
 
     #validate-btn {
-      background: transparent;
-      border: 1px solid rgba(0,0,0,0.12);
+      background: rgba(0,0,0,0.04);
+      border: 1.5px solid rgba(0,0,0,0.10);
       color: rgba(0,0,0,0.25);
-      padding: 7px 10px;
+      padding: 9px 12px;
       font-family: 'JetBrains Mono', monospace;
       font-size: .7rem;
-      letter-spacing: .12em;
+      font-weight: 700;
+      letter-spacing: .14em;
       cursor: not-allowed;
-      border-radius: 4px;
+      border-radius: 26px;
       transition: all .3s;
       flex-shrink: 0;
       align-self: stretch;
+      text-shadow: none;
     }
     #validate-btn:not(:disabled) {
-      border-color: #00B4D8;
-      color: #00B4D8;
+      background: #ffffff;
+      border-color: rgba(0,229,255,0.75);
+      color: #1a2638;
       cursor: pointer;
-      box-shadow: 0 0 8px rgba(0,180,216,.12);
+      box-shadow: 0 0 14px rgba(0,229,255,0.35), 0 0 4px rgba(0,229,255,0.18),
+                  inset 0 1px 0 rgba(255,255,255,0.50), inset 0 0 22px rgba(0,229,255,0.06);
     }
-    #validate-btn:not(:disabled):hover { background: #00B4D8; color: #fff; }
+    #validate-btn:not(:disabled):hover {
+      background: #f0feff; border-color: #00E5FF;
+      transform: translateY(-1px);
+      box-shadow: 0 0 22px rgba(0,229,255,0.55), 0 0 8px rgba(0,229,255,0.25),
+                  inset 0 1px 0 rgba(255,255,255,0.60), inset 0 0 26px rgba(0,229,255,0.10);
+    }
 
     /* ===================== DECODER DEVICE ===================== */
     #decoder-wrap {
@@ -543,20 +552,30 @@
     /* Action buttons */
     .bb-actions { display: flex; flex-direction: column; gap: 7px; }
     .bb-btn {
-      background: transparent;
-      border: 1px solid rgba(0,180,215,0.2);
+      background: #ffffff;
+      border: 1.5px solid rgba(0,229,255,0.75);
       color: #1a2638;
-      padding: 10px 13px;
-      border-radius: 4px;
+      padding: 10px 20px;
+      border-radius: 26px;
       cursor: pointer;
       font-family: 'JetBrains Mono', monospace;
       font-size: .68rem;
+      font-weight: 700;
+      letter-spacing: .10em;
       text-align: left;
-      transition: all .2s;
+      transition: all .28s ease;
       display: flex; align-items: center; gap: 9px;
+      text-shadow: none;
+      box-shadow: 0 0 14px rgba(0,229,255,0.35), 0 0 4px rgba(0,229,255,0.18),
+                  inset 0 1px 0 rgba(255,255,255,0.50), inset 0 0 22px rgba(0,229,255,0.06);
     }
-    .bb-btn:hover { border-color: #00B4D8; background: rgba(0,180,215,0.05); }
-    .bb-btn svg { width: 13px; height: 13px; stroke: rgba(0,180,215,0.55); stroke-width: 1.5; flex-shrink: 0; }
+    .bb-btn:hover {
+      background: #f0feff; border-color: #00E5FF;
+      transform: translateY(-1px);
+      box-shadow: 0 0 22px rgba(0,229,255,0.55), 0 0 8px rgba(0,229,255,0.25),
+                  inset 0 1px 0 rgba(255,255,255,0.60), inset 0 0 26px rgba(0,229,255,0.10);
+    }
+    .bb-btn svg { width: 13px; height: 13px; stroke: #00B4D8; stroke-width: 1.5; flex-shrink: 0; }
     .bb-btn:hover svg { stroke: #00B4D8; }
 
     /* ===================== SUCCESS PANEL ===================== */
@@ -594,20 +613,29 @@
     .score-reason { font-size: .58rem; color: #888; text-align: center; max-width: 340px; line-height: 1.6; margin-top: 2px; animation: fadeUp .8s .85s both; }
 
     .nx-btn-replay {
-      background: transparent;
-      border: 1px solid rgba(0,180,215,0.38);
-      color: #00B4D8;
-      padding: 9px 22px;
+      background: #ffffff;
+      border: 1.5px solid rgba(0,229,255,0.75);
+      color: #1a2638;
+      padding: 11px 32px;
       font-family: 'JetBrains Mono', monospace;
       font-size: .7rem;
+      font-weight: 700;
       cursor: pointer;
-      border-radius: 4px;
-      letter-spacing: .14em;
-      transition: all .2s;
+      border-radius: 26px;
+      letter-spacing: .18em;
+      transition: all .28s ease;
       display: flex; align-items: center; gap: 8px;
       margin-top: 6px;
+      text-shadow: none;
+      box-shadow: 0 0 14px rgba(0,229,255,0.35), 0 0 4px rgba(0,229,255,0.18),
+                  inset 0 1px 0 rgba(255,255,255,0.50), inset 0 0 22px rgba(0,229,255,0.06);
     }
-    .nx-btn-replay:hover { background: rgba(0,180,215,0.08); }
+    .nx-btn-replay:hover {
+      background: #f0feff; border-color: #00E5FF;
+      transform: translateY(-2px);
+      box-shadow: 0 0 22px rgba(0,229,255,0.55), 0 0 8px rgba(0,229,255,0.25),
+                  inset 0 1px 0 rgba(255,255,255,0.60), inset 0 0 26px rgba(0,229,255,0.10);
+    }
     .nx-btn-replay svg { width: 13px; height: 13px; stroke: #00B4D8; stroke-width: 1.5; }
 
     /* ⚠ INTOUCHABLE — styles manette de jeu (body.gamepad-mode géré par JS) */
@@ -681,12 +709,29 @@
     }
     #alarm-msg { font-size: .64rem; color: #cc3322; letter-spacing: .06em; text-align: center; max-width: 420px; line-height: 1.65; }
     .alarm-retry {
-      background: transparent; border: 1px solid #dd2211; color: #dd2211;
-      padding: 8px 24px; font-family: 'JetBrains Mono', monospace;
-      font-size: .72rem; cursor: pointer; border-radius: 3px;
-      letter-spacing: .14em; transition: all .2s; margin-top: 4px;
+      background: #ffffff;
+      border: 1.5px solid rgba(221,34,17,0.75);
+      color: #dd2211;
+      padding: 11px 36px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .72rem;
+      font-weight: 700;
+      cursor: pointer;
+      border-radius: 26px;
+      letter-spacing: .14em;
+      transition: all .28s ease;
+      margin-top: 4px;
+      text-shadow: none;
+      box-shadow: 0 0 14px rgba(221,34,17,0.20), 0 0 4px rgba(221,34,17,0.10),
+                  inset 0 1px 0 rgba(255,255,255,0.50);
     }
-    .alarm-retry:hover { background: rgba(200,30,10,.06); }
+    .alarm-retry:hover {
+      background: #fff5f5;
+      border-color: #dd2211;
+      transform: translateY(-2px);
+      box-shadow: 0 0 22px rgba(221,34,17,0.35), 0 0 8px rgba(221,34,17,0.20),
+                  inset 0 1px 0 rgba(255,255,255,0.60);
+    }
     @keyframes pulse { from{opacity:.45} to{opacity:1} }
 
     /* ✎ MODIFIABLE — écran 0-1 : titre, cartes, flèche, bouton DÉCRYPTER */
@@ -855,13 +900,13 @@
       line-height: 1.75;
       letter-spacing: .02em;
     }
-    .choice-bar-desc .warn-ok  { color: #009944; font-weight: 700; }
-    .choice-bar-desc .warn-bad { color: #bb3300; font-weight: 700; }
+    .choice-bar-desc .warn-ok  { color: #009944; font-weight: 800; }
+    .choice-bar-desc .warn-bad { color: #bb3300; font-weight: 800; }
     .choice-not-final {
       font-size: clamp(.56rem, 1vw, .65rem);
       color: rgba(0,0,0,0.48);
       letter-spacing: .02em;
-      font-style: italic;
+      font-style: normal;
     }
 
     /* ⚠ INTOUCHABLE — restructuration complète du layout en phase choix */
@@ -892,8 +937,9 @@
     /* Placement grille — hauteurs naturelles, pas de troncage */
     body[data-phase="choice"] #choice-btn-lex { grid-area: 1 / 1; align-self: end; }
     body[data-phase="choice"] #lex-panel      { grid-area: 2 / 1; min-height: 0; }
-    body[data-phase="choice"] #choice-btn-dec { grid-area: 1 / 2; align-self: end; }
-    body[data-phase="choice"] #decoder-wrap   { grid-area: 2 / 2; }
+    body[data-phase="choice"] #choice-btn-dec { grid-area: 1 / 2; align-self: end; justify-self: start; width: fit-content; }
+    body[data-phase="choice"] #choice-btn-dec .choice-method-btn { width: auto; }
+    body[data-phase="choice"] #decoder-wrap   { grid-area: 2 / 2; width: fit-content; justify-self: start; }
     body[data-phase="choice"] #decoder-img    { height: auto; max-width: 100%; }
 
     /* ⚠ INTOUCHABLE — visibilité boutons choix */
