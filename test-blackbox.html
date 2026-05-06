@@ -149,6 +149,8 @@
     /* ⚠ INTOUCHABLE — layout lex-panel en mode cerveau */
     body[data-phase="brain"] #lex-panel { flex-direction: row; }
     body[data-phase="brain"] #lex-panel-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+    /* ✎ MODIFIABLE — décodeur inutile en mode cerveau */
+    body[data-phase="brain"] #decoder-wrap { display: none; }
 
     #lex-panel-main {
       flex: 1;
