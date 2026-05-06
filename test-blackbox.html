@@ -357,8 +357,14 @@
     }
     .dscreen-state.active { display: flex; }
 
-    /* Idle */
-    #dscreen-idle { gap: 5px; }
+    /* Idle — centrage explicite dans l'écran noir */
+    #dscreen-idle {
+      gap: 5px;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
     #dscreen-idle svg { width: 22px; height: 22px; stroke: #00B4D8; stroke-width: 1.5; }
     .dscreen-title {
       font-family: 'Bebas Neue', sans-serif;
