@@ -853,7 +853,7 @@
     body[data-phase="choice"] #lex-panel      { grid-area: 2 / 1; min-height: 0; }
     body[data-phase="choice"] #choice-btn-dec { grid-area: 1 / 2; align-self: end; }
     body[data-phase="choice"] #decoder-wrap   { grid-area: 2 / 2; }
-    body[data-phase="choice"] #decoder-img    { width: 100%; height: auto; }
+    body[data-phase="choice"] #decoder-img    { height: auto; max-width: 100%; }
 
     /* Boutons de choix — cachés par défaut, visibles en phase choix */
     #choice-btn-lex { display: none; flex-shrink: 0; }
@@ -1418,9 +1418,43 @@ function initChoicePhase() {
   lucide.createIcons();
 }
 
+/**
+ * Égalise la hauteur du décodeur sur celle du lexique.
+ * Principe : on masque temporairement l'image décodeur (width:0) pour que
+ * la ligne de grille soit dimensionnée par le lexique seul, on mesure cette
+ * hauteur, puis on calcule la largeur du décodeur via son ratio 1980×1114.
+ */
+function equalizeDecoderToLex() {
+  const img = document.getElementById('decoder-img');
+  const lex = document.getElementById('lex-panel');
+  if (!img || !lex || document.body.dataset.phase !== 'choice') return;
+
+  // 1. Réduit temporairement l'image à 0 pour ne pas influencer la ligne de grille
+  img.style.width  = '0';
+  img.style.height = '0';
+
+  // 2. Laisse le navigateur recalculer le layout, puis mesure la hauteur naturelle du lexique
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      const lexH = lex.getBoundingClientRect().height;
+      if (lexH > 40) {
+        // Ratio image décodeur : 1980 × 1114 = 1.7774
+        const targetW = Math.round(lexH * 1980 / 1114);
+        img.style.width    = Math.min(targetW, img.parentElement.getBoundingClientRect().width) + 'px';
+        img.style.height   = 'auto';
+      } else {
+        // Fallback : largeur 100 % si mesure impossible
+        img.style.width  = '100%';
+        img.style.height = 'auto';
+      }
+    });
+  });
+}
+
 function goToChoice() {
   document.getElementById('phase-intro').classList.remove('active');
   showPhase('choice');
+  equalizeDecoderToLex();
 }
 
 // ============================================================
@@ -1831,7 +1865,7 @@ function devGoTo(phase, btn) {
       document.getElementById('phase-intro').classList.remove('active');
       aiCode1 = null; aiCode2 = null; decoderBound = false;
       playerPath = []; secondRun = false;
-      showPhase('choice'); initChoicePhase(); break;
+      showPhase('choice'); initChoicePhase(); equalizeDecoderToLex(); break;
     case 'brain':
       document.getElementById('brain-ai-notice').style.display = 'none';
       buildBrainTable(); showPhase('brain'); break;
@@ -2137,6 +2171,13 @@ document.addEventListener('DOMContentLoaded', () => {
   initChoicePhase();       // peuple les icônes intro + carte latérale
   updateDecoderScreen('idle'); // écran décodeur visible derrière l'intro
   lucide.createIcons();
+
+  // Ré-égalise décodeur/lexique si la fenêtre est redimensionnée en phase choix
+  let _eqResizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(_eqResizeTimer);
+    _eqResizeTimer = setTimeout(equalizeDecoderToLex, 120);
+  });
 
   gpLoop();
 });
