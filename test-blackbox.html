@@ -89,12 +89,8 @@
       bottom: 0; left: 0; right: 0;
       padding: 0 10px 13px 11px;
     }
-    .card-label {
-      font-size: .44rem;
-      color: rgba(0,0,0,0.32);
-      letter-spacing: .1em;
-      margin-bottom: 4px;
-    }
+    /* Titres masqués : déjà imprimés sur les images des cartes */
+    .card-label { display: none; }
     .card-icons {
       display: flex;
       gap: 3px;
@@ -117,6 +113,11 @@
     .card-code-val.revealed {
       color: #1a2638;
       animation: codeReveal .7s forwards;
+    }
+    /* Prévisualisation en direct pendant le déchiffrement manuel */
+    .card-code-val.live {
+      color: rgba(0,0,0,0.65);
+      letter-spacing: .12em;
     }
     @keyframes codeReveal { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:translateY(0)} }
 
@@ -151,6 +152,12 @@
     body[data-phase="brain"] #lex-panel-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
     /* ✎ MODIFIABLE — décodeur inutile en mode cerveau */
     body[data-phase="brain"] #decoder-wrap { display: none; }
+    /* ✎ MODIFIABLE — cartes agrandies en mode cerveau (plus de place sans le décodeur) */
+    body[data-phase="brain"] .nexus-card      { width: clamp(180px, 17vw, 240px); }
+    body[data-phase="brain"] .card-bottom     { padding: 0 8% 9% 8%; }
+    body[data-phase="brain"] .card-icons      { gap: 6px; }
+    body[data-phase="brain"] .card-icons svg  { width: 22px; height: 22px; }
+    body[data-phase="brain"] .card-code-val   { font-size: 1rem; letter-spacing: .14em; }
 
     #lex-panel-main {
       flex: 1;
@@ -1418,6 +1425,7 @@ function onLexCellClick(cell, char) {
     }
   });
   checkBrainFilled();
+  syncOutputCard();
 }
 
 function setLexHint(brainMode) {
@@ -1738,6 +1746,10 @@ function buildBrainTable() {
   document.querySelectorAll('.lex-cell.marked').forEach(c => c.classList.remove('marked'));
   setLexHint(true);
 
+  // Réinitialise la carte de code (droite) pour la prévisualisation
+  const codeEl = document.getElementById('output-card-code');
+  if (codeEl) { codeEl.textContent = '· · · · · ·'; codeEl.classList.remove('live', 'revealed'); }
+
   lucide.createIcons();
   if (inputMode === 'gamepad') updateGpBrainFocus();
   else setTimeout(() => document.getElementById('bi-0')?.focus(), 100);
@@ -1747,6 +1759,7 @@ function onBrainInput(idx, el) {
   el.value = el.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
   el.classList.remove('ok', 'bad');
   checkBrainFilled();
+  syncOutputCard();
   if (el.value && idx < INPUT_CHARS.length - 1) {
     document.getElementById(`bi-${idx+1}`)?.focus();
   }
@@ -1768,6 +1781,34 @@ function onBrainKey(e, idx) {
 function checkBrainFilled() {
   const filled = INPUT_CHARS.every((_, i) => document.getElementById(`bi-${i}`)?.value);
   document.getElementById('validate-btn').disabled = !filled;
+}
+
+/**
+ * Met à jour la carte de code (droite) en temps réel pendant le déchiffrement.
+ * Appelé depuis onBrainInput(), onLexCellClick() et updateGpBrainDisplay().
+ * Affiche chaque caractère saisi ou · pour les cases vides.
+ */
+function syncOutputCard() {
+  if (document.body.dataset.phase !== 'brain') return;
+  const codeEl = document.getElementById('output-card-code');
+  if (!codeEl || codeEl.classList.contains('revealed')) return;
+
+  let preview = '';
+  let anyFilled = false;
+  for (let i = 0; i < INPUT_CHARS.length; i++) {
+    const v = (document.getElementById(`bi-${i}`)?.value || '').toUpperCase();
+    if (v) anyFilled = true;
+    preview += (v || '·');
+    if (i < INPUT_CHARS.length - 1) preview += ' ';
+  }
+
+  if (anyFilled) {
+    codeEl.textContent = preview;
+    codeEl.classList.add('live');
+  } else {
+    codeEl.textContent = '· · · · · ·';
+    codeEl.classList.remove('live');
+  }
 }
 
 function validateBrain() {
@@ -2147,6 +2188,7 @@ function updateGpBrainDisplay() {
     if (input) input.value = gpBrainChars[i] || '';
   }
   checkBrainFilled();
+  syncOutputCard();
 }
 
 function syncGpBrainToInputs() {
