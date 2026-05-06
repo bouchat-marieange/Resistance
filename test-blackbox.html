@@ -301,9 +301,9 @@
     .decode-idx { font-size: .48rem; color: rgba(0,0,0,0.18); margin-left: auto; }
 
     #validate-btn {
-      background: rgba(0,0,0,0.04);
-      border: 1.5px solid rgba(0,0,0,0.10);
-      color: rgba(0,0,0,0.25);
+      background: rgba(123,174,196,0.25);
+      border: none;
+      color: rgba(255,255,255,0.45);
       padding: 9px 12px;
       font-family: 'JetBrains Mono', monospace;
       font-size: .7rem;
@@ -311,24 +311,21 @@
       letter-spacing: .14em;
       cursor: not-allowed;
       border-radius: 26px;
-      transition: all .3s;
+      transition: all .22s;
       flex-shrink: 0;
       align-self: stretch;
       text-shadow: none;
     }
     #validate-btn:not(:disabled) {
-      background: #ffffff;
-      border-color: rgba(0,229,255,0.75);
-      color: #1a2638;
+      background: #7BAEC4;
+      color: #ffffff;
       cursor: pointer;
-      box-shadow: 0 0 14px rgba(0,229,255,0.35), 0 0 4px rgba(0,229,255,0.18),
-                  inset 0 1px 0 rgba(255,255,255,0.50), inset 0 0 22px rgba(0,229,255,0.06);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     }
     #validate-btn:not(:disabled):hover {
-      background: #f0feff; border-color: #00E5FF;
+      background: #6A9DB3;
       transform: translateY(-1px);
-      box-shadow: 0 0 22px rgba(0,229,255,0.55), 0 0 8px rgba(0,229,255,0.25),
-                  inset 0 1px 0 rgba(255,255,255,0.60), inset 0 0 26px rgba(0,229,255,0.10);
+      box-shadow: 0 4px 14px rgba(0,0,0,0.20);
     }
 
     /* ===================== DECODER DEVICE ===================== */
@@ -552,9 +549,9 @@
     /* Action buttons */
     .bb-actions { display: flex; flex-direction: column; gap: 7px; }
     .bb-btn {
-      background: #ffffff;
-      border: 1.5px solid rgba(0,229,255,0.75);
-      color: #1a2638;
+      background: #7BAEC4;
+      border: none;
+      color: #ffffff;
       padding: 10px 20px;
       border-radius: 26px;
       cursor: pointer;
@@ -563,20 +560,14 @@
       font-weight: 700;
       letter-spacing: .10em;
       text-align: left;
-      transition: all .28s ease;
+      transition: all .22s ease;
       display: flex; align-items: center; gap: 9px;
       text-shadow: none;
-      box-shadow: 0 0 14px rgba(0,229,255,0.35), 0 0 4px rgba(0,229,255,0.18),
-                  inset 0 1px 0 rgba(255,255,255,0.50), inset 0 0 22px rgba(0,229,255,0.06);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     }
-    .bb-btn:hover {
-      background: #f0feff; border-color: #00E5FF;
-      transform: translateY(-1px);
-      box-shadow: 0 0 22px rgba(0,229,255,0.55), 0 0 8px rgba(0,229,255,0.25),
-                  inset 0 1px 0 rgba(255,255,255,0.60), inset 0 0 26px rgba(0,229,255,0.10);
-    }
-    .bb-btn svg { width: 13px; height: 13px; stroke: #00B4D8; stroke-width: 1.5; flex-shrink: 0; }
-    .bb-btn:hover svg { stroke: #00B4D8; }
+    .bb-btn:hover { background: #6A9DB3; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,0,0,0.20); }
+    .bb-btn svg { width: 13px; height: 13px; stroke: #ffffff; stroke-width: 1.5; flex-shrink: 0; }
+    .bb-btn:hover svg { stroke: #ffffff; }
 
     /* ===================== SUCCESS PANEL ===================== */
     .success-panel { align-items: center; justify-content: center; }
@@ -613,9 +604,9 @@
     .score-reason { font-size: .58rem; color: #888; text-align: center; max-width: 340px; line-height: 1.6; margin-top: 2px; animation: fadeUp .8s .85s both; }
 
     .nx-btn-replay {
-      background: #ffffff;
-      border: 1.5px solid rgba(0,229,255,0.75);
-      color: #1a2638;
+      background: #7BAEC4;
+      border: none;
+      color: #ffffff;
       padding: 11px 32px;
       font-family: 'JetBrains Mono', monospace;
       font-size: .7rem;
@@ -623,20 +614,14 @@
       cursor: pointer;
       border-radius: 26px;
       letter-spacing: .18em;
-      transition: all .28s ease;
+      transition: all .22s ease;
       display: flex; align-items: center; gap: 8px;
       margin-top: 6px;
       text-shadow: none;
-      box-shadow: 0 0 14px rgba(0,229,255,0.35), 0 0 4px rgba(0,229,255,0.18),
-                  inset 0 1px 0 rgba(255,255,255,0.50), inset 0 0 22px rgba(0,229,255,0.06);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     }
-    .nx-btn-replay:hover {
-      background: #f0feff; border-color: #00E5FF;
-      transform: translateY(-2px);
-      box-shadow: 0 0 22px rgba(0,229,255,0.55), 0 0 8px rgba(0,229,255,0.25),
-                  inset 0 1px 0 rgba(255,255,255,0.60), inset 0 0 26px rgba(0,229,255,0.10);
-    }
-    .nx-btn-replay svg { width: 13px; height: 13px; stroke: #00B4D8; stroke-width: 1.5; }
+    .nx-btn-replay:hover { background: #6A9DB3; transform: translateY(-2px); box-shadow: 0 4px 14px rgba(0,0,0,0.20); }
+    .nx-btn-replay svg { width: 13px; height: 13px; stroke: #ffffff; stroke-width: 1.5; }
 
     /* ⚠ INTOUCHABLE — styles manette de jeu (body.gamepad-mode géré par JS) */
     /* ===================== GAMEPAD STYLES ===================== */
@@ -709,9 +694,9 @@
     }
     #alarm-msg { font-size: .64rem; color: #cc3322; letter-spacing: .06em; text-align: center; max-width: 420px; line-height: 1.65; }
     .alarm-retry {
-      background: #ffffff;
-      border: 1.5px solid rgba(221,34,17,0.75);
-      color: #dd2211;
+      background: #C94A38;
+      border: none;
+      color: #ffffff;
       padding: 11px 36px;
       font-family: 'JetBrains Mono', monospace;
       font-size: .72rem;
@@ -719,18 +704,15 @@
       cursor: pointer;
       border-radius: 26px;
       letter-spacing: .14em;
-      transition: all .28s ease;
+      transition: all .22s ease;
       margin-top: 4px;
       text-shadow: none;
-      box-shadow: 0 0 14px rgba(221,34,17,0.20), 0 0 4px rgba(221,34,17,0.10),
-                  inset 0 1px 0 rgba(255,255,255,0.50);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.20);
     }
     .alarm-retry:hover {
-      background: #fff5f5;
-      border-color: #dd2211;
+      background: #B03D2C;
       transform: translateY(-2px);
-      box-shadow: 0 0 22px rgba(221,34,17,0.35), 0 0 8px rgba(221,34,17,0.20),
-                  inset 0 1px 0 rgba(255,255,255,0.60);
+      box-shadow: 0 4px 14px rgba(0,0,0,0.25);
     }
     @keyframes pulse { from{opacity:.45} to{opacity:1} }
 
@@ -839,37 +821,28 @@
     .intro-arrow-css span:nth-child(2) { animation: arrowFlow 1.5s ease-in-out infinite 0.25s; }
     .intro-arrow-css span:nth-child(3) { animation: arrowFlow 1.5s ease-in-out infinite 0.5s; }
 
-    /* Bouton futuriste — verre dépoli arrondi + contour néon turquoise */
+    /* ✎ MODIFIABLE — style bouton unifié (intro + choix + actions + replay + valider) */
     .intro-start-btn {
       position: relative;
-      background: #ffffff;
-      border: 1.5px solid rgba(0,229,255,0.75);
-      color: #1a2638;
+      background: #7BAEC4;
+      border: none;
+      color: #ffffff;
       padding: 13px 46px;
       font-family: 'JetBrains Mono', monospace;
       font-size: .82rem;
       font-weight: 700;
       letter-spacing: .22em;
-      border-radius: 20px;
+      border-radius: 26px;
       cursor: pointer;
-      transition: all .28s ease;
+      transition: all .22s ease;
       text-shadow: none;
-      box-shadow: 0 0 14px rgba(0,229,255,0.35),
-                  0 0 4px  rgba(0,229,255,0.18),
-                  inset 0 1px 0 rgba(255,255,255,0.50),
-                  inset 0 0 22px rgba(0,229,255,0.06);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
       margin-top: 4px;
     }
     .intro-start-btn:hover {
-      background: #f0feff;
-      border-color: #00E5FF;
-      color: #1a2638;
-      text-shadow: none;
+      background: #6A9DB3;
       transform: translateY(-2px);
-      box-shadow: 0 0 28px rgba(0,229,255,0.65),
-                  0 0 8px  rgba(0,229,255,0.40),
-                  inset 0 1px 0 rgba(255,255,255,0.55),
-                  inset 0 0 30px rgba(0,229,255,0.14);
+      box-shadow: 0 4px 14px rgba(0,0,0,0.20);
     }
 
     /* ✎ MODIFIABLE — écran 0-2 : barre titre, boutons choix, grille lex/décodeur */
@@ -939,7 +912,7 @@
     body[data-phase="choice"] #lex-panel      { grid-area: 2 / 1; min-height: 0; }
     body[data-phase="choice"] #choice-btn-dec { grid-area: 1 / 2; align-self: end; justify-self: start; width: fit-content; }
     body[data-phase="choice"] #choice-btn-dec .choice-method-btn { width: auto; }
-    body[data-phase="choice"] #decoder-wrap   { grid-area: 2 / 2; width: fit-content; justify-self: start; }
+    body[data-phase="choice"] #decoder-wrap   { grid-area: 2 / 2; }
     body[data-phase="choice"] #decoder-img    { height: auto; max-width: 100%; }
 
     /* ⚠ INTOUCHABLE — visibilité boutons choix */
@@ -950,40 +923,32 @@
 
     /* ✎ MODIFIABLE — style visuel des boutons de choix */
     .choice-method-btn {
-      background: #ffffff;
-      border: 1.5px solid rgba(0,229,255,0.75);
-      color: #1a2638;
+      background: #7BAEC4;
+      border: none;
+      color: #ffffff;
       padding: 11px 20px;
       font-family: 'JetBrains Mono', monospace;
       font-size: .72rem;
       font-weight: 700;
       letter-spacing: .14em;
       text-transform: uppercase;
-      border-radius: 20px;
+      border-radius: 26px;
       cursor: pointer;
-      transition: all .28s ease;
+      transition: all .22s ease;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
       width: 100%;
       text-shadow: none;
-      box-shadow: 0 0 14px rgba(0,229,255,0.35),
-                  0 0 4px rgba(0,229,255,0.18),
-                  inset 0 1px 0 rgba(255,255,255,0.50),
-                  inset 0 0 22px rgba(0,229,255,0.06);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     }
     .choice-method-btn:hover {
-      background: #f0feff;
-      border-color: #00E5FF;
-      color: #1a2638;
+      background: #6A9DB3;
       transform: translateY(-2px);
-      box-shadow: 0 0 22px rgba(0,229,255,0.55),
-                  0 0 8px rgba(0,229,255,0.25),
-                  inset 0 1px 0 rgba(255,255,255,0.60),
-                  inset 0 0 26px rgba(0,229,255,0.10);
+      box-shadow: 0 4px 14px rgba(0,0,0,0.20);
     }
-    .choice-method-btn svg { width: 15px; height: 15px; stroke: #00B4D8; stroke-width: 1.5; }
+    .choice-method-btn svg { width: 15px; height: 15px; stroke: #ffffff; stroke-width: 1.5; }
   </style>
 </head>
 <body data-phase="intro">
@@ -1525,15 +1490,21 @@ function equalizeDecoderToLex() {
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       const lexH = lex.getBoundingClientRect().height;
+      const wrap = img.parentElement;
       if (lexH > 40) {
         // Ratio image décodeur : 1980 × 1114 = 1.7774
         const targetW = Math.round(lexH * 1980 / 1114);
-        img.style.width    = Math.min(targetW, img.parentElement.getBoundingClientRect().width) + 'px';
+        const finalW  = Math.min(targetW, wrap.getBoundingClientRect().width);
+        img.style.width    = finalW + 'px';
         img.style.height   = 'auto';
+        // Aligne le wrapper sur la largeur réelle de l'image
+        // → #decoder-screen (positionné en %) sera relatif à la bonne dimension
+        wrap.style.width = finalW + 'px';
       } else {
         // Fallback : largeur 100 % si mesure impossible
-        img.style.width  = '100%';
-        img.style.height = 'auto';
+        img.style.width   = '100%';
+        img.style.height  = 'auto';
+        wrap.style.width  = '';
       }
     });
   });
