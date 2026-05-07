@@ -27,7 +27,13 @@
       overflow: hidden;
     }
 
-    /* ===================== DEV TOOLBAR ===================== */
+    /* ===================== DEV TOOLBAR (DÉSACTIVÉE) =====================
+       ⚠ Pour réactiver la barre dev :
+       1. Décommenter ce bloc CSS
+       2. Décommenter le HTML <div id="dev-toolbar"> et <button id="dev-toggle">
+       3. Remettre top:40px sur #nexus-scene, inset:40px 0 0 0 sur #phase-intro et #alarm-overlay
+    ====================================================================== */
+    /*
     #dev-toolbar {
       position: fixed;
       top: 0; left: 0; right: 0; height: 40px;
@@ -48,7 +54,6 @@
     .dev-btn.active { background:#ff00ff22; border-color:#ff00ff; color:#ff00ff; }
     #dev-info { margin-left:auto; color:#00E5FF66; font-size:.6rem; white-space:nowrap; }
 
-    /* Triangle toggle barre dev */
     #dev-toggle {
       position: fixed;
       top: 40px; left: 50%; transform: translateX(-50%);
@@ -71,11 +76,28 @@
     body.dev-hidden #nexus-scene,
     body.dev-hidden #phase-intro { top: 0; }
     body.dev-hidden #alarm-overlay { inset: 0; }
+    */
+
+    /* ===================== HUD LUCIDITÉ — MASQUÉ EN BOÎTE NOIRE =====================
+       Le mini-jeu Boîte Noire correspond au moment où Raya regarde l'écran du Nexus.
+       Afficher la jauge Emprise ↔ Lucidité briserait l'immersion (le joueur est censé
+       voir UNIQUEMENT l'écran que Raya regarde). Les points sont bankés silencieusement
+       dans showSuccess() puis affichés plus tard (traversée Bruxelles → bunker).
+       Cette règle s'applique aussi si la page est intégrée dans un parent qui injecte
+       le HUD (iframe, etc.) — défense en profondeur.
+    =============================================================================== */
+    #lucidite-hud,
+    #game-score,
+    #score-display,
+    .lucidite-hud,
+    [data-hud="lucidite"] {
+      display: none !important;
+    }
 
     /* ===================== NEXUS SCENE ===================== */
     #nexus-scene {
       position: fixed;
-      top: 40px; left: 0; right: 0; bottom: 0;
+      top: 0; left: 0; right: 0; bottom: 0; /* top:40px si dev toolbar réactivée */
       display: flex;
       flex-direction: row;
       align-items: flex-end;
@@ -920,7 +942,7 @@
     /* ===================== ALARM ===================== */
     /* ✎ MODIFIABLE  — couleurs, tailles, polices de l'alarme */
     #alarm-overlay {
-      display: none; position: fixed; inset: 40px 0 0 0; z-index: 200;
+      display: none; position: fixed; inset: 0; z-index: 200; /* inset:40px 0 0 0 si dev toolbar réactivée */
       flex-direction: column; align-items: center; justify-content: center; gap: 16px;
       background: rgba(255,255,255,0.98);
       border-top: 3px solid rgba(220,40,0,.45);
@@ -978,7 +1000,7 @@
     /* ===================== PHASE INTRO (écran 0-1) ===================== */
     #phase-intro {
       position: fixed;
-      inset: 40px 0 0 0;
+      inset: 0; /* inset:40px 0 0 0 si dev toolbar réactivée */
       z-index: 150;
       display: none;
       flex-direction: column;
@@ -1224,7 +1246,11 @@
 </head>
 <body data-phase="intro">
 
-<!-- ==================== DEV TOOLBAR ==================== -->
+<!-- ==================== DEV TOOLBAR (DÉSACTIVÉE) ====================
+     ⚠ Pour réactiver : décommenter ce bloc HTML + le bloc CSS dev-toolbar
+        + le toggle ci-dessous + les guards JS (recherche "DEV TOOLBAR")
+=================================================================== -->
+<!--
 <div id="dev-toolbar">
   <span class="dev-label">// DEV</span>
   <button class="dev-btn active" onclick="devGoTo('intro',this)">0·Intro</button>
@@ -1239,6 +1265,8 @@
   <button class="dev-btn" style="color:#ff6666aa;border-color:#ff666622" onclick="location.reload()">↺&nbsp;Reset</button>
   <span id="dev-info">CODE : … &nbsp;|&nbsp; 1/3 chance d'erreur IA</span>
 </div>
+-->
+
 
 <!-- ==================== INTRO OVERLAY (écran 0-1 — but du jeu) ==================== -->
 <div id="phase-intro" class="active">
@@ -1285,8 +1313,10 @@
 
 </div>
 
-<!-- Toggle barre dev -->
+<!-- Toggle barre dev (DÉSACTIVÉ — voir bloc dev-toolbar plus haut) -->
+<!--
 <button id="dev-toggle" onclick="document.body.classList.toggle('dev-hidden');this.textContent=document.body.classList.contains('dev-hidden')?'▲':'▼'">▼</button>
+-->
 
 <!-- ==================== NEXUS SCENE ==================== -->
 <div id="nexus-scene">
@@ -1638,6 +1668,15 @@
     <button class="alarm-retry alarm-retry-alt" id="alarm-btn-alt" onclick="switchFromAlarmOverlay()">⌕ ESSAYER AVEC LE LEXIQUE</button>
   </div>
 </div>
+
+<!-- ==================== MANAGERS DE SCORE (jeu Résistance) ====================
+     Inclus avant le script principal pour que showSuccess() puisse créditer
+     les points obtenus dans le mini-jeu Boîte Noire au profil joueur global.
+     Les points sont ajoutés silencieusement (le HUD #lucidite-hud n'est pas
+     présent sur cette page → aucune animation visible — l'immersion est préservée).
+============================================================================ -->
+<script src="game/score-manager.js"></script>
+<script src="game/lucidity-manager.js"></script>
 
 <!-- ==================== SCRIPT ==================== -->
 <script>
@@ -2350,6 +2389,22 @@ function showSuccess() {
 
   const s = computeScore();
 
+  // ═══════════════════════════════════════════════════════════════════════
+  // BANKING SILENCIEUX DES POINTS DANS LE PROFIL JOUEUR GLOBAL
+  // Les points obtenus ici sont ajoutés au score Lucidité du joueur (Resistance).
+  // Aucune animation visible : le HUD #lucidite-hud n'existe pas sur cette page,
+  // donc animateLuciditeGain() de LucidityManager retourne early. L'immersion
+  // du mini-jeu est préservée. Les points seront affichés à l'étape suivante
+  // (traversée de Bruxelles dystopique → bunker).
+  // Le flag _blackboxScoreBanked évite le double-comptage si le joueur revoit
+  // l'écran de succès (replay → location.reload() repart à zéro de toute façon).
+  // ═══════════════════════════════════════════════════════════════════════
+  if (window.LucidityManager && !window._blackboxScoreBanked) {
+    window.LucidityManager.addLucidite(s.pts);
+    window._blackboxScoreBanked = true;
+    console.log('[Boîte Noire] Score banké au profil joueur :', s.pts, 'pts (' + s.tier + ')');
+  }
+
   // Toujours afficher le score dans l'écran du décodeur (chemin cerveau ou décodeur)
   document.getElementById('dscreen-score-tier').textContent  = s.tier;
   document.getElementById('dscreen-score-tier').className    = 'dscreen-score-tier ' + s.lv;
@@ -2494,7 +2549,7 @@ function devGoTo(phase, btn) {
     case 'intro':
       CORRECT_CODE = generateCorrectCode();
       INPUT_CHARS  = CORRECT_CODE.split('');
-      document.getElementById('dev-info').textContent = `CODE : ${CORRECT_CODE}  |  1/3 chance d'erreur IA`;
+      { const _di = document.getElementById('dev-info'); if (_di) _di.textContent = `CODE : ${CORRECT_CODE}  |  1/3 chance d'erreur IA`; } // dev toolbar désactivée — guard
       initChoicePhase();
       document.getElementById('phase-intro').classList.add('active');
       document.body.dataset.phase = 'intro';
@@ -2794,8 +2849,8 @@ function highlightActionBtns(phaseId) {
 // INIT
 // ============================================================
 document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('dev-info').textContent =
-    `CODE : ${CORRECT_CODE}  |  1/3 chance d'erreur IA`;
+  // dev toolbar désactivée — guard
+  { const _di = document.getElementById('dev-info'); if (_di) _di.textContent = `CODE : ${CORRECT_CODE}  |  1/3 chance d'erreur IA`; }
 
   buildLexicon();
   initChoicePhase();       // peuple les icônes intro + carte latérale
@@ -2857,6 +2912,19 @@ document.getElementById('lex-panel').addEventListener('click', function(e) {
 document.getElementById('decoder-wrap').addEventListener('click', function(e) {
   if (document.body.dataset.phase !== 'choice') return;
   chooseDecoder();
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// SIGNAL "MASQUER HUD" POUR LE JEU PARENT
+// Si test-blackbox.html est intégré (iframe/redirect) dans le jeu Résistance,
+// le parent doit masquer le HUD Lucidité ↔ Emprise pendant ce mini-jeu.
+// On lève un flag dans localStorage à l'entrée et on le retire à la sortie.
+// Le parent peut écouter l'event 'storage' ou poller ce flag.
+// Idem pour les vidéos plein-écran (à dupliquer dans la page vidéo).
+// ════════════════════════════════════════════════════════════════════════════
+try { localStorage.setItem('resistance_hud_hidden', 'blackbox'); } catch(_){}
+window.addEventListener('beforeunload', () => {
+  try { localStorage.removeItem('resistance_hud_hidden'); } catch(_){}
 });
 </script>
 </body>
