@@ -1136,7 +1136,7 @@
       align-items: center;
       gap: 4px;
       text-align: center;
-      padding: 16px 20px 0;
+      padding: 0 20px; /* placement géré par le centrage du parent #nexus-scene en phase choix */
     }
     body[data-phase="choice"] #choice-info-bar { display: flex; }
 
@@ -1162,45 +1162,46 @@
     }
 
     /* ⚠ INTOUCHABLE — restructuration complète du layout en phase choix */
-    /* Layout côte à côte en phase choix */
+    /* Layout côte à côte en phase choix — bloc centré horizontalement & verticalement */
     body[data-phase="choice"] #nexus-scene {
       flex-direction: column;
-      align-items: stretch;
-      gap: 0;
+      align-items: center;          /* centre horizontalement le titre + grille */
+      justify-content: center;      /* centre verticalement l'ensemble */
+      gap: 25px;                    /* espace vertical titre ↔ boutons */
+      padding: 24px 18px;
     }
     body[data-phase="choice"] #card-left-wrap,
     body[data-phase="choice"] #card-right-wrap { display: none; }
 
+    /* Titre : padding minimal — le centrage parent gère le placement */
+    body[data-phase="choice"] #choice-info-bar { padding: 0 20px; }
+
     body[data-phase="choice"] #center-zone {
       display: grid;
-      /* 0.78fr : ratio calculé pour égaliser les hauteurs naturelles lex/déco
-         (lex hauteur ≈ largeur + header ; déco hauteur = largeur / 1.777) */
-      grid-template-columns: 0.78fr 1.45fr;
+      grid-template-columns: auto auto;   /* colonnes dimensionnées au contenu */
       grid-template-rows: auto auto;
-      gap: 8px 40px;
+      gap: 10px 40px;
+      width: auto;                         /* shrink-to-fit */
       max-width: 100%;
-      flex: 1;
-      min-height: 0;
-      padding: 10px 30px 18px;
-      justify-content: unset;
-      align-items: end;
+      flex: 0 0 auto;                      /* ne grandit pas — pas d'espace mort */
+      padding: 0;
+      align-items: start;                  /* panneaux top-alignés dans ligne 2 */
+      justify-items: center;               /* chaque cellule centre son contenu horizontalement */
+      transform: translateX(-110px);       /* décalage visuel pour compenser l'asymétrie lex/déco */
     }
 
-    /* Placement grille — hauteurs naturelles, pas de troncage */
+    /* ⚠ display:contents — enfants de #decoder-column deviennent items de la grille parent.
+       Les 2 boutons partagent la ligne 1, les 2 panneaux la ligne 2 → alignement auto. */
+    body[data-phase="choice"] #decoder-column { display: contents; }
+
+    /* Placement grille — hauteurs naturelles, contenus centrés au-dessus de leur panneau */
     body[data-phase="choice"] #choice-btn-lex  { grid-area: 1 / 1; align-self: end; }
-    body[data-phase="choice"] #lex-panel       { grid-area: 2 / 1; min-height: 0; }
-    /* #decoder-column occupe les 2 rangées de la colonne 2 */
-    body[data-phase="choice"] #decoder-column  {
-      grid-area: 1 / 2 / 3 / 3;
-      display: flex;
-      flex-direction: column;
-      align-items: center;   /* centre le bouton sur la largeur du décodeur */
-      justify-content: flex-end;
-      gap: 8px;
-    }
-    body[data-phase="choice"] #choice-btn-dec .choice-method-btn { width: auto; }
-    body[data-phase="choice"] #decoder-wrap   { width: 100%; }
-    body[data-phase="choice"] #decoder-img    { height: auto; max-width: 100%; }
+    body[data-phase="choice"] #choice-btn-dec  { grid-area: 1 / 2; align-self: end; }
+    body[data-phase="choice"] #lex-panel       { grid-area: 2 / 1; min-height: 0; flex: 0 0 auto; width: clamp(360px, 28vw, 460px); }
+    body[data-phase="choice"] #decoder-wrap    { grid-area: 2 / 2; width: clamp(520px, 56vw, 900px); }
+    /* Boutons : largeur = au texte (pas étirés sur toute la cellule) — centrés via justify-items */
+    body[data-phase="choice"] .choice-method-btn { width: auto; }
+    body[data-phase="choice"] #decoder-img     { width: 100%; height: auto; max-width: 100%; }
 
     /* Clics directs sur le lexique / décodeur en phase choix */
     body[data-phase="choice"] #lex-panel   { cursor: pointer; }
