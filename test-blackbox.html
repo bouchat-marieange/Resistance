@@ -48,6 +48,30 @@
     .dev-btn.active { background:#ff00ff22; border-color:#ff00ff; color:#ff00ff; }
     #dev-info { margin-left:auto; color:#00E5FF66; font-size:.6rem; white-space:nowrap; }
 
+    /* Triangle toggle barre dev */
+    #dev-toggle {
+      position: fixed;
+      top: 40px; left: 50%; transform: translateX(-50%);
+      z-index: 9998;
+      background: #1a0033;
+      border: 1px solid #ff00ff44;
+      border-top: none;
+      color: #ff00ffaa;
+      font-size: .55rem;
+      line-height: 1;
+      padding: 2px 10px 3px;
+      cursor: pointer;
+      border-radius: 0 0 5px 5px;
+      transition: color .15s, background .15s;
+      user-select: none;
+    }
+    #dev-toggle:hover { color: #ff00ff; background: #2a0044; }
+    body.dev-hidden #dev-toolbar { display: none; }
+    body.dev-hidden #dev-toggle  { top: 0; }
+    body.dev-hidden #nexus-scene,
+    body.dev-hidden #phase-intro { top: 0; }
+    body.dev-hidden #alarm-overlay { inset: 0; }
+
     /* ===================== NEXUS SCENE ===================== */
     #nexus-scene {
       position: fixed;
@@ -152,6 +176,41 @@
     body[data-phase="brain"] #lex-panel-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
     /* ✎ MODIFIABLE — décodeur inutile en mode cerveau */
     body[data-phase="brain"] #decoder-wrap { display: none; }
+    /* En succès/échec, le lex-panel n'est plus utile — le décodeur affiche le résultat */
+    body[data-phase="success"] #lex-panel,
+    body[data-phase="fail"]    #lex-panel { display: none; }
+    /* Layout succès/échec cerveau : décodeur agrandi centré, cartes ancrées sur les bords */
+    body[data-phase="success"]:not(.decoder-path) #nexus-scene,
+    body[data-phase="fail"] #nexus-scene {
+      align-items: center;
+      justify-content: center;
+    }
+    body[data-phase="success"]:not(.decoder-path) #card-left-wrap,
+    body[data-phase="fail"] #card-left-wrap {
+      position: absolute;
+      left: 18px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+    body[data-phase="success"]:not(.decoder-path) #card-right-wrap,
+    body[data-phase="fail"] #card-right-wrap {
+      position: absolute;
+      right: 18px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+    body[data-phase="success"]:not(.decoder-path) #center-zone,
+    body[data-phase="fail"] #center-zone {
+      flex: none;
+      max-width: none;
+      width: min(72vw, calc(100vw - 380px));
+      align-self: center;
+      justify-content: center;
+    }
+    body[data-phase="success"]:not(.decoder-path) #decoder-wrap,
+    body[data-phase="fail"] #decoder-wrap {
+      width: 100%;
+    }
     /* ✎ MODIFIABLE — cartes agrandies + centrées verticalement en mode cerveau */
     body[data-phase="brain"] #card-left-wrap,
     body[data-phase="brain"] #card-right-wrap { align-self: center; }
@@ -391,28 +450,83 @@
     #dscreen-reading svg { width: 20px; height: 20px; stroke: #00B4D8; animation: spin 1s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ⚠ INTOUCHABLE — layout phase décodeur & traitement (cartes latérales + décodeur centré) */
-    body[data-phase="decoder"] #nexus-scene,
-    body[data-phase="processing"] #nexus-scene { align-items: center; }
-    body[data-phase="decoder"] #card-left-wrap,
-    body[data-phase="processing"] #card-left-wrap { align-self: center; }
-    /* Carte de sortie masquée en phase décodeur — seule la carte d'activation est visible */
-    body[data-phase="decoder"] #card-right-wrap,
-    body[data-phase="processing"] #card-right-wrap { display: none; }
-    body[data-phase="decoder"] #lex-panel,
-    body[data-phase="processing"] #lex-panel { display: none; }
-    body[data-phase="decoder"] #center-zone,
-    body[data-phase="processing"] #center-zone {
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center; gap: 10px;
+/* ── CHEMIN DÉCODEUR (écran 1B) ──────────────────────────────
+   Carte en position absolue (hors flux), décodeur en vw/vh purs.
+   Le décodeur prend min(hauteur-dispo × ratio, 88vw) pour être
+   aussi grand que possible sans dépasser le viewport. */
+    body.decoder-path #nexus-scene {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 10px 10px;
+      gap: 6px;
     }
-    /* ✎ MODIFIABLE — barre d'instruction au-dessus du décodeur */
-    #decoder-info-bar {
-      display: none; flex-shrink: 0;
-      align-items: center; justify-content: center; gap: 8px;
-      text-align: center;
+    /* ── Instruction : juste au-dessus du décodeur, centrée sur sa largeur ── */
+    body.decoder-path #decoder-info-bar {
+      position: absolute;
+      left: calc(15.7vw + 30px);
+      width: calc(61.3vw + 250px);
+      top: calc(10.65vh - 18px);
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
     }
-    body[data-phase="decoder"] #decoder-info-bar { display: flex; }
+    /* ── Carte : absolue, coin haut-gauche, centrée verticalement ── */
+    body.decoder-path #card-left-wrap {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    body.decoder-path #card-left-wrap .nexus-card     { width: clamp(180px, 17vw, 240px); height: auto; }
+    body.decoder-path #card-left-wrap .nexus-card .card-img { width: 100%; height: auto; }
+    body.decoder-path #card-left-wrap .card-icons     { gap: 5px; }
+    body.decoder-path #card-left-wrap .card-icons svg { width: 20px; height: 20px; stroke: rgba(0,0,0,0.58); stroke-width: 1.5; }
+    body.decoder-path #card-left-wrap .card-code-val  { font-size: clamp(.75rem, 1.5vw, 1.05rem); color: rgba(0,0,0,0.48); letter-spacing: .06em; font-weight: 700; }
+    /* ── Zone centrale : pass-through, décodeur est en position absolue ── */
+    body.decoder-path #center-zone {
+      flex: 1;
+      min-height: 0;
+      min-width: 0;
+    }
+    /* ── Décodeur : calé à droite de la carte, proportions image de référence ──
+       gap carte→décodeur : 4vw (~4% de la ref)
+       marge droite       : 2.8vw (~2.8% de la ref)
+       largeur résultante : ~76% du viewport (idem ref) */
+    body.decoder-path #decoder-wrap {
+      position: absolute;
+      left: calc(15.7vw + 30px);         /* +30px décalage droite */
+      top: calc(10.65vh + 10px);          /* +50px vers le bas au total */
+      width: calc(61.3vw + 250px);       /* +250px largeur au total */
+      aspect-ratio: 1980 / 1114;         /* hauteur calculée par le navigateur — ratio garanti */
+      margin: 0;
+    }
+    body.decoder-path #decoder-img {
+      display: block;
+      width: 100%;
+      height: auto;       /* ratio naturel — aspect-ratio sur le wrap garantit l'alignement */
+    }
+    /* ── Badge clavier : absolu coin bas-droite ── */
+    body.decoder-path #input-mode-badge {
+      position: absolute;
+      bottom: 10px;
+      right: 14px;
+      pointer-events: auto;
+    }
+    /* Éléments masqués dans ce chemin */
+    body.decoder-path #card-right-wrap { display: none; }
+    body.decoder-path #lex-panel       { display: none; }
+    body.decoder-path #choice-info-bar { display: none; }
+    /* Overlays brain-path masqués en chemin décodeur */
+    body.decoder-path .nexus-overlay { display: none !important; }
+
+    /* ✎ MODIFIABLE — barre d'instruction (cachée hors chemin décodeur) */
+    #decoder-info-bar { display: none; }
     .decoder-info-text {
       font-size: clamp(.58rem, 1vw, .72rem);
       color: rgba(0,0,0,0.50);
@@ -421,9 +535,108 @@
     }
     .decoder-info-text svg { width: 16px; height: 16px; stroke: #00B4D8; stroke-width: 1.5; }
 
-    /* ✎ MODIFIABLE — décodeur agrandi en phase décodeur */
-    body[data-phase="decoder"] #decoder-img,
-    body[data-phase="processing"] #decoder-img { width: clamp(300px, 46vw, 580px); }
+    /* ✎ MODIFIABLE — confirm & compare à l'intérieur de l'écran du décodeur */
+    #dscreen-confirm, #dscreen-compare {
+      flex-direction: column;
+      gap: 8px;
+      padding: 4% 6%;
+      align-items: center;
+      overflow: hidden;
+    }
+    .dscrn-title {
+      font-size: clamp(.8rem, 1.1vw, 1rem);
+      color: rgba(0,229,255,0.75);
+      letter-spacing: .07em;
+      font-weight: 700;
+      padding-bottom: 6px;
+      border-bottom: 1px solid rgba(0,229,255,0.18);
+      align-self: stretch;
+      text-align: center;
+      flex-shrink: 0;
+      line-height: 1.4;
+    }
+    .dscrn-row { display: flex; align-items: flex-start; gap: 16px; flex-shrink: 0; justify-content: center; }
+    .dscrn-mini-label { font-size: clamp(.62rem, 0.8vw, .78rem); color: rgba(0,229,255,0.40); letter-spacing: .10em; margin-bottom: 3px; text-align: center; }
+    .dscrn-code {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(1.2rem, 2vw, 1.7rem);
+      color: #ffffff; letter-spacing: .18em;
+      text-align: center;
+    }
+    .dscrn-code.error { color: #E07020; }
+    .dscrn-count { font-size: clamp(.62rem, 0.78vw, .78rem); color: rgba(0,180,216,0.55); margin-top: 2px; text-align: center; }
+    .dscrn-arrow { font-size: clamp(.9rem, 1.3vw, 1.2rem); color: rgba(0,229,255,0.28); flex-shrink: 0; }
+    .dscrn-notice { font-size: clamp(.68rem, 0.85vw, .82rem); color: rgba(0,229,255,0.55); letter-spacing: .04em; line-height: 1.5; flex-shrink: 0; text-align: center; }
+    /* Grille à 1 colonne : tous les boutons prennent la largeur du plus long */
+    .dscrn-btns {
+      display: grid;
+      grid-template-columns: 1fr;
+      width: fit-content;
+      gap: 6px;
+      flex-shrink: 0;
+      margin-top: auto;
+    }
+    /* ✎ MODIFIABLE — boutons écran décodeur : texte turquoise + contour turquoise */
+    .dscreen-btn {
+      background: transparent;
+      border: 1px solid rgba(0,229,255,0.48);
+      color: #00E5FF;
+      padding: 6px 16px;
+      border-radius: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: clamp(.68rem, 0.9vw, .88rem);
+      font-weight: 700;
+      letter-spacing: .05em;
+      cursor: pointer;
+      transition: background .18s;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      white-space: nowrap;
+    }
+    .dscreen-btn:hover { background: rgba(0,229,255,0.10); border-color: #00E5FF; }
+    .dscreen-btn svg { width: 13px; height: 13px; stroke: #00E5FF; stroke-width: 1.5; flex-shrink: 0; }
+
+    /* Decoder success score */
+    .dscreen-success-content { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 100%; }
+    .dscreen-replay-btn { margin-top: 8px; }
+    .dscreen-exit-btn  { margin-top: 8px; }
+    /* Écran d'échec lexique */
+    #dscreen-fail { background: transparent; flex-direction: column; align-items: center; justify-content: center; gap: 6px; }
+    .dscreen-fail-content { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+    .dscreen-fail-icon  { font-size: 1.6rem; color: #ff4444; font-weight: 700; }
+    .dscreen-fail-title { font-family: 'Bebas Neue', sans-serif; font-size: clamp(.9rem, 1.5vw, 1.3rem); color: #ff4444; letter-spacing: .14em; }
+    .dscreen-fail-msg   { font-size: clamp(.6rem, 0.82vw, .78rem); color: rgba(255,255,255,.85); text-align: center; line-height: 1.6; max-width: 82%; }
+    .dscreen-fail-btns  { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-top: 8px; }
+    .dscreen-switch-btn { border-color: rgba(0,229,255,0.25); color: rgba(0,229,255,0.7); }
+    .dscreen-switch-btn:hover { background: rgba(0,229,255,0.08); border-color: rgba(0,229,255,0.55); color: #00E5FF; }
+    .dscreen-score-tier { font-family: 'Bebas Neue', sans-serif; font-size: clamp(1rem, 1.6vw, 1.4rem); color: #00E5FF; letter-spacing: .12em; }
+    .dscreen-score-pts  { font-family: 'JetBrains Mono', monospace; font-size: clamp(.75rem, 1.1vw, 1rem); color: #fff; }
+    .dscreen-score-reason { font-size: clamp(.58rem, 0.75vw, .72rem); color: rgba(255,255,255,.7); text-align: center; width: 90%; line-height: 1.5; }
+
+    /* Decoder alarm state */
+    @keyframes blink-alarm {
+      0%, 100% { opacity: 1; }
+      45%       { opacity: 1; }
+      50%       { opacity: 0.15; }
+      95%       { opacity: 0.15; }
+    }
+    #dscreen-alarm { flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 5% 7%; }
+    .dalarm-title { font-family: 'Bebas Neue', sans-serif; font-size: clamp(1rem, 1.8vw, 1.5rem); color: #ff4444; letter-spacing: .15em; text-align: center; }
+    .dalarm-trigger {
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(200, 0, 0, 0.28);
+      border: 2px solid rgba(255, 60, 60, 0.75);
+      border-radius: 5px;
+      padding: 5px 14px;
+      color: #ffffff;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(.8rem, 1.3vw, 1.1rem);
+      letter-spacing: .10em;
+      white-space: nowrap;
+      animation: blink-alarm .9s ease-in-out infinite;
+    }
+    .dalarm-trigger svg { width: 14px; height: 14px; stroke: #ff6666; stroke-width: 2; flex-shrink: 0; }
+    .dalarm-msg { font-size: clamp(.62rem, 0.85vw, .8rem); color: rgba(255,255,255,.85); text-align: center; line-height: 1.6; max-width: 85%; }
+    .dalarm-btn { margin-top: 0; }
 
     /* Neural net canvas — marge intérieure pour ne pas coller au rebord de l'écran noir */
     #dscreen-processing-wrap { flex-direction: column; gap: 0; padding: 7% 7% 6%; }
@@ -438,20 +651,9 @@
     }
     #nn-canvas { width: 100%; height: auto; flex: 1; min-height: 0; background: transparent; display: block; }
 
-    /* Success on decoder screen */
-    #dscreen-success {
-      position: relative;
-      overflow: hidden;
-      background: #eaf7f0;
-    }
-    #dscreen-success .vagues-anim {
-      position: absolute; inset: 0;
-      width: 100%; height: 100%;
-      object-fit: cover;
-      opacity: 0.55;
-    }
+    /* Success on decoder screen — fond toujours transparent (l'écran noir du décodeur fait le fond) */
+    #dscreen-success { background: transparent; }
     .dscreen-success-content {
-      position: relative; z-index: 1;
       display: flex; flex-direction: column;
       align-items: center; gap: 3px;
     }
@@ -558,6 +760,7 @@
 
     .bb-card-icons { display: flex; justify-content: center; gap: 5px; align-items: center; }
     .bb-card-icons svg { width: 18px; height: 18px; stroke: #888; stroke-width: 1.5; }
+    #dscreen-confirm-icons.bb-card-icons svg { width: 28px; height: 28px; stroke: #ffffff; }
 
     .bb-code-result {
       font-size: 1.45rem;
@@ -683,12 +886,16 @@
     body.gamepad-mode .decode-input { display: none; }
     body.gamepad-mode .gp-char-display { display: block; }
 
-    #brain-gp-hints {
-      display: none; flex-direction: column; align-items: center;
-      gap: 4px; font-size: .52rem; color: #bbb; flex-shrink: 0;
-    }
-    body.gamepad-mode #brain-gp-hints { display: flex; }
     .gp-hint-row { display: flex; align-items: center; gap: 5px; }
+    #brain-input-hints {
+      flex-shrink: 0;
+      font-size: .52rem;
+      color: #005f77;
+      line-height: 1.6;
+      text-align: center;
+      margin-bottom: 4px;
+    }
+    .bih-label { display: block; font-weight: 700; color: #004d63; margin-bottom: 2px; }
 
     /* ===================== INPUT MODE BADGE ===================== */
     #input-mode-badge {
@@ -730,9 +937,10 @@
       animation: pulse .6s infinite alternate;
     }
     #alarm-msg { font-size: .64rem; color: #cc3322; letter-spacing: .06em; text-align: center; max-width: 420px; line-height: 1.65; }
+    .alarm-btns { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 4px; }
     .alarm-retry {
       background: #C94A38;
-      border: none;
+      border: 2px solid #C94A38;
       color: #ffffff;
       padding: 11px 36px;
       font-family: 'JetBrains Mono', monospace;
@@ -742,14 +950,26 @@
       border-radius: 26px;
       letter-spacing: .14em;
       transition: all .22s ease;
-      margin-top: 4px;
       text-shadow: none;
       box-shadow: 0 2px 8px rgba(0,0,0,0.20);
     }
     .alarm-retry:hover {
       background: #B03D2C;
+      border-color: #B03D2C;
       transform: translateY(-2px);
       box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+    }
+    .alarm-retry-alt {
+      background: transparent;
+      border: 2px solid rgba(201,74,56,0.45);
+      color: #C94A38;
+      box-shadow: none;
+    }
+    .alarm-retry-alt:hover {
+      background: rgba(201,74,56,0.07);
+      border-color: #C94A38;
+      transform: translateY(-2px);
+      box-shadow: none;
     }
     @keyframes pulse { from{opacity:.45} to{opacity:1} }
 
@@ -945,12 +1165,26 @@
     }
 
     /* Placement grille — hauteurs naturelles, pas de troncage */
-    body[data-phase="choice"] #choice-btn-lex { grid-area: 1 / 1; align-self: end; }
-    body[data-phase="choice"] #lex-panel      { grid-area: 2 / 1; min-height: 0; }
-    body[data-phase="choice"] #choice-btn-dec { grid-area: 1 / 2; align-self: end; justify-self: start; width: fit-content; }
+    body[data-phase="choice"] #choice-btn-lex  { grid-area: 1 / 1; align-self: end; }
+    body[data-phase="choice"] #lex-panel       { grid-area: 2 / 1; min-height: 0; }
+    /* #decoder-column occupe les 2 rangées de la colonne 2 */
+    body[data-phase="choice"] #decoder-column  {
+      grid-area: 1 / 2 / 3 / 3;
+      display: flex;
+      flex-direction: column;
+      align-items: center;   /* centre le bouton sur la largeur du décodeur */
+      justify-content: flex-end;
+      gap: 8px;
+    }
     body[data-phase="choice"] #choice-btn-dec .choice-method-btn { width: auto; }
-    body[data-phase="choice"] #decoder-wrap   { grid-area: 2 / 2; }
+    body[data-phase="choice"] #decoder-wrap   { width: 100%; }
     body[data-phase="choice"] #decoder-img    { height: auto; max-width: 100%; }
+
+    /* Clics directs sur le lexique / décodeur en phase choix */
+    body[data-phase="choice"] #lex-panel   { cursor: pointer; }
+    body[data-phase="choice"] #decoder-wrap { cursor: pointer; }
+    body[data-phase="choice"] #lex-panel:hover   { border-color: rgba(0,229,255,0.65); }
+    body[data-phase="choice"] #decoder-wrap:hover { filter: drop-shadow(8px 8px 6px rgba(0,0,0,0.10)) brightness(1.06); }
 
     /* ⚠ INTOUCHABLE — visibilité boutons choix */
     #choice-btn-lex { display: none; flex-shrink: 0; }
@@ -1051,6 +1285,9 @@
 
 </div>
 
+<!-- Toggle barre dev -->
+<button id="dev-toggle" onclick="document.body.classList.toggle('dev-hidden');this.textContent=document.body.classList.contains('dev-hidden')?'▲':'▼'">▼</button>
+
 <!-- ==================== NEXUS SCENE ==================== -->
 <div id="nexus-scene">
 
@@ -1062,6 +1299,14 @@
       <span class="warn-bad">✗ Code incorrect</span> → alarme déclenchée, recommencer depuis le début
     </div>
     <div class="choice-not-final">Ce choix n'est pas définitif — vous pourrez le modifier par la suite.</div>
+  </div>
+
+  <!-- Ligne 1 grille décodeur : instruction (enfant direct de nexus-scene) -->
+  <div id="decoder-info-bar">
+    <div class="decoder-info-text">
+      <i data-lucide="move-horizontal"></i>
+      Glissez la carte d'activation sur le décodeur pour lancer le décodage
+    </div>
   </div>
 
   <!-- LEFT CARD (input — draggable en phase décodeur) -->
@@ -1106,14 +1351,17 @@
         <div id="brain-ai-notice"></div>
         <div class="brain-hint-sm">Remplissez les 6 cases puis validez.</div>
         <div class="decode-table" id="decode-table"></div>
-        <button id="validate-btn" disabled onclick="validateBrain()">VALIDER ▸</button>
-        <div id="brain-gp-hints">
-          <div class="gp-hint-row"><span class="gp-dpad">↕</span> Ligne &nbsp;·&nbsp; <span class="gp-dpad">↔</span> Caractère</div>
-          <div class="gp-hint-row"><span class="gp-btn">A</span> Confirmer &nbsp;·&nbsp; <span class="gp-btn">B</span> Effacer</div>
+        <div id="brain-input-hints">
+          <span class="bih-label">Pour saisir votre code</span>
+          Cliquez sur les icônes du code d'activation dans le lexique : le caractère correspondant s'ajoute automatiquement.
         </div>
+        <button id="validate-btn" disabled onclick="validateBrain()">VALIDER ▸</button>
       </div>
 
     </div><!-- /lex-panel -->
+
+    <!-- Colonne décodeur : bouton + objet physique (centrage partagé) -->
+    <div id="decoder-column">
 
     <!-- Bouton choix décodeur — visible uniquement en phase choix -->
     <div id="choice-btn-dec">
@@ -1121,14 +1369,6 @@
         <i data-lucide="cpu"></i>
         J'utilise le décodeur IA
       </button>
-    </div>
-
-    <!-- Barre instruction décodeur — visible uniquement en phase décodeur -->
-    <div id="decoder-info-bar">
-      <div class="decoder-info-text">
-        <i data-lucide="move-horizontal"></i>
-        Glissez la carte d'activation sur le décodeur pour lancer le décodage
-      </div>
     </div>
 
     <!-- DÉCODEUR PHYSIQUE -->
@@ -1157,12 +1397,114 @@
           <canvas id="nn-canvas" width="580" height="200"></canvas>
         </div>
 
-        <!-- État 4 : succès — vagues.gif -->
+        <!-- État 4 : résultat analyse — confirm (chemin décodeur) -->
+        <div class="dscreen-state" id="dscreen-confirm">
+          <div class="dscrn-title">// ANALYSE TERMINÉE — QUE FAITES-VOUS ?</div>
+          <div class="dscrn-row">
+            <div>
+              <div class="dscrn-mini-label">// INPUT ENCODÉ</div>
+              <div class="bb-card-icons" id="dscreen-confirm-icons"></div>
+            </div>
+            <div class="dscrn-arrow">→</div>
+            <div>
+              <div class="dscrn-mini-label">// RÉSULTAT IA</div>
+              <div class="dscrn-code" id="dscreen-confirm-code"></div>
+              <div class="dscrn-count" id="dscreen-confirm-count"></div>
+            </div>
+          </div>
+          <div class="dscrn-btns">
+            <button class="dscreen-btn" onclick="acceptResult()">
+              <i data-lucide="check-circle"></i> J'accepte ce résultat — j'entre le code
+            </button>
+            <button class="dscreen-btn" onclick="relaunchDecoder()">
+              <i data-lucide="refresh-cw"></i> Je relance le décodeur pour confirmer
+            </button>
+            <button class="dscreen-btn" onclick="verifyMyself()">
+              <i data-lucide="search"></i> Je vérifie moi-même avec le lexique
+            </button>
+          </div>
+        </div>
+
+        <!-- État 4b : deux analyses — compare (chemin décodeur) -->
+        <div class="dscreen-state" id="dscreen-compare">
+          <div class="dscrn-title">// DEUX ANALYSES DISPONIBLES — LAQUELLE CHOISIR ?</div>
+          <div class="dscrn-row">
+            <div>
+              <div class="dscrn-mini-label">ANALYSE 1</div>
+              <div class="dscrn-code" id="dscreen-cmp-code1"></div>
+            </div>
+            <div style="width:20px"></div>
+            <div>
+              <div class="dscrn-mini-label">ANALYSE 2</div>
+              <div class="dscrn-code" id="dscreen-cmp-code2"></div>
+            </div>
+          </div>
+          <div class="dscrn-notice" id="dscreen-compare-notice"></div>
+          <div class="dscrn-btns">
+            <button class="dscreen-btn" onclick="trustCode(1)">
+              <i data-lucide="check-circle"></i> Je choisis l'analyse 1
+            </button>
+            <button class="dscreen-btn" onclick="trustCode(2)">
+              <i data-lucide="check-circle"></i> Je choisis l'analyse 2
+            </button>
+            <button class="dscreen-btn" onclick="verifyMyself()">
+              <i data-lucide="search"></i> Aucune fiable — je vérifie moi-même
+            </button>
+          </div>
+        </div>
+
+        <!-- État 5 : succès -->
         <div class="dscreen-state" id="dscreen-success">
-          <img src="images/Images jeu Nexus/vagues.gif" class="vagues-anim" alt="">
           <div class="dscreen-success-content">
             <div class="dscreen-check">✓</div>
             <div class="dscreen-success-title">ACCÈS AUTORISÉ</div>
+            <div id="dscreen-score-tier" class="dscreen-score-tier"></div>
+            <div id="dscreen-score-pts" class="dscreen-score-pts"></div>
+            <div id="dscreen-score-reason" class="dscreen-score-reason"></div>
+            <button class="dscreen-btn dscreen-exit-btn" onclick="exitNexus()">
+              <i data-lucide="door-open"></i> Sortir du Nexus
+            </button>
+          </div>
+        </div>
+
+        <!-- État 6 : alarme dans décodeur (chemin décodeur) -->
+        <div class="dscreen-state" id="dscreen-alarm">
+          <div class="dalarm-title">✗ CODE ERRONÉ</div>
+          <div class="dalarm-trigger">
+            <i data-lucide="alert-triangle"></i>
+            Vous avez déclenché l'alarme
+            <i data-lucide="alert-triangle"></i>
+          </div>
+          <div class="dalarm-msg" id="dalarm-msg"></div>
+          <div class="dscreen-fail-btns">
+            <button class="dscreen-btn dalarm-btn" onclick="dismissDecoderAlarm()">
+              <i data-lucide="rotate-ccw"></i> Réessayer avec le décodeur
+            </button>
+            <button class="dscreen-btn dscreen-switch-btn" onclick="switchToLexiqueFromAlarm()">
+              <i data-lucide="scan-line"></i> Essayer avec le lexique
+            </button>
+          </div>
+        </div>
+
+        <!-- État 7 : échec lexique (chemin cerveau, code erroné) -->
+        <div class="dscreen-state" id="dscreen-fail">
+          <div class="dscreen-fail-content">
+            <div class="dscreen-fail-icon">✗</div>
+            <div class="dscreen-fail-title">CODE ERRONÉ</div>
+            <div class="dalarm-trigger">
+              <i data-lucide="alert-triangle"></i>
+              Vous avez déclenché l'alarme
+              <i data-lucide="alert-triangle"></i>
+            </div>
+            <div class="dscreen-fail-msg">L'humain comme l'IA peuvent se tromper.<br>Soyez plus attentif pour trouver les caractères correspondant aux icônes.</div>
+            <div class="dscreen-fail-btns">
+              <button class="dscreen-btn" onclick="retryBrain()">
+                <i data-lucide="rotate-ccw"></i> Réessayer avec le lexique
+              </button>
+              <button class="dscreen-btn dscreen-switch-btn" onclick="switchToDecoderFromFail()">
+                <i data-lucide="cpu"></i> Essayer avec le décodeur IA
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1172,6 +1514,8 @@
       <div id="decoder-machine"></div>
 
     </div><!-- /decoder-wrap -->
+
+    </div><!-- /decoder-column -->
 
     <!-- ========== PANELS FLOTTANTS (position:absolute) ========== -->
 
@@ -1289,7 +1633,10 @@
 <div id="alarm-overlay">
   <div class="alarm-title">🚨 CODE INCORRECT</div>
   <div id="alarm-msg"></div>
-  <button class="alarm-retry" onclick="dismissAlarm()">↺ RÉESSAYER</button>
+  <div class="alarm-btns">
+    <button class="alarm-retry" id="alarm-btn-primary" onclick="dismissAlarm()">↺ RÉESSAYER</button>
+    <button class="alarm-retry alarm-retry-alt" id="alarm-btn-alt" onclick="switchFromAlarmOverlay()">⌕ ESSAYER AVEC LE LEXIQUE</button>
+  </div>
 </div>
 
 <!-- ==================== SCRIPT ==================== -->
@@ -1393,12 +1740,9 @@ function formatCode(code) {
 // ============================================================
 function updateDecoderScreen(state) {
   document.querySelectorAll('.dscreen-state').forEach(s => s.classList.remove('active'));
-  if (state === 'processing') {
-    document.getElementById('dscreen-processing-wrap').classList.add('active');
-  } else if (state) {
-    const el = document.getElementById('dscreen-' + state);
-    if (el) el.classList.add('active');
-  }
+  const idMap = { processing: 'dscreen-processing-wrap' };
+  const id = idMap[state] || (state ? 'dscreen-' + state : null);
+  if (id) document.getElementById(id)?.classList.add('active');
 }
 
 // ============================================================
@@ -1416,10 +1760,13 @@ function showPhase(id) {
   document.body.dataset.phase = id;
 
   // Écran du décodeur selon la phase
+  const isDecoderPath = document.body.classList.contains('decoder-path');
   if      (id === 'intro' || id === 'choice' || id === 'decoder') updateDecoderScreen('idle');
-  else if (id === 'processing')                                   updateDecoderScreen('processing');
-  else if (id === 'success')                                      updateDecoderScreen('success');
-  else                                                            updateDecoderScreen(null); // écran sombre
+  else if (id === 'processing')                                    updateDecoderScreen('processing');
+  else if (id === 'confirm'  && isDecoderPath)                    updateDecoderScreen('confirm');
+  else if (id === 'compare'  && isDecoderPath)                    updateDecoderScreen('compare');
+  else if (id === 'success')                                       updateDecoderScreen('success');
+  else                                                             updateDecoderScreen(null); // écran sombre
 
   // Nettoyage outline carte quand on quitte la phase décodeur
   if (id !== 'decoder') {
@@ -1449,32 +1796,60 @@ function buildLexicon() {
 }
 
 function onLexCellClick(cell, char) {
-  const wasMarked = cell.classList.contains('marked');
-  cell.classList.toggle('marked');
-  const nowMarked = !wasMarked;
-
   if (getActivePhase() !== 'brain') return;
 
-  INPUT_CHARS.forEach((c, i) => {
-    if (c !== char) return;
-    if (inputMode === 'gamepad') {
-      if (nowMarked) { gpBrainChars[i] = char; }
-      else           { if (gpBrainChars[i] === char) gpBrainChars[i] = ''; }
-      updateGpBrainDisplay();
-    } else {
+  // Marque visuellement la cellule cliquée
+  document.querySelectorAll('.lex-cell').forEach(c => c.classList.remove('marked'));
+  cell.classList.add('marked');
+
+  if (inputMode === 'gamepad') {
+    gpBrainChars[gpBrainRow] = char;
+    updateGpBrainDisplay();
+    checkBrainFilled();
+    syncOutputCard();
+    return;
+  }
+
+  function flash(input) {
+    input.classList.remove('ok', 'bad');
+    input.style.transition = 'color .15s';
+    input.style.color = '#00E5FF';
+    setTimeout(() => { input.style.color = ''; }, 300);
+  }
+
+  const charInCode = INPUT_CHARS.includes(char);
+
+  if (charInCode) {
+    // L'icône fait partie du code → remplit toutes les positions qui lui correspondent,
+    // peu importe l'ordre de clic. Chaque occurrence est placée à sa bonne case.
+    INPUT_CHARS.forEach((c, i) => {
+      if (c !== char) return;
       const input = document.getElementById(`bi-${i}`);
-      if (!input) return;
-      if (nowMarked) {
-        input.value = char;
-        input.classList.remove('ok', 'bad');
-        input.style.transition = 'color .15s';
-        input.style.color = '#00B4D8';
-        setTimeout(() => { input.style.color = ''; }, 300);
-      } else {
-        if (input.value === char) { input.value = ''; input.classList.remove('ok', 'bad'); }
+      if (input) { input.value = char; flash(input); }
+    });
+  } else {
+    // L'icône n'est PAS dans le code → remplit la case focalisée ou la première vide
+    // (l'humain peut se tromper, comme l'IA).
+    let targetIdx = -1;
+    const focused = document.activeElement;
+    if (focused && focused.classList.contains('decode-input')) {
+      targetIdx = parseInt(focused.id.replace('bi-', ''));
+    } else {
+      for (let i = 0; i < INPUT_CHARS.length; i++) {
+        if (!document.getElementById(`bi-${i}`)?.value) { targetIdx = i; break; }
       }
     }
-  });
+    if (targetIdx >= 0) {
+      const input = document.getElementById(`bi-${targetIdx}`);
+      if (input) {
+        input.value = char;
+        flash(input);
+        if (targetIdx < INPUT_CHARS.length - 1)
+          document.getElementById(`bi-${targetIdx + 1}`)?.focus();
+      }
+    }
+  }
+
   checkBrainFilled();
   syncOutputCard();
 }
@@ -1552,6 +1927,15 @@ function goToChoice() {
 // ============================================================
 function chooseDecoder() {
   playerPath.push('decoder');
+  document.body.classList.add('decoder-path'); // active le layout chemin décodeur
+
+  // Efface les styles inline laissés par equalizeDecoderToLex() (phase choix)
+  // Sans ça, ces styles inline écrasent toutes les règles CSS du chemin décodeur.
+  const wrap = document.getElementById('decoder-wrap');
+  const img  = document.getElementById('decoder-img');
+  if (wrap) wrap.style.width = '';
+  if (img)  { img.style.width = ''; img.style.height = ''; }
+
   decoderBound = false;
   const card = document.getElementById('decoder-card');
   card.style.opacity = '1';
@@ -1578,6 +1962,7 @@ function initDragDecoder() {
   card.addEventListener('dragstart', e => {
     e.dataTransfer.setData('text/plain', 'card-input');
     card.classList.add('dragging');
+    SFX.play('slide');
   });
   card.addEventListener('dragend', () => card.classList.remove('dragging'));
 
@@ -1592,8 +1977,9 @@ function initDragDecoder() {
     machine.classList.remove('drag-over');
 
     // Lancer le décodage (neural net immédiat)
-    card.style.opacity = '.15';
+    card.style.opacity = '1';
     card.draggable = false;
+    card.classList.remove('dragging');
     updateDecoderScreen('processing');
     setTimeout(startProcessing, 120);
   });
@@ -1603,6 +1989,7 @@ function initDragDecoder() {
 // PHASE 2 : TRAITEMENT
 // ============================================================
 function startProcessing() {
+  SFX.play('decode');
   showPhase('processing');
   runNeuralNet(() => {
     if (!secondRun) {
@@ -1676,13 +2063,23 @@ function runNeuralNet(onDone) {
 // PHASE 3 : CONFIRMATION
 // ============================================================
 function showConfirm() {
-  document.getElementById('confirm-input-icons').innerHTML = iconsHtml(INPUT_CHARS);
   const isErr = aiCode1 !== CORRECT_CODE;
+  const countTxt = aiCode1.length + ' caractère' + (aiCode1.length > 1 ? 's' : '') +
+    (aiCode1.length !== CORRECT_CODE.length ? ` ⚠ attendu : ${CORRECT_CODE.length}` : '');
+  const iconsHtmlStr = iconsHtml(INPUT_CHARS);
+
+  // Overlay brain-path
+  document.getElementById('confirm-input-icons').innerHTML = iconsHtmlStr;
   document.getElementById('confirm-code').textContent = aiCode1;
   document.getElementById('confirm-code').className = 'bb-code-result' + (isErr ? ' error' : '');
-  document.getElementById('confirm-count').textContent =
-    aiCode1.length + ' caractère' + (aiCode1.length > 1 ? 's' : '') +
-    (aiCode1.length !== CORRECT_CODE.length ? ` ⚠ attendu : ${CORRECT_CODE.length}` : '');
+  document.getElementById('confirm-count').textContent = countTxt;
+
+  // dscreen-confirm (chemin décodeur)
+  document.getElementById('dscreen-confirm-icons').innerHTML = iconsHtmlStr;
+  document.getElementById('dscreen-confirm-code').textContent = aiCode1;
+  document.getElementById('dscreen-confirm-code').className = 'dscrn-code' + (isErr ? ' error' : '');
+  document.getElementById('dscreen-confirm-count').textContent = countTxt;
+
   showPhase('confirm');
   lucide.createIcons();
 }
@@ -1694,7 +2091,7 @@ function acceptResult() {
   } else {
     alarmReturnPhase = 'confirm';
     document.getElementById('alarm-msg').textContent =
-      `Code "${aiCode1}" refusé. L'IA s'est trompée. Vous devez assumer les conséquences si vous validez sans vérifier.`;
+      `Code "${aiCode1}" refusé — CODE ERRONÉ.\nVous devez assumer les conséquences si vous validez sans vérifier.`;
     showAlarm();
   }
 }
@@ -1707,10 +2104,18 @@ function relaunchDecoder() {
 
 function verifyMyself() {
   if (!playerPath.includes('verify')) playerPath.push('verify');
+  document.body.classList.remove('decoder-path');
+  const notice = document.getElementById('brain-ai-notice');
   if (aiCode1) {
-    document.getElementById('brain-ai-notice').style.display = 'block';
-    document.getElementById('brain-ai-notice').textContent =
-      `L'IA a proposé "${aiCode1}" — vérifiez vous-même si c'est correct.`;
+    notice.style.display = 'block';
+    if (aiCode2) {
+      // Vient de la phase compare : 2 analyses disponibles
+      notice.innerHTML =
+        `L'IA a proposé<br>"${aiCode1}" et<br>"${aiCode2}"<br>— vérifiez vous-même si c'est correct.`;
+    } else {
+      // Vient de la phase confirm : 1 seule analyse
+      notice.textContent = `L'IA a proposé "${aiCode1}" — vérifiez vous-même si c'est correct.`;
+    }
   }
   buildBrainTable();
   showPhase('brain');
@@ -1720,21 +2125,27 @@ function verifyMyself() {
 // PHASE 4 : COMPARAISON
 // ============================================================
 function showCompare() {
+  const sameResult = aiCode1 === aiCode2;
+  const noticeText = sameResult
+    ? `Les deux analyses concordent : "${aiCode1}"`
+    : `Les deux analyses divergent ! L'IA n'est pas cohérente.`;
+
+  // Overlay brain-path
   const c1 = document.getElementById('cmp-code1');
   const c2 = document.getElementById('cmp-code2');
-  c1.textContent = aiCode1;
-  c1.className = 'bb-code-result' + (aiCode1 !== CORRECT_CODE ? ' error' : '');
-  c2.textContent = aiCode2;
-  c2.className = 'bb-code-result' + (aiCode2 !== CORRECT_CODE ? ' error' : '');
-
+  c1.textContent = aiCode1; c1.className = 'bb-code-result' + (aiCode1 !== CORRECT_CODE ? ' error' : '');
+  c2.textContent = aiCode2; c2.className = 'bb-code-result' + (aiCode2 !== CORRECT_CODE ? ' error' : '');
   const notice = document.getElementById('compare-notice');
-  if (aiCode1 === aiCode2) {
-    notice.className = 'same';
-    notice.textContent = `Les deux analyses concordent : "${aiCode1}"`;
-  } else {
-    notice.className = 'diff';
-    notice.textContent = `Les deux analyses divergent ! L'IA n'est pas cohérente.`;
-  }
+  notice.className = sameResult ? 'same' : 'diff';
+  notice.textContent = noticeText;
+
+  // dscreen-compare (chemin décodeur)
+  const dc1 = document.getElementById('dscreen-cmp-code1');
+  const dc2 = document.getElementById('dscreen-cmp-code2');
+  dc1.textContent = aiCode1; dc1.className = 'dscrn-code' + (aiCode1 !== CORRECT_CODE ? ' error' : '');
+  dc2.textContent = aiCode2; dc2.className = 'dscrn-code' + (aiCode2 !== CORRECT_CODE ? ' error' : '');
+  document.getElementById('dscreen-compare-notice').textContent = noticeText;
+
   showPhase('compare');
   lucide.createIcons();
 }
@@ -1747,7 +2158,7 @@ function trustCode(n) {
   } else {
     alarmReturnPhase = 'compare';
     document.getElementById('alarm-msg').textContent =
-      `L'analyse ${n} proposait "${chosen}" — incorrect. Faites confiance à votre propre déchiffrement.`;
+      `L'analyse ${n} proposait "${chosen}" — CODE ERRONÉ.\nFaites confiance à votre propre déchiffrement.`;
     showAlarm();
   }
 }
@@ -1757,6 +2168,7 @@ function trustCode(n) {
 // ============================================================
 function chooseBrain() {
   playerPath.push('brain');
+  document.body.classList.remove('decoder-path');
   document.getElementById('brain-ai-notice').style.display = 'none';
   buildBrainTable();
   showPhase('brain');
@@ -1861,10 +2273,7 @@ function validateBrain() {
     if (code === CORRECT_CODE) {
       showSuccess();
     } else {
-      alarmReturnPhase = 'brain';
-      document.getElementById('alarm-msg').textContent =
-        `Code "${code}" incorrect. Vérifiez le lexique (cases rouges à corriger).`;
-      showAlarm();
+      showFail();
     }
   }, 550);
 }
@@ -1873,31 +2282,50 @@ function validateBrain() {
 // SCORING LUCIDITÉ
 // ============================================================
 function computeScore() {
-  const hasBrain    = playerPath.includes('brain');
-  const hasVerify   = playerPath.includes('verify');
-  const hasRelaunch = playerPath.includes('relaunch');
+  const hasBrain             = playerPath.includes('brain');
+  const hasBrainFail         = playerPath.includes('brain-fail');
+  const hasSwitchDecoder     = playerPath.includes('brain-switch-decoder');
+  const hasDecoderSwitchBrain = playerPath.includes('decoder-switch-brain');
+  const hasVerify            = playerPath.includes('verify');
+  const hasRelaunch          = playerPath.includes('relaunch');
 
-  if (hasBrain) return {
-    pts: 100, lv: 'lv-max', tier: 'LUCIDITÉ MAXIMALE',
-    reason: "Vous avez fait confiance à votre propre cerveau avant de recourir à une machine. "
-          + "Évaluer si on en a les moyens et si c'est préférable, c'est exactement ça, la résistance."
+  // ── Chemin D : décodeur échoué → lexique réussi ──
+  if (hasDecoderSwitchBrain) return {
+    pts: 50, lv: 'lv-mid', tier: 'LUCIDITÉ PARTIELLE',
+    reason: "Vous avez utilisé l'IA et vu\nqu'elle n'était pas fiable à 100%.\nVous avez alors réalisé la tâche sans son aide\net vous avez réussi. Bravo !\nToutes les tâches ne nécessitent pas l'usage de l'IA.\nVotre cerveau est toujours votre meilleur allié."
   };
+
+  // ── Chemin A1 : lexique réussi du premier coup (aucun échec) ──
+  if (hasBrain && !hasBrainFail) return {
+    pts: 100, lv: 'lv-max', tier: 'LUCIDITÉ MAXIMALE',
+    reason: "Vous avez fait confiance à votre propre cerveau\npour réaliser une tâche qu'il était capable d'accomplir.\nÉvaluer si on en a les moyens et si c'est préférable,\nc'est exactement ça, la RÉSISTANCE."
+  };
+  // ── Chemin A2 : lexique réussi après un ou plusieurs échecs (sans passer au décodeur) ──
+  if (hasBrain && hasBrainFail && !hasSwitchDecoder) return {
+    pts: 100, lv: 'lv-max', tier: 'LUCIDITÉ MAXIMALE',
+    reason: "Vous avez décidé de continuer malgré la difficulté\net vous y êtes arrivés ! Bravo !\nNe pas céder à la facilité pour maintenir son esprit actif,\nc'est exactement ça, la RÉSISTANCE."
+  };
+  // ── Chemin C1 : lexique échoué → décodeur réussi ──
+  if (hasBrain && hasSwitchDecoder) return {
+    pts: 55, lv: 'lv-mid', tier: 'LUCIDITÉ PARTIELLE',
+    reason: "Vous avez eu le réflexe de tenter par vous-même avant de déléguer à la machine.\nL'effort compte — mais sans maîtrise du code,\nvous n'avez pas pu vérifier ce que l'IA produisait."
+  };
+  // ── Chemins décodeur pur (inchangés) ──
   if (hasVerify && hasRelaunch) return {
     pts: 65, lv: 'lv-high', tier: 'FORTE LUCIDITÉ',
-    reason: "Vérification croisée puis confirmation personnelle — vous n'avez pas délégué la décision finale à la machine. Bonne démarche."
+    reason: "Vérification croisée puis confirmation personnelle.\nVous n'avez pas délégué la décision finale à la machine.\nBonne démarche."
   };
   if (hasVerify) return {
     pts: 75, lv: 'lv-high', tier: 'FORTE LUCIDITÉ',
-    reason: "Vous avez su douter du résultat de l'IA et vérifier par vous-même. Le bon réflexe : utiliser la machine comme aide, pas comme oracle."
+    reason: "Vous avez su douter du résultat de l'IA et vérifier par vous-même.\nLe bon réflexe : utiliser la machine comme aide, pas comme oracle."
   };
   if (hasRelaunch) return {
     pts: 40, lv: 'lv-mid', tier: 'LUCIDITÉ PARTIELLE',
-    reason: "Vous avez demandé à l'IA de contrôler sa propre réponse. C'est mieux qu'accepter aveuglément, mais la machine reste juge et partie."
+    reason: "Vous avez demandé à l'IA de contrôler sa propre réponse.\nC'est mieux qu'accepter aveuglément, mais la machine reste juge et partie."
   };
   return {
     pts: 15, lv: 'lv-low', tier: 'LUCIDITÉ FAIBLE',
-    reason: "Vous avez accepté sans vérifier alors que vous en aviez les moyens. "
-          + "Vous avez eu de la chance cette fois — l'IA peut se tromper. Vérifier reste votre meilleure protection."
+    reason: "Vous avez accepté sans vérifier alors que vous en aviez les moyens.\nVous avez eu de la chance cette fois —\nl'IA peut se tromper. Vérifier reste votre meilleure protection."
   };
 }
 
@@ -1905,36 +2333,130 @@ function computeScore() {
 // SUCCESS & ALARM
 // ============================================================
 function showSuccess() {
+  SFX.play('success');
   document.querySelectorAll('.bb-phase').forEach(p => p.classList.remove('active'));
   document.getElementById('alarm-overlay').classList.remove('active');
 
-  document.body.dataset.phase = 'success';
-
-  // Vagues.gif sur l'écran du décodeur
-  updateDecoderScreen('success');
-
-  // Révèle le code déchiffré sur la carte output (droite)
-  const codeEl = document.getElementById('output-card-code');
-  if (codeEl) {
-    codeEl.textContent = formatCode(CORRECT_CODE);
-    codeEl.classList.add('revealed');
+  // Efface les styles inline laissés par equalizeDecoderToLex() (chemin cerveau)
+  // Sans ça, wrap.style.width écrase le CSS width: 100% de la phase succès.
+  if (!document.body.classList.contains('decoder-path')) {
+    const wrap = document.getElementById('decoder-wrap');
+    const img  = document.getElementById('decoder-img');
+    if (wrap) wrap.style.width = '';
+    if (img)  { img.style.width = ''; img.style.height = ''; }
   }
 
-  // Affiche le panel score
-  const s = computeScore();
-  document.getElementById('score-pts').textContent   = s.pts;
-  document.getElementById('score-tier').textContent  = s.tier;
-  document.getElementById('score-tier').className    = 'score-tier ' + s.lv;
-  document.getElementById('score-reason').textContent = s.reason;
+  document.body.dataset.phase = 'success';
 
-  document.getElementById('phase-success').classList.add('active');
+  const s = computeScore();
+
+  // Toujours afficher le score dans l'écran du décodeur (chemin cerveau ou décodeur)
+  document.getElementById('dscreen-score-tier').textContent  = s.tier;
+  document.getElementById('dscreen-score-tier').className    = 'dscreen-score-tier ' + s.lv;
+  document.getElementById('dscreen-score-pts').textContent   = s.pts + ' pts';
+  document.getElementById('dscreen-score-reason').innerHTML  = s.reason.replace(/\n/g, '<br>');
+  updateDecoderScreen('success');
+
+  // Révèle le code sur la carte output (droite) dans le chemin cerveau
+  if (!document.body.classList.contains('decoder-path')) {
+    const codeEl = document.getElementById('output-card-code');
+    if (codeEl) { codeEl.textContent = formatCode(CORRECT_CODE); codeEl.classList.add('revealed'); }
+  }
+
   lucide.createIcons();
-  setTimeout(() => { document.getElementById('score-bar').style.width = s.pts + '%'; }, 200);
+}
+
+function showFail() {
+  SFX.play('alarm');
+  // Mémorise l'échec lexique pour le scoring (une seule fois suffit)
+  if (!playerPath.includes('brain-fail')) playerPath.push('brain-fail');
+  document.querySelectorAll('.bb-phase').forEach(p => p.classList.remove('active'));
+  document.getElementById('alarm-overlay').classList.remove('active');
+  // Efface les styles inline de equalizeDecoderToLex pour que le CSS s'applique
+  const wrap = document.getElementById('decoder-wrap');
+  const img  = document.getElementById('decoder-img');
+  if (wrap) wrap.style.width = '';
+  if (img)  { img.style.width = ''; img.style.height = ''; }
+  document.body.dataset.phase = 'fail';
+  updateDecoderScreen('fail');
+
+  // Libellé dynamique : "Réessayer" si le décodeur a déjà été utilisé, "Essayer" sinon
+  const switchBtn = document.querySelector('#dscreen-fail .dscreen-switch-btn');
+  if (switchBtn) {
+    const decoderAlreadyUsed = playerPath.includes('decoder');
+    switchBtn.innerHTML = decoderAlreadyUsed
+      ? '<i data-lucide="cpu"></i> Réessayer avec le décodeur IA'
+      : '<i data-lucide="cpu"></i> Essayer avec le décodeur IA';
+  }
+
+  lucide.createIcons();
+}
+
+// Bascule vers le décodeur IA depuis l'écran d'échec lexique
+function switchToDecoderFromFail() {
+  // Marque le passage lexique→décodeur uniquement si le décodeur n'avait pas encore été utilisé
+  // (si 'decoder' est déjà dans le chemin, on revient simplement au décodeur sans changer le scoring)
+  if (!playerPath.includes('decoder') && !playerPath.includes('brain-switch-decoder')) {
+    playerPath.push('brain-switch-decoder');
+  }
+  chooseDecoder();
+}
+
+function retryBrain() {
+  document.body.dataset.phase = 'brain';
+  document.querySelectorAll('.decode-input').forEach(el => {
+    el.value = '';
+    el.classList.remove('ok', 'bad');
+  });
+  document.querySelectorAll('.lex-cell').forEach(c => c.classList.remove('marked'));
+  checkBrainFilled();
+  syncOutputCard();
+  updateDecoderScreen('idle');
+  showPhase('brain');
+}
+
+function exitNexus() {
+  // TODO : relier à la prochaine scène (vidéo de fuite ou monde 3D généré par IA)
+  console.log('Nexus déverrouillé — prochaine scène à implémenter.');
+  alert('Félicitations ! La prochaine étape du scénario sera bientôt disponible.');
 }
 
 function showAlarm() {
+  SFX.play('alarm');
   document.querySelectorAll('.bb-phase').forEach(p => p.classList.remove('active'));
-  document.getElementById('alarm-overlay').classList.add('active');
+  if (document.body.classList.contains('decoder-path')) {
+    // Alarme dans le décodeur : copie le message dans l'écran noir
+    const msg = document.getElementById('alarm-msg').textContent;
+    document.getElementById('dalarm-msg').innerHTML = msg.replace(/\n/g, '<br>');
+    updateDecoderScreen('alarm');
+    lucide.createIcons();
+  } else {
+    // Adapte les labels des deux boutons selon le contexte
+    const primaryBtn = document.getElementById('alarm-btn-primary');
+    const altBtn     = document.getElementById('alarm-btn-alt');
+    if (alarmReturnPhase === 'brain') {
+      // Arrivé ici depuis le chemin lexique : primary = lexique, alt = décodeur
+      if (primaryBtn) primaryBtn.textContent = '↺ RÉESSAYER AVEC LE LEXIQUE';
+      if (altBtn)     altBtn.textContent = '⌕ ESSAYER AVEC LE DÉCODEUR IA';
+    } else {
+      // Arrivé ici depuis le chemin décodeur (confirm / compare) : primary = décodeur, alt = lexique
+      if (primaryBtn) primaryBtn.textContent = '↺ RÉESSAYER AVEC LE DÉCODEUR';
+      if (altBtn)     altBtn.textContent = '⌕ ESSAYER AVEC LE LEXIQUE';
+    }
+    document.getElementById('alarm-overlay').classList.add('active');
+  }
+}
+
+// Bouton alternatif dans l'alarm-overlay : bascule vers l'autre méthode
+function switchFromAlarmOverlay() {
+  document.getElementById('alarm-overlay').classList.remove('active');
+  if (alarmReturnPhase === 'brain') {
+    // Était dans le chemin lexique → bascule vers le décodeur
+    switchToDecoderFromFail();
+  } else {
+    // Était dans le chemin décodeur (confirm/compare) → bascule vers le lexique
+    switchToLexiqueFromAlarm();
+  }
 }
 
 function dismissAlarm() {
@@ -1944,6 +2466,20 @@ function dismissAlarm() {
   else if (p === 'compare') showPhase('compare');
   else if (p === 'brain')   showPhase('brain');
   lucide.createIcons();
+}
+
+function dismissDecoderAlarm() {
+  const p = alarmReturnPhase;
+  if      (p === 'confirm') updateDecoderScreen('confirm');
+  else if (p === 'compare') updateDecoderScreen('compare');
+  lucide.createIcons();
+}
+
+// Bascule vers le lexique après une alarme dans le décodeur
+function switchToLexiqueFromAlarm() {
+  if (!playerPath.includes('decoder-switch-brain')) playerPath.push('decoder-switch-brain');
+  // chooseBrain() enlève decoder-path, construit la table et affiche la phase brain
+  chooseBrain();
 }
 
 // ============================================================
@@ -1962,12 +2498,15 @@ function devGoTo(phase, btn) {
       initChoicePhase();
       document.getElementById('phase-intro').classList.add('active');
       document.body.dataset.phase = 'intro';
+      document.body.classList.remove('decoder-path');
+      playerPath = []; secondRun = false;
       updateDecoderScreen('idle');
       break;
     case 'choice':
       document.getElementById('phase-intro').classList.remove('active');
       aiCode1 = null; aiCode2 = null; decoderBound = false;
       playerPath = []; secondRun = false;
+      document.body.classList.remove('decoder-path');
       showPhase('choice'); initChoicePhase(); equalizeDecoderToLex(); break;
     case 'brain':
       document.getElementById('brain-ai-notice').style.display = 'none';
@@ -2146,8 +2685,9 @@ function highlightChoiceBtns() {
 function gpDecoder(btn) {
   if (btn === GP.A || btn === GP.START) {
     const card = document.getElementById('decoder-card');
-    card.style.opacity = '.15';
+    card.style.opacity = '1';
     card.draggable = false;
+    card.classList.remove('dragging');
     updateDecoderScreen('processing');
     setTimeout(startProcessing, 120);
   }
@@ -2270,6 +2810,53 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   gpLoop();
+});
+
+// ============================================================
+// SONS
+// ============================================================
+const SFX = (() => {
+  const base = 'Audio/Sound effects/';
+  const files = {
+    click:   'clic_icone.mp3',
+    decode:  'decodage.mp3',
+    fail:    'echec.mp3',
+    alarm:   'echec-alarme.mp3',
+    slide:   'glissement carte.mp3',
+    success: 'succes.mp3',
+  };
+  const cache = {};
+  Object.entries(files).forEach(([k, f]) => {
+    const a = new Audio(base + f);
+    a.preload = 'auto';
+    cache[k] = a;
+  });
+  function play(name) {
+    const s = cache[name];
+    if (!s) return;
+    s.currentTime = 0;
+    s.play().catch(() => {});
+  }
+  return { play };
+})();
+
+// Son sur tout clic bouton ou cellule lex-icone
+document.addEventListener('click', e => {
+  if (e.target.closest('button, .lex-cell')) SFX.play('click');
+});
+
+// Clic direct sur le lexique → même effet que le bouton "Je déchiffre moi-même"
+document.getElementById('lex-panel').addEventListener('click', function(e) {
+  if (document.body.dataset.phase !== 'choice') return;
+  // Ne pas déclencher si le clic vient du bouton #choice-btn-lex (il appelle directement chooseBrain)
+  if (e.target.closest('#choice-btn-lex')) return;
+  chooseBrain();
+});
+
+// Clic direct sur l'objet décodeur → même effet que "J'utilise le décodeur IA"
+document.getElementById('decoder-wrap').addEventListener('click', function(e) {
+  if (document.body.dataset.phase !== 'choice') return;
+  chooseDecoder();
 });
 </script>
 </body>
