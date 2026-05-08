@@ -718,8 +718,61 @@
       overflow-y: auto;
       filter: drop-shadow(8px 8px 6px rgba(0,0,0,0.10));
     }
-    .bb-phase.active { display: flex; }
-    .nexus-overlay.active { display: flex; }
+    .bb-phase.active { display: flex; animation: bbPhaseIn .45s cubic-bezier(.22,.61,.36,1) both; }
+    .nexus-overlay.active { display: flex; animation: bbOverlayIn .55s cubic-bezier(.22,.61,.36,1) both; }
+
+    /* ✎ MODIFIABLE — transitions élégantes entre les écrans (immersion) */
+    @keyframes bbPhaseIn {
+      0%   { opacity: 0; transform: translateY(10px) scale(.985); filter: blur(3px); }
+      60%  { filter: blur(0); }
+      100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+    }
+    @keyframes bbOverlayIn {
+      0%   { opacity: 0; transform: scale(.96); filter: blur(4px); }
+      100% { opacity: 1; transform: scale(1); filter: blur(0); }
+    }
+    @keyframes bbFadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    @keyframes bbScreenFade {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+
+    /* Éléments persistants : transitions douces quand le layout change entre phases */
+    #card-left-wrap,
+    #card-right-wrap,
+    #decoder-wrap,
+    #lex-panel,
+    #choice-info-bar,
+    #decoder-info-bar,
+    #choice-btn-lex,
+    #choice-btn-dec,
+    #input-mode-badge {
+      transition:
+        transform .5s cubic-bezier(.22,.61,.36,1),
+        opacity .4s ease,
+        filter .4s ease,
+        border-color .3s ease,
+        box-shadow .3s ease;
+    }
+    /* Conserver la transition rapide du hover (.25s) — surclassée par spécificité */
+
+    /* États successifs de l'écran décodeur : fondu doux à l'apparition */
+    .dscreen-state.active { animation: bbScreenFade .5s ease both; }
+
+    /* Alarme : fade in plutôt que pop brutal */
+    #alarm-overlay.active {
+      animation: bbAlarmIn .55s cubic-bezier(.22,.61,.36,1) both;
+    }
+    @keyframes bbAlarmIn {
+      0%   { opacity: 0; backdrop-filter: blur(0); }
+      40%  { opacity: 1; }
+      100% { opacity: 1; }
+    }
+
+    /* (Note : pas de différé sur les boutons — donnait une impression de page qui charge mal) */
 
     .ovl-title {
       font-size: .56rem;
