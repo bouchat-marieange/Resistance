@@ -1204,10 +1204,32 @@
     body[data-phase="choice"] #decoder-img     { width: 100%; height: auto; max-width: 100%; }
 
     /* Clics directs sur le lexique / décodeur en phase choix */
-    body[data-phase="choice"] #lex-panel   { cursor: pointer; }
-    body[data-phase="choice"] #decoder-wrap { cursor: pointer; }
-    body[data-phase="choice"] #lex-panel:hover   { border-color: rgba(0,229,255,0.65); }
-    body[data-phase="choice"] #decoder-wrap:hover { filter: drop-shadow(8px 8px 6px rgba(0,0,0,0.10)) brightness(1.06); }
+    body[data-phase="choice"] #lex-panel   {
+      cursor: pointer;
+      transition: border-color .25s ease, box-shadow .25s ease, transform .25s ease;
+    }
+    body[data-phase="choice"] #decoder-wrap {
+      cursor: pointer;
+      transition: filter .25s ease, transform .25s ease;
+    }
+    body[data-phase="choice"] #lex-panel:hover {
+      border-color: #00E5FF;
+      border-width: 2px;
+      box-shadow: 0 0 0 3px rgba(0,229,255,0.18), 0 8px 24px rgba(0,180,215,0.30);
+      transform: translateY(-3px);
+    }
+    body[data-phase="choice"] #decoder-wrap:hover {
+      filter: drop-shadow(0 12px 18px rgba(0,180,215,0.45)) brightness(1.08);
+      transform: translateY(-3px);
+    }
+
+    /* En phase choix : neutralise le hover case-par-case du lexique
+       pour que le panneau soit perçu comme un seul bloc cliquable */
+    body[data-phase="choice"] .lex-cell { cursor: pointer; pointer-events: none; }
+    body[data-phase="choice"] .lex-cell:hover {
+      background: #fff;
+      border-color: rgba(0,180,215,0.28); /* identique à l'état normal */
+    }
 
     /* ⚠ INTOUCHABLE — visibilité boutons choix */
     #choice-btn-lex { display: none; flex-shrink: 0; }
