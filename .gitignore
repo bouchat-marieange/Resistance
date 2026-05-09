@@ -42,3 +42,6 @@ lancer serveur local.txt
 
 # Raccourci local pour lancer le serveur de test (Windows)
 lancer-serveur.bat
+
+# Annexes TFE — documents confidentiels, jamais versionnés
+TFE Annexes/

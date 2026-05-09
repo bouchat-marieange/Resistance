@@ -1094,7 +1094,9 @@
     .intro-cards-row {
       display: flex;
       align-items: center;
-      gap: min(32px, 2.5vw);
+      gap: clamp(10px, 1.1vw, 16px); /* = gap box↔flèches dans decode-main-row */
+      width: 100%;
+      justify-content: center;
     }
     .intro-card-wrap {
       position: relative;
@@ -1123,22 +1125,130 @@
       letter-spacing: .18em;
       font-weight: 700;
     }
-    /* Flèche CSS animée — remplace l'image PNG */
-    .intro-arrow-css {
+    /* ── Animation de décodage horizontale (écran 0-1) ── */
+    .intro-decode-animation {
       display: flex;
+      flex-direction: column;
       align-items: center;
-      gap: clamp(5px, 0.8vw, 10px);
+      gap: clamp(10px, 1.2vw, 18px);
+      flex-shrink: 0;   /* taille = son contenu, ne s'étire plus */
+    }
+    /* Ligne principale : icônes ↔ cerveau ↔ caractères sur le même axe */
+    .decode-main-row {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(10px, 1.1vw, 16px); /* = gap cartes ci-dessous */
+    }
+    /* 6 icônes en entrée — dimensions identiques au bloc caractères */
+    .decode-input-icons {
+      display: flex;
+      flex-direction: row;
+      gap: clamp(2px, 0.3vw, 5px);
+      align-items: center;
+      justify-content: center;
+      border: 1.5px solid rgba(0, 180, 216, 0.35);
+      border-radius: 7px;
+      padding: clamp(4px, 0.45vw, 7px);
+      width: clamp(148px, 16vw, 215px);
+      height: clamp(34px, 3.6vw, 48px);
+      box-sizing: border-box;
       flex-shrink: 0;
     }
-    .intro-arrow-css span {
-      display: block;
-      width:  clamp(16px, 2.4vw, 30px);
-      height: clamp(16px, 2.4vw, 30px);
-      border-right: clamp(2.5px, 0.35vw, 4px) solid #00E5FF;
-      border-top:   clamp(2.5px, 0.35vw, 4px) solid #00E5FF;
-      transform: rotate(45deg);
+    .decode-input-icons svg {
+      width:  clamp(15px, 1.65vw, 24px);
+      height: clamp(15px, 1.65vw, 24px);
+      stroke: #00B4D8;
+      stroke-width: 1.5;
     }
-    /* Animation séquentielle gauche → droite */
+    /* Groupe de 3 chevrons (avant et après le cerveau) */
+    .decode-arrows-group {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 0px;
+      flex-shrink: 0;
+    }
+    .decode-h-arrow {
+      flex-shrink: 0;
+      stroke: #00C0D8 !important;
+      stroke-width: 2.5 !important;
+      width:  clamp(14px, 1.6vw, 22px) !important;
+      height: clamp(14px, 1.6vw, 22px) !important;
+      margin-right: clamp(-7px, -0.8vw, -5px);
+    }
+    .decode-h-arrow:last-child {
+      margin-right: 0;
+    }
+    /* Animation séquentielle gauche→droite sur les 3 chevrons */
+    .decode-h-arrow-1 { animation: decodeArrowPulse 1.2s ease-in-out infinite 0s; }
+    .decode-h-arrow-2 { animation: decodeArrowPulse 1.2s ease-in-out infinite 0.2s; }
+    .decode-h-arrow-3 { animation: decodeArrowPulse 1.2s ease-in-out infinite 0.4s; }
+    @keyframes decodeArrowPulse {
+      0%, 100% { opacity: 0.28; filter: none; }
+      50%      { opacity: 1;    filter: drop-shadow(0 0 5px rgba(0,229,255,0.75)); }
+    }
+    /* Cerveau + engrenage en superposition */
+    .decode-brain-wrap {
+      position: relative;
+      flex-shrink: 0;
+      width:  clamp(26px, 3vw, 42px);
+      height: clamp(26px, 3vw, 42px);
+    }
+    .decode-brain-icon {
+      width: 100% !important;
+      height: 100% !important;
+      stroke: #00B4D8 !important;
+      stroke-width: 1.5 !important;
+    }
+    .decode-gear-icon {
+      position: absolute;
+      top:   -4px;
+      right: -4px;
+      width:  44% !important;
+      height: 44% !important;
+      stroke: #ffffff !important;
+      stroke-width: 2 !important;
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: decodeSpin 1.8s linear infinite;
+    }
+    @keyframes decodeSpin {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+    /* Sortie : caractères révélés dynamiquement — dimensions identiques au bloc icônes */
+    .decode-output-chars {
+      display: flex;
+      flex-direction: row;
+      gap: clamp(2px, 0.3vw, 5px);
+      align-items: center;
+      justify-content: center;
+      border: 1.5px solid rgba(0, 180, 216, 0.35);
+      border-radius: 7px;
+      padding: clamp(4px, 0.45vw, 7px);
+      width: clamp(148px, 16vw, 215px);
+      height: clamp(34px, 3.6vw, 48px);
+      box-sizing: border-box;
+      flex-shrink: 0;
+    }
+    .decode-output-chars span {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: clamp(12px, 1.4vw, 19px);
+      font-weight: 700;
+      color: #00B4D8;
+      opacity: 0.4;
+      width: clamp(15px, 1.65vw, 24px);
+      text-align: center;
+      transition: opacity .12s ease, text-shadow .12s ease;
+    }
+    .decode-output-chars span.revealed {
+      opacity: 1;
+      text-shadow: 0 0 8px rgba(0,180,216,0.6), 0 0 16px rgba(0,180,216,0.3);
+    }
+
+    /* Animation séquentielle gauche → droite (réutilisée sur écran décodeur) */
     @keyframes arrowFlow {
       0%, 100% {
         opacity: 0.18;
@@ -1149,9 +1259,33 @@
         filter: drop-shadow(0 0 7px #00E5FF) drop-shadow(0 0 14px rgba(0,229,255,0.5));
       }
     }
-    .intro-arrow-css span:nth-child(1) { animation: arrowFlow 1.5s ease-in-out infinite 0s; }
-    .intro-arrow-css span:nth-child(2) { animation: arrowFlow 1.5s ease-in-out infinite 0.25s; }
-    .intro-arrow-css span:nth-child(3) { animation: arrowFlow 1.5s ease-in-out infinite 0.5s; }
+
+    /* ── 3 chevrons carte → décodeur (écran 1B, chemin décodeur) ── */
+    #card-decoder-arrow {
+      display: none;
+      position: absolute;
+      /* centré au milieu du gap carte (droite ~17vw+12px) / décodeur (gauche ~15.7vw+30px) */
+      left: calc(16.35vw + 21px);
+      top: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 50;                   /* au-dessus de la carte z:20 et du décodeur */
+      flex-direction: row;
+      align-items: center;
+      gap: clamp(5px, 0.65vw, 10px);
+      pointer-events: none;
+    }
+    body.decoder-path #card-decoder-arrow { display: flex; }
+    #card-decoder-arrow span {
+      display: block;
+      width:  clamp(14px, 2vw, 26px);
+      height: clamp(14px, 2vw, 26px);
+      border-right: clamp(2.5px, 0.3vw, 4px) solid #00E5FF;
+      border-top:   clamp(2.5px, 0.3vw, 4px) solid #00E5FF;
+      transform: rotate(45deg);
+    }
+    #card-decoder-arrow span:nth-child(1) { animation: arrowFlow 1.5s ease-in-out infinite 0s; }
+    #card-decoder-arrow span:nth-child(2) { animation: arrowFlow 1.5s ease-in-out infinite 0.25s; }
+    #card-decoder-arrow span:nth-child(3) { animation: arrowFlow 1.5s ease-in-out infinite 0.5s; }
 
     /* ✎ MODIFIABLE — style bouton unifié (intro + choix + actions + replay + valider) */
     .intro-start-btn {
@@ -1164,6 +1298,7 @@
       font-size: .82rem;
       font-weight: 700;
       letter-spacing: .22em;
+      text-align: center;
       border-radius: 26px;
       cursor: pointer;
       transition: all .22s ease;
@@ -1367,11 +1502,46 @@
       </div>
     </div>
 
-    <!-- Flèche CSS animée -->
-    <div class="intro-arrow-css">
-      <span></span>
-      <span></span>
-      <span></span>
+    <!-- Animation décodage : ligne principale + bouton en dessous -->
+    <div class="intro-decode-animation">
+
+      <!-- Ligne principale : tout sur le même axe horizontal -->
+      <div class="decode-main-row">
+        <!-- Icônes fixes du code de démo (3B9XF4) -->
+        <div class="decode-input-icons">
+          <i data-lucide="anchor"></i>
+          <i data-lucide="bell"></i>
+          <i data-lucide="crown"></i>
+          <i data-lucide="scissors"></i>
+          <i data-lucide="fish"></i>
+          <i data-lucide="star"></i>
+        </div>
+        <!-- 3 chevrons → entrée cerveau -->
+        <div class="decode-arrows-group">
+          <i data-lucide="chevron-right" class="decode-h-arrow decode-h-arrow-1"></i>
+          <i data-lucide="chevron-right" class="decode-h-arrow decode-h-arrow-2"></i>
+          <i data-lucide="chevron-right" class="decode-h-arrow decode-h-arrow-3"></i>
+        </div>
+        <!-- Cerveau + engrenage (haut droite) -->
+        <div class="decode-brain-wrap">
+          <i data-lucide="brain" class="decode-brain-icon"></i>
+          <i data-lucide="settings" class="decode-gear-icon"></i>
+        </div>
+        <!-- 3 chevrons → sortie cerveau -->
+        <div class="decode-arrows-group">
+          <i data-lucide="chevron-right" class="decode-h-arrow decode-h-arrow-1"></i>
+          <i data-lucide="chevron-right" class="decode-h-arrow decode-h-arrow-2"></i>
+          <i data-lucide="chevron-right" class="decode-h-arrow decode-h-arrow-3"></i>
+        </div>
+        <!-- Output : ? révélés un par un → 3 B 9 X F 4 -->
+        <div class="decode-output-chars" id="demo-output-chars">
+          <span>?</span><span>?</span><span>?</span><span>?</span><span>?</span><span>?</span>
+        </div>
+      </div>
+
+      <!-- Bouton sous la ligne, centré sous le cerveau -->
+      <button class="intro-start-btn" onclick="goToChoice()">DÉCRYPTER</button>
+
     </div>
 
     <!-- Carte output : caractères inconnus -->
@@ -1384,8 +1554,6 @@
 
   </div>
 
-  <!-- Bouton futuriste néon -->
-  <button class="intro-start-btn" onclick="goToChoice()">DÉCRYPTER ▸</button>
 
 </div>
 
@@ -1424,6 +1592,13 @@
         <div class="card-icons" id="decoder-icons"></div>
       </div>
     </div>
+  </div>
+
+  <!-- 3 chevrons carte → décodeur (visible uniquement en chemin décodeur, après la carte dans le DOM) -->
+  <div id="card-decoder-arrow">
+    <span></span>
+    <span></span>
+    <span></span>
   </div>
 
   <!-- CENTER ZONE -->
@@ -2922,6 +3097,40 @@ function highlightActionBtns(phaseId) {
 }
 
 // ============================================================
+// DEMO ANIMATION ÉCRAN INTRO (révèle 3B9XF4 char par char en boucle)
+// ============================================================
+const DEMO_CODE_CHARS = ['3','B','9','X','F','4'];
+let _demoTimer = null;
+
+function startDemoAnimation() {
+  const container = document.getElementById('demo-output-chars');
+  if (!container) return;
+  const spans = Array.from(container.querySelectorAll('span'));
+  if (_demoTimer) { clearTimeout(_demoTimer); _demoTimer = null; }
+
+  // Réinitialise
+  spans.forEach(s => { s.textContent = '?'; s.classList.remove('revealed'); });
+
+  let idx = 0;
+  function revealNext() {
+    if (idx < spans.length) {
+      spans[idx].textContent = DEMO_CODE_CHARS[idx];
+      spans[idx].classList.add('revealed');
+      idx++;
+      _demoTimer = setTimeout(revealNext, 360);
+    } else {
+      // Tous révélés → pause → reset → recommence
+      _demoTimer = setTimeout(() => {
+        spans.forEach(s => { s.textContent = '?'; s.classList.remove('revealed'); });
+        idx = 0;
+        _demoTimer = setTimeout(revealNext, 650);
+      }, 1900);
+    }
+  }
+  _demoTimer = setTimeout(revealNext, 900); // délai initial
+}
+
+// ============================================================
 // INIT
 // ============================================================
 document.addEventListener('DOMContentLoaded', () => {
@@ -2932,6 +3141,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initChoicePhase();       // peuple les icônes intro + carte latérale
   updateDecoderScreen('idle'); // écran décodeur visible derrière l'intro
   lucide.createIcons();
+  startDemoAnimation();    // animation démo écran intro (révèle 3B9XF4 en boucle)
 
   // Ré-égalise décodeur/lexique si la fenêtre est redimensionnée en phase choix
   let _eqResizeTimer;
