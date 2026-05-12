@@ -1,0 +1,1287 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Mythology — Neural Punk</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=JetBrains+Mono:wght@300;400;700&display=swap" rel="stylesheet">
+
+  <style>
+
+    /* ════════════════════════════════════════════
+       RESET & BASE
+    ════════════════════════════════════════════ */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --cyan : #00E5FF;
+      --red  : #FF1A2E;
+      --dark : #040810;
+      --noir : #010204;
+    }
+
+    html, body {
+      width: 100vw; height: 100vh;
+      overflow: hidden;
+      background: #000;
+      /* Pas de flex ici — le centrage est géré par position absolute + JS */
+    }
+
+    /* ════════════════════════════════════════════
+       CONTENEUR DE JEU — 1920×1080 mis à l'échelle
+       Centrage par position absolute + translate(-50%,-50%) + scale
+    ════════════════════════════════════════════ */
+    #game {
+      width: 1920px;
+      height: 1080px;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      /* transform sera posé par JS : translate(-50%,-50%) scale(s) */
+      transform-origin: center center;
+      overflow: hidden;
+      background: var(--noir);
+    }
+
+    /* ════════════════════════════════════════════
+       SYSTÈME DE SCREENS
+    ════════════════════════════════════════════ */
+    .screen {
+      display: none;
+      position: absolute;
+      inset: 0;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+    }
+
+    .screen.active { display: block; }
+
+    /* Screens centrés en colonne */
+    #s-letsplay.active,
+    #s-round1.active,
+    #s-round2.active,
+    #s-round3.active,
+    #s-round4.active,
+    #s-round5.active,
+    #s-round6.active,
+    #s-round7.active,
+    #s-round8.active,
+    #s-round9.active,
+    #s-round10.active {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ════════════════════════════════════════════
+       SCANLINES — overlay pixel art universel
+    ════════════════════════════════════════════ */
+    .scanlines::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 3px,
+        rgba(0, 0, 0, 0.07) 3px,
+        rgba(0, 0, 0, 0.07) 4px
+      );
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    /* ════════════════════════════════════════════
+       SCREEN 1 — LET'S PLAY
+    ════════════════════════════════════════════ */
+    #s-letsplay {
+      background: var(--dark);
+    }
+
+    /* Grille animée en fond */
+    #s-letsplay::before {
+      content: '';
+      position: absolute;
+      inset: -80px;
+      background-image:
+        linear-gradient(rgba(0,229,255,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,229,255,0.04) 1px, transparent 1px);
+      background-size: 80px 80px;
+      animation: grid-move 30s linear infinite;
+      z-index: 0;
+    }
+
+    @keyframes grid-move {
+      from { transform: translate(0, 0); }
+      to   { transform: translate(80px, 80px); }
+    }
+
+    /* Vignette radiale par-dessus la grille */
+    .lp-vignette {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 48%,
+        transparent 25%,
+        rgba(2, 4, 8, 0.78) 100%
+      );
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Tout le contenu au-dessus */
+    #s-letsplay > *:not(.lp-vignette):not(.corner) {
+      position: relative;
+      z-index: 5;
+    }
+
+    /* Coins décoratifs */
+    .corner {
+      position: absolute;
+      width: 70px; height: 70px;
+      border-color: rgba(0,229,255,0.22);
+      border-style: solid;
+      z-index: 10;
+    }
+    .c-tl { top:40px; left:40px;  border-width: 2px 0 0 2px; }
+    .c-tr { top:40px; right:40px; border-width: 2px 2px 0 0; }
+    .c-bl { bottom:40px; left:40px;  border-width: 0 0 2px 2px; }
+    .c-br { bottom:40px; right:40px; border-width: 0 2px 2px 0; }
+
+    /* Texte au-dessus du titre */
+    .lp-pre {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 20px;
+      letter-spacing: 10px;
+      color: rgba(0, 229, 255, 0.4);
+      text-transform: uppercase;
+      margin-bottom: 22px;
+    }
+
+    /* Grand titre avec glitch */
+    .lp-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 220px;
+      line-height: 0.82;
+      color: #fff;
+      text-align: center;
+      letter-spacing: 18px;
+      text-shadow:
+        0 0 40px var(--cyan),
+        0 0 90px rgba(0,229,255,0.45),
+        0 0 180px rgba(0,229,255,0.18);
+      animation: title-glitch 9s ease-in-out infinite;
+      user-select: none;
+    }
+
+    @keyframes title-glitch {
+      0%, 84%, 100% {
+        text-shadow: 0 0 40px var(--cyan), 0 0 90px rgba(0,229,255,0.45);
+        transform: none;
+        filter: none;
+      }
+      86% {
+        transform: translateX(-4px) skewX(-1deg);
+        text-shadow: 5px 0 0 var(--red), -5px 0 0 var(--cyan);
+        filter: brightness(1.5);
+      }
+      88% {
+        transform: translateX(4px) skewX(1deg);
+        text-shadow: -5px 0 0 var(--red), 5px 0 0 var(--cyan);
+        filter: brightness(1.2);
+      }
+      90% {
+        transform: none;
+        text-shadow: 0 0 40px var(--cyan), 0 0 90px rgba(0,229,255,0.45);
+        filter: none;
+      }
+    }
+
+    /* Sous-titre */
+    .lp-sub {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 24px;
+      color: rgba(255, 255, 255, 0.42);
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      margin-top: 20px;
+    }
+
+    .lp-sub em {
+      color: var(--cyan);
+      font-style: normal;
+    }
+
+    /* Ligne décorative */
+    .lp-divider {
+      width: 600px; height: 1px;
+      background: linear-gradient(90deg,
+        transparent,
+        var(--cyan),
+        rgba(0,229,255,0.4),
+        var(--cyan),
+        transparent
+      );
+      margin: 48px 0 42px;
+    }
+
+    /* Bouton hexagonal rouge */
+    #btn-start {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 70px;
+      letter-spacing: 10px;
+      color: #fff;
+      background: var(--red);
+      border: none;
+      padding: 20px 112px 16px;
+      cursor: pointer;
+      clip-path: polygon(
+        22px 0%,   calc(100% - 22px) 0%,
+        100% 50%,
+        calc(100% - 22px) 100%, 22px 100%,
+        0% 50%
+      );
+      filter:
+        drop-shadow(0 0 20px rgba(255,26,46,0.8))
+        drop-shadow(0 0 50px rgba(255,26,46,0.4));
+      transition: transform 0.12s ease, filter 0.12s ease;
+      animation: btn-breathe 2.5s ease-in-out infinite alternate;
+    }
+
+    @keyframes btn-breathe {
+      from {
+        filter:
+          drop-shadow(0 0 20px rgba(255,26,46,0.8))
+          drop-shadow(0 0 50px rgba(255,26,46,0.35));
+      }
+      to {
+        filter:
+          drop-shadow(0 0 30px rgba(255,26,46,1))
+          drop-shadow(0 0 80px rgba(255,26,46,0.6));
+      }
+    }
+
+    #btn-start:hover  { transform: scale(1.055); background: #FF3348; }
+    #btn-start:active { transform: scale(0.96); }
+
+    /* Texte clignotant sous le bouton */
+    .lp-insert {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 18px;
+      letter-spacing: 7px;
+      color: rgba(255, 255, 255, 0.25);
+      margin-top: 34px;
+      animation: blink 1.4s step-end infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0; }
+    }
+
+    /* ════════════════════════════════════════════
+       SCREENS 2 & 4 — ROUND ANNOUNCEMENTS
+    ════════════════════════════════════════════ */
+    .screen-round { background: #000; }
+
+    /* Flash radial rouge en fond */
+    .round-flash {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 42%,
+        rgba(255,26,46,0.2) 0%,
+        transparent 65%
+      );
+      animation: flash-pop 0.5s ease-out both;
+      z-index: 1;
+    }
+
+    @keyframes flash-pop {
+      from { opacity: 0; transform: scale(0.3); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+
+    /* Contenu des rounds au-dessus du flash */
+    .screen-round > *:not(.round-flash) {
+      position: relative;
+      z-index: 5;
+    }
+
+    .round-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 32px;
+      letter-spacing: 24px;
+      color: rgba(255, 255, 255, 0.38);
+      text-transform: uppercase;
+      animation: fade-down 0.4s ease-out both;
+    }
+
+    @keyframes fade-down {
+      from { opacity: 0; transform: translateY(-28px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .round-num {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 420px;
+      line-height: 0.82;
+      color: var(--red);
+      text-shadow:
+        0 0 60px rgba(255,26,46,0.75),
+        0 0 140px rgba(255,26,46,0.35);
+      animation: num-pop 0.55s cubic-bezier(0.18, 0.89, 0.32, 1.28) 0.08s both;
+      user-select: none;
+    }
+
+    @keyframes num-pop {
+      from { opacity: 0; transform: scale(0.15); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+
+    .round-sep {
+      width: 480px; height: 2px;
+      background: linear-gradient(90deg,
+        transparent, var(--red), transparent
+      );
+      margin: 14px 0 18px;
+    }
+
+    .round-charname {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 128px;
+      color: var(--cyan);
+      letter-spacing: 24px;
+      text-shadow: 0 0 50px rgba(0,229,255,0.8);
+      animation: fade-up 0.5s 0.22s ease-out both;
+      user-select: none;
+    }
+
+    @keyframes fade-up {
+      from { opacity: 0; transform: translateY(38px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Barre de progression (3 secondes) */
+    .round-timer {
+      position: absolute;
+      bottom: 0; left: 0;
+      width: 100%; height: 5px;
+      background: rgba(255,255,255,0.06);
+      z-index: 10;
+    }
+
+    .round-timer-fill {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, var(--cyan), var(--red));
+      transform-origin: left center;
+      animation: timer-drain 2s linear both;
+    }
+
+    @keyframes timer-drain {
+      from { transform: scaleX(1); }
+      to   { transform: scaleX(0); }
+    }
+
+    /* ════════════════════════════════════════════
+       LIGNE DE BALAYAGE — effet écran perturbé
+       Une ligne cyan passe de haut en bas toutes
+       les ~10s, en ~2.5s de traversée
+    ════════════════════════════════════════════ */
+    /* Deux couches à périodes premières entre elles (71px et 101px).
+       Chaque couche boucle parfaitement en 0.45s.
+       Leurs vitesses différentes créent un motif d'interférence qui
+       met ~130s à se répéter → effet "aléatoire" en pratique. */
+    @keyframes bg-sweep-fast {
+      from { background-position: 0 0,    0 0; }
+      to   { background-position: 0 71px, 0 101px; }
+    }
+
+    .bg-sweep::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        repeating-linear-gradient(
+          to bottom,
+          transparent            0px,
+          transparent            70px,
+          rgba(255,255,255,0.05) 70px,
+          rgba(255,255,255,0.05) 71px,
+          transparent            71px
+        ),
+        repeating-linear-gradient(
+          to bottom,
+          transparent           0px,
+          transparent           100px,
+          rgba(0,229,255,0.04)  100px,
+          rgba(0,229,255,0.04)  101px,
+          transparent           101px
+        );
+      background-size: 100% 71px, 100% 101px;
+      z-index: 15;
+      pointer-events: none;
+      animation: bg-sweep-fast 0.45s linear infinite;
+    }
+
+    /* ════════════════════════════════════════════
+       BATTLE SCREENS — FOND + PERSONNAGE
+    ════════════════════════════════════════════ */
+
+    /* Fond plein écran */
+    .battle-bg {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      z-index: 1;
+    }
+
+    /* Conteneur du sprite (2 frames superposées) */
+    .char-sprite {
+      position: absolute;
+      z-index: 10;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+
+    /* Frame individuelle */
+    .char-frame {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      image-rendering: pixelated;
+      opacity: 1;
+      filter: brightness(1);
+      /*
+        Transition douce sur opacity ET brightness :
+        la frame sortante s'éclaircit légèrement en disparaissant
+        → effet "décharge d'énergie" pixel art
+      */
+      transition:
+        opacity  0.45s cubic-bezier(0.4, 0.0, 0.2, 1),
+        filter   0.45s cubic-bezier(0.4, 0.0, 0.2, 1);
+    }
+
+    /* Frame cachée : fondue + légère surexposition au départ */
+    .char-frame.off {
+      opacity: 0;
+      filter: brightness(1.6);
+    }
+
+    /* ════════════════════════════════════════════
+       SCREEN 3 — BATTLE ORACLE-7
+    ════════════════════════════════════════════ */
+    #s-battle-oracle7 { cursor: pointer; }
+
+    /* Taille et position exactes du sprite Oracle-7 */
+    #char-oracle7 {
+      width:  819px;
+      height: 585px;
+      left:   551px;
+      top:    247px;
+    }
+
+    /* Hint de clic */
+    .click-hint {
+      position: absolute;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 50;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 19px;
+      letter-spacing: 7px;
+      color: rgba(255, 255, 255, 0.42);
+      white-space: nowrap;
+      animation: blink 1.6s step-end infinite;
+    }
+
+    /* ════════════════════════════════════════════
+       SCREEN 5 — BATTLE GEN-X
+    ════════════════════════════════════════════ */
+
+    /* Taille et position exactes du sprite Gen-X */
+    #char-genx {
+      width:  718px;
+      height: 715px;
+      left:   632px;
+      top:    234px;
+      /* Flottement doux CSS */
+      animation: float-char 2.9s ease-in-out infinite;
+    }
+
+    @keyframes float-char {
+      0%   { transform: translateY(0px)   rotate(0deg); }
+      30%  { transform: translateY(-14px) rotate(0.35deg); }
+      65%  { transform: translateY(-6px)  rotate(-0.2deg); }
+      100% { transform: translateY(0px)   rotate(0deg); }
+    }
+
+    /* Flottement strictement vertical — aucune rotation (Neutral-Net) */
+    @keyframes float-vertical {
+      0%   { transform: translateY(0px); }
+      30%  { transform: translateY(-14px); }
+      65%  { transform: translateY(-6px); }
+      100% { transform: translateY(0px); }
+    }
+
+    /* ════════════════════════════════════════════
+       PLACEHOLDER BATTLE SCREENS (Compile, Lolbot…)
+    ════════════════════════════════════════════ */
+    .battle-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      background: var(--noir);
+      cursor: pointer;
+    }
+
+    .battle-placeholder .ph-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 120px;
+      color: rgba(255, 255, 255, 0.08);
+      letter-spacing: 12px;
+    }
+
+    .battle-placeholder .ph-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 18px;
+      letter-spacing: 8px;
+      color: rgba(0, 229, 255, 0.4);
+    }
+
+    /* ════════════════════════════════════════════
+       GLITCH — personnages mono-frame
+       Flash bref toutes les ~10s :
+       décalage horizontal + torsion + filtre coloré
+    ════════════════════════════════════════════ */
+    /* Même logique que title-glitch — décalage latéral + aberration
+       chromatique simulée via drop-shadow rouge/cyan (≈ RGB split) */
+    @keyframes glitch-char {
+      0%, 84%, 100% {
+        transform: none;
+        filter: none;
+      }
+      86% {
+        transform: translateX(-4px) skewX(-1deg);
+        filter: brightness(1.5)
+                drop-shadow( 5px 0 0 rgba(255, 26,  46, 0.9))
+                drop-shadow(-5px 0 0 rgba(  0,229, 255, 0.9));
+      }
+      88% {
+        transform: translateX(4px) skewX(1deg);
+        filter: brightness(1.2)
+                drop-shadow(-5px 0 0 rgba(255, 26,  46, 0.9))
+                drop-shadow( 5px 0 0 rgba(  0,229, 255, 0.9));
+      }
+      90% {
+        transform: none;
+        filter: none;
+      }
+    }
+
+    /* ════════════════════════════════════════════
+       PERSONNAGES MONO-FRAME (.char-solo)
+    ════════════════════════════════════════════ */
+    .char-solo {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      animation: glitch-char 9s ease-in-out infinite;
+    }
+
+    /* ════════════════════════════════════════════
+       SCREEN — BATTLE : EMPATH-IA  (FLOATS 3.1s)
+    ════════════════════════════════════════════ */
+    #s-battle-empath  { cursor: pointer; }
+
+    #char-empath {
+      width:  596px;
+      height: 815px;
+      left:   662px;
+      top:    228px;
+      animation: float-char 3.1s ease-in-out infinite;
+    }
+
+    /* ════════════════════════════════════════════
+       SCREEN — BATTLE : GHOST-LOVER  (pas de flottement)
+    ════════════════════════════════════════════ */
+    #s-battle-ghost   { cursor: pointer; }
+
+    #char-ghost {
+      width:  691px;
+      height: 729px;
+      left:   615px;
+      top:    289px;
+    }
+
+    /* ════════════════════════════════════════════
+       SCREEN — BATTLE : MEDBOT-X  (pas de flottement)
+    ════════════════════════════════════════════ */
+    #s-battle-medbot  { cursor: pointer; }
+
+    #char-medbot {
+      width:  494px;
+      height: 568px;
+      left:  1020px;
+      top:    492px;
+    }
+
+    /* ════════════════════════════════════════════
+       SCREEN — BATTLE : NEUTRAL-NET  (FLOATS 3.4s)
+    ════════════════════════════════════════════ */
+    #s-battle-neutral { cursor: pointer; }
+
+    #char-neutral {
+      width:  392px;
+      height: 719px;
+      left:   756px;
+      top:    246px;
+      animation: float-vertical 3.4s ease-in-out infinite;
+    }
+
+    /* ════════════════════════════════════════════
+       SCREEN — BATTLE : PHANTOM-FEED  (pas de flottement)
+    ════════════════════════════════════════════ */
+    #s-battle-phantom { cursor: pointer; }
+
+    #char-phantom {
+      width:  728px;
+      height: 744px;
+      left:   596px;
+      top:    275px;
+    }
+
+    /* ════════════════════════════════════════════
+       SCREEN — BATTLE : COMPILE  (pas de flottement)
+    ════════════════════════════════════════════ */
+    #s-battle-compile { cursor: pointer; }
+
+    #char-compile {
+      width:  571px;
+      height: 499px;
+      left:   674px;
+      top:    517px;
+    }
+
+    /* ════════════════════════════════════════════
+       SCREEN — BATTLE : LOLBOT  (pas de flottement)
+    ════════════════════════════════════════════ */
+    #s-battle-lolbot  { cursor: pointer; }
+
+    #char-lolbot {
+      width:  798px;
+      height: 771px;
+      left:   561px;
+      top:    276px;
+    }
+
+    /* ════════════════════════════════════════════
+       SCREEN — BATTLE : TUTOR-IA  (pas de flottement)
+    ════════════════════════════════════════════ */
+    #s-battle-tutoria { cursor: pointer; }
+
+    #char-tutoria {
+      width:  639px;
+      height: 530px;
+      left:   746px;
+      top:    448px;
+      animation: float-char 3.3s ease-in-out infinite;
+    }
+
+  </style>
+</head>
+
+<body>
+<div id="game">
+
+  <!-- ════════════════════════════════════════════
+       SCREEN 1 — LET'S PLAY
+  ════════════════════════════════════════════ -->
+  <section id="s-letsplay" class="screen active scanlines">
+
+    <div class="lp-vignette"></div>
+
+    <div class="corner c-tl"></div>
+    <div class="corner c-tr"></div>
+    <div class="corner c-bl"></div>
+    <div class="corner c-br"></div>
+
+    <p class="lp-pre">Neural Punk &nbsp;·&nbsp; Resistance &nbsp;·&nbsp; 2026</p>
+
+    <h1 class="lp-title">AI<br>MYTHOLOGY</h1>
+
+    <p class="lp-sub">
+      Déconstruis les <em>mythes</em>&nbsp;&nbsp;·&nbsp;&nbsp;Jailbreak ta réalité
+    </p>
+
+    <div class="lp-divider"></div>
+
+    <button id="btn-start">LET'S PLAY</button>
+
+    <p class="lp-insert">▶ &nbsp; APPUIE POUR DÉMARRER &nbsp; ◀</p>
+
+  </section>
+
+
+  <!-- ════════════════════════════════════════════
+       SCREEN 2 — ROUND 1 : ORACLE-7
+  ════════════════════════════════════════════ -->
+  <section id="s-round1" class="screen screen-round scanlines">
+
+    <div class="round-flash"></div>
+
+    <p class="round-label">Round</p>
+    <div class="round-num">1</div>
+    <div class="round-sep"></div>
+    <h2 class="round-charname">Oracle&#8209;7</h2>
+
+    <div class="round-timer">
+      <div class="round-timer-fill" id="rtf1"></div>
+    </div>
+
+  </section>
+
+
+  <!-- ════════════════════════════════════════════
+       SCREEN 3 — BATTLE : ORACLE-7
+  ════════════════════════════════════════════ -->
+  <section id="s-battle-oracle7" class="screen scanlines bg-sweep">
+
+    <!-- Fond GIF animé plein écran -->
+    <img id="bg-oracle7" class="battle-bg" alt="Cathédrale de Données" />
+
+    <!-- Sprite Oracle-7 : 2 frames superposées -->
+    <div id="char-oracle7" class="char-sprite">
+      <img id="o7-f1" class="char-frame"     alt="Oracle-7 frame 1" />
+      <img id="o7-f2" class="char-frame off" alt="Oracle-7 frame 2" />
+    </div>
+
+    <p class="click-hint">▶ &nbsp; CLIQUER POUR CONTINUER &nbsp; ◀</p>
+
+  </section>
+
+
+  <!-- ════════════════════════════════════════════
+       SCREEN 4 — ROUND 2 : GEN-X
+  ════════════════════════════════════════════ -->
+  <section id="s-round2" class="screen screen-round scanlines">
+
+    <div class="round-flash"></div>
+
+    <p class="round-label">Round</p>
+    <div class="round-num">2</div>
+    <div class="round-sep"></div>
+    <h2 class="round-charname">Gen&#8209;X</h2>
+
+    <div class="round-timer">
+      <div class="round-timer-fill" id="rtf2"></div>
+    </div>
+
+  </section>
+
+
+  <!-- ════════════════════════════════════════════
+       SCREEN 5 — BATTLE : GEN-X
+  ════════════════════════════════════════════ -->
+  <section id="s-battle-genx" class="screen scanlines bg-sweep">
+
+    <!-- Fond JPG statique plein écran -->
+    <img id="bg-genx" class="battle-bg" alt="Usine à œuvres" />
+
+    <!-- Sprite Gen-X : 2 frames superposées + flottement CSS -->
+    <div id="char-genx" class="char-sprite">
+      <img id="gx-f1" class="char-frame"     alt="Gen-X frame 1" />
+      <img id="gx-f2" class="char-frame off" alt="Gen-X frame 2" />
+    </div>
+
+  </section>
+
+
+
+  <!-- ════════════════════════════════════════════
+       ROUND 3 — COMPILE  (placeholder)
+  ════════════════════════════════════════════ -->
+  <section id="s-round3" class="screen screen-round scanlines">
+    <div class="round-flash"></div>
+    <p class="round-label">Round</p>
+    <div class="round-num">3</div>
+    <div class="round-sep"></div>
+    <h2 class="round-charname">Compile</h2>
+    <div class="round-timer">
+      <div class="round-timer-fill" id="rtf3"></div>
+    </div>
+  </section>
+
+  <section id="s-battle-compile" class="screen scanlines bg-sweep">
+    <img id="bg-compile" class="battle-bg" alt="Forge industrielle du code" />
+    <div id="char-compile" class="char-sprite">
+      <img id="compile-basic" class="char-solo" alt="Compile" />
+    </div>
+    <p class="click-hint">▶ &nbsp; CLIQUER POUR CONTINUER &nbsp; ◀</p>
+  </section>
+
+
+  <!-- ════════════════════════════════════════════
+       ROUND 4 — EMPATH-IA
+  ════════════════════════════════════════════ -->
+  <section id="s-round4" class="screen screen-round scanlines">
+    <div class="round-flash"></div>
+    <p class="round-label">Round</p>
+    <div class="round-num">4</div>
+    <div class="round-sep"></div>
+    <h2 class="round-charname">Empath&#8209;IA</h2>
+    <div class="round-timer">
+      <div class="round-timer-fill" id="rtf4"></div>
+    </div>
+  </section>
+
+  <section id="s-battle-empath" class="screen scanlines bg-sweep">
+    <img id="bg-empath" class="battle-bg" alt="Sanctuaire pastel émotionnel" />
+    <div id="char-empath" class="char-sprite">
+      <img id="empath-basic" class="char-solo" alt="Empath-IA" />
+    </div>
+    <p class="click-hint">▶ &nbsp; CLIQUER POUR CONTINUER &nbsp; ◀</p>
+  </section>
+
+
+  <!-- ════════════════════════════════════════════
+       ROUND 5 — GHOST-LOVER
+  ════════════════════════════════════════════ -->
+  <section id="s-round5" class="screen screen-round scanlines">
+    <div class="round-flash"></div>
+    <p class="round-label">Round</p>
+    <div class="round-num">5</div>
+    <div class="round-sep"></div>
+    <h2 class="round-charname">Ghost&#8209;Lover</h2>
+    <div class="round-timer">
+      <div class="round-timer-fill" id="rtf5"></div>
+    </div>
+  </section>
+
+  <section id="s-battle-ghost" class="screen scanlines bg-sweep">
+    <img id="bg-ghost" class="battle-bg" alt="Appartement fantôme AR" />
+    <div id="char-ghost" class="char-sprite">
+      <img id="ghost-basic" class="char-solo" alt="Ghost-Lover" />
+    </div>
+    <p class="click-hint">▶ &nbsp; CLIQUER POUR CONTINUER &nbsp; ◀</p>
+  </section>
+
+
+  <!-- ════════════════════════════════════════════
+       ROUND 6 — LOLBOT  (placeholder)
+  ════════════════════════════════════════════ -->
+  <section id="s-round6" class="screen screen-round scanlines">
+    <div class="round-flash"></div>
+    <p class="round-label">Round</p>
+    <div class="round-num">6</div>
+    <div class="round-sep"></div>
+    <h2 class="round-charname">Lolbot</h2>
+    <div class="round-timer">
+      <div class="round-timer-fill" id="rtf6"></div>
+    </div>
+  </section>
+
+  <section id="s-battle-lolbot" class="screen scanlines bg-sweep">
+    <img id="bg-lolbot" class="battle-bg" alt="Carnaval des dépendances" />
+    <div id="char-lolbot" class="char-sprite">
+      <img id="lolbot-basic" class="char-solo" alt="Lolbot" />
+    </div>
+    <p class="click-hint">▶ &nbsp; CLIQUER POUR CONTINUER &nbsp; ◀</p>
+  </section>
+
+
+  <!-- ════════════════════════════════════════════
+       ROUND 7 — MEDBOT-X
+  ════════════════════════════════════════════ -->
+  <section id="s-round7" class="screen screen-round scanlines">
+    <div class="round-flash"></div>
+    <p class="round-label">Round</p>
+    <div class="round-num">7</div>
+    <div class="round-sep"></div>
+    <h2 class="round-charname">Medbot&#8209;X</h2>
+    <div class="round-timer">
+      <div class="round-timer-fill" id="rtf7"></div>
+    </div>
+  </section>
+
+  <section id="s-battle-medbot" class="screen scanlines bg-sweep">
+    <img id="bg-medbot" class="battle-bg" alt="Salle opératoire biopunk" />
+    <div id="char-medbot" class="char-sprite">
+      <img id="medbot-basic" class="char-solo" alt="Medbot-X" />
+    </div>
+    <p class="click-hint">▶ &nbsp; CLIQUER POUR CONTINUER &nbsp; ◀</p>
+  </section>
+
+
+  <!-- ════════════════════════════════════════════
+       ROUND 8 — NEUTRAL-NET
+  ════════════════════════════════════════════ -->
+  <section id="s-round8" class="screen screen-round scanlines">
+    <div class="round-flash"></div>
+    <p class="round-label">Round</p>
+    <div class="round-num">8</div>
+    <div class="round-sep"></div>
+    <h2 class="round-charname">Neutral&#8209;Net</h2>
+    <div class="round-timer">
+      <div class="round-timer-fill" id="rtf8"></div>
+    </div>
+  </section>
+
+  <section id="s-battle-neutral" class="screen scanlines bg-sweep">
+    <img id="bg-neutral" class="battle-bg" alt="Tribunal blanc suspendu" />
+    <div id="char-neutral" class="char-sprite">
+      <img id="neutral-basic" class="char-solo" alt="Neutral-Net" />
+    </div>
+    <p class="click-hint">▶ &nbsp; CLIQUER POUR CONTINUER &nbsp; ◀</p>
+  </section>
+
+
+  <!-- ════════════════════════════════════════════
+       ROUND 9 — PHANTOM-FEED
+  ════════════════════════════════════════════ -->
+  <section id="s-round9" class="screen screen-round scanlines">
+    <div class="round-flash"></div>
+    <p class="round-label">Round</p>
+    <div class="round-num">9</div>
+    <div class="round-sep"></div>
+    <h2 class="round-charname">Phantom&#8209;Feed</h2>
+    <div class="round-timer">
+      <div class="round-timer-fill" id="rtf9"></div>
+    </div>
+  </section>
+
+  <section id="s-battle-phantom" class="screen scanlines bg-sweep">
+    <img id="bg-phantom" class="battle-bg" alt="Tour panoptique" />
+    <div id="char-phantom" class="char-sprite">
+      <img id="phantom-basic" class="char-solo" alt="Phantom-Feed" />
+    </div>
+    <p class="click-hint">▶ &nbsp; CLIQUER POUR CONTINUER &nbsp; ◀</p>
+  </section>
+
+
+  <!-- ════════════════════════════════════════════
+       ROUND 10 — TUTOR-IA
+  ════════════════════════════════════════════ -->
+  <section id="s-round10" class="screen screen-round scanlines">
+    <div class="round-flash"></div>
+    <p class="round-label">Round</p>
+    <div class="round-num">10</div>
+    <div class="round-sep"></div>
+    <h2 class="round-charname">Tutor&#8209;IA</h2>
+    <div class="round-timer">
+      <div class="round-timer-fill" id="rtf10"></div>
+    </div>
+  </section>
+
+  <section id="s-battle-tutoria" class="screen scanlines bg-sweep">
+    <img id="bg-tutoria" class="battle-bg" alt="Bibliothèque suspendue" />
+    <div id="char-tutoria" class="char-sprite">
+      <img id="tutoria-basic" class="char-solo" alt="Tutor-IA" />
+    </div>
+    <p class="click-hint">▶ &nbsp; CLIQUER POUR CONTINUER &nbsp; ◀</p>
+  </section>
+
+
+</div><!-- /game -->
+
+
+<script>
+'use strict';
+
+/* ════════════════════════════════════════════════════
+   ASSETS — chemins encodés (caractères spéciaux sûrs)
+════════════════════════════════════════════════════ */
+const ASSETS = {
+  // Rounds 1 & 2 — Oracle-7 / Gen-X (2 frames sprite)
+  bgOracle7 : 'decors/Cath%C3%A9drale%20de%20Donn%C3%A9es%20.gif',
+  bgGenX    : 'decors/Usine%20%C3%A0%20%C5%93uvres.jpg',
+  o7f1      : 'perso/Oracle-7%20-%20basic-image1.png',
+  o7f2      : 'perso/Oracle-7%20-%20basic-image2.png',
+  gxf1      : 'perso/Gen-X-basic-image1.png',
+  gxf2      : 'perso/Gen-X-basic-image2.png',
+
+  // Round 4 — Empath-IA
+  bgEmpath  : 'decors/Sanctuaire%20pastel%20%C3%A9motionnel.png',
+  empathB   : 'perso/Empath-IA%20-%20basic.png',
+
+  // Round 5 — Ghost-Lover
+  bgGhost   : 'decors/Appartement%20fant%C3%B4me%20AR.png',
+  ghostB    : 'perso/Ghost-Lover%20-%20basic.png',
+
+  // Round 7 — Medbot-X
+  bgMedbot  : 'decors/Salle%20op%C3%A9ratoire%20biopunk.png',
+  medbotB   : 'perso/Medbot-X%20-%20basic.png',
+
+  // Round 8 — Neutral-Net
+  bgNeutral : 'decors/Tribunal%20blanc%20suspendu.png',
+  neutralB  : 'perso/Neutral-Net%20-%20basic.png',
+
+  // Round 9 — Phantom-Feed
+  bgPhantom : 'decors/Tour%20panoptique.png',
+  phantomB  : 'perso/Phantom-Feed%20-%20basic.png',
+
+  // Round 3 — Compile
+  bgCompile : 'decors/Forge%20industrielle%20du%20code.png',
+  compileB  : 'perso/Compile%20-%20basic.png',
+
+  // Round 6 — Lolbot
+  bgLolbot  : 'decors/Carnaval%20des%20d%C3%A9pendances.png',
+  lolbotB   : 'perso/Lolbot%20-%20basic.png',
+
+  // Round 10 — Tutor-IA
+  bgTutoria : 'decors/Biblioth%C3%A8que%20suspendue.png',
+  tutoriaB  : 'perso/Tutor-IA%20-%20basic.png',
+};
+
+// Injection des sources au chargement
+document.getElementById('bg-oracle7').src  = ASSETS.bgOracle7;
+document.getElementById('bg-genx').src     = ASSETS.bgGenX;
+document.getElementById('o7-f1').src       = ASSETS.o7f1;
+document.getElementById('o7-f2').src       = ASSETS.o7f2;
+document.getElementById('gx-f1').src       = ASSETS.gxf1;
+document.getElementById('gx-f2').src       = ASSETS.gxf2;
+
+document.getElementById('bg-empath').src   = ASSETS.bgEmpath;
+document.getElementById('empath-basic').src = ASSETS.empathB;
+document.getElementById('bg-ghost').src    = ASSETS.bgGhost;
+document.getElementById('ghost-basic').src = ASSETS.ghostB;
+document.getElementById('bg-medbot').src   = ASSETS.bgMedbot;
+document.getElementById('medbot-basic').src = ASSETS.medbotB;
+document.getElementById('bg-neutral').src  = ASSETS.bgNeutral;
+document.getElementById('neutral-basic').src = ASSETS.neutralB;
+document.getElementById('bg-phantom').src  = ASSETS.bgPhantom;
+document.getElementById('phantom-basic').src = ASSETS.phantomB;
+document.getElementById('bg-compile').src  = ASSETS.bgCompile;
+document.getElementById('compile-basic').src = ASSETS.compileB;
+document.getElementById('bg-lolbot').src   = ASSETS.bgLolbot;
+document.getElementById('lolbot-basic').src = ASSETS.lolbotB;
+document.getElementById('bg-tutoria').src  = ASSETS.bgTutoria;
+document.getElementById('tutoria-basic').src = ASSETS.tutoriaB;
+
+
+/* ════════════════════════════════════════════════════
+   SCALING — maintient le jeu en 1920×1080
+   Centrage par translate(-50%,-50%) + scale(s)
+   → toujours parfaitement centré quelle que soit la fenêtre
+════════════════════════════════════════════════════ */
+const gameEl = document.getElementById('game');
+
+function scaleGame() {
+  const s = Math.min(
+    window.innerWidth  / 1920,
+    window.innerHeight / 1080
+  );
+  // translate(-50%,-50%) centre l'élément sur le point (50vw, 50vh)
+  // puis scale(s) réduit/agrandit depuis ce centre
+  gameEl.style.transform = `translate(-50%, -50%) scale(${s})`;
+}
+
+window.addEventListener('resize', scaleGame);
+scaleGame(); // premier appel immédiat
+
+
+/* ════════════════════════════════════════════════════
+   SCREEN MANAGER — affiche un screen, masque les autres
+════════════════════════════════════════════════════ */
+const SCREENS = {
+  letsplay      : document.getElementById('s-letsplay'),
+  round1        : document.getElementById('s-round1'),
+  battleOracle7 : document.getElementById('s-battle-oracle7'),
+  round2        : document.getElementById('s-round2'),
+  battleGenX    : document.getElementById('s-battle-genx'),
+  round3        : document.getElementById('s-round3'),
+  battleCompile : document.getElementById('s-battle-compile'),
+  round4        : document.getElementById('s-round4'),
+  battleEmpath  : document.getElementById('s-battle-empath'),
+  round5        : document.getElementById('s-round5'),
+  battleGhost   : document.getElementById('s-battle-ghost'),
+  round6        : document.getElementById('s-round6'),
+  battleLolbot  : document.getElementById('s-battle-lolbot'),
+  round7        : document.getElementById('s-round7'),
+  battleMedbot  : document.getElementById('s-battle-medbot'),
+  round8        : document.getElementById('s-round8'),
+  battleNeutral : document.getElementById('s-battle-neutral'),
+  round9        : document.getElementById('s-round9'),
+  battlePhantom : document.getElementById('s-battle-phantom'),
+  round10       : document.getElementById('s-round10'),
+  battleTutoria : document.getElementById('s-battle-tutoria'),
+};
+
+function showScreen(name) {
+  Object.values(SCREENS).forEach(s => s.classList.remove('active'));
+  SCREENS[name].classList.add('active');
+}
+
+
+/* ════════════════════════════════════════════════════
+   SPRITE ANIMATOR
+   Alterne entre frame1 (f1) et frame2 (f2) toutes les
+   `ms` millisecondes avec crossfade CSS
+════════════════════════════════════════════════════ */
+class SpriteAnim {
+  constructor(f1El, f2El, ms = 540) {
+    this.f1  = f1El;
+    this.f2  = f2El;
+    this.ms  = ms;
+    this._id = null;
+    this._cur = 1; // frame actuellement visible
+  }
+
+  start() {
+    this.stop(); // évite les doublons
+    this._id = setInterval(() => {
+      this._cur = this._cur === 1 ? 2 : 1;
+      this.f1.classList.toggle('off', this._cur !== 1);
+      this.f2.classList.toggle('off', this._cur !== 2);
+    }, this.ms);
+  }
+
+  stop() {
+    if (this._id) {
+      clearInterval(this._id);
+      this._id = null;
+    }
+    // Retour à la frame 1
+    this.f1.classList.remove('off');
+    this.f2.classList.add('off');
+    this._cur = 1;
+  }
+}
+
+const animOracle7 = new SpriteAnim(
+  document.getElementById('o7-f1'),
+  document.getElementById('o7-f2'),
+  900  // 900ms : laisse la transition de 450ms se terminer + 450ms de frame stable
+);
+
+const animGenX = new SpriteAnim(
+  document.getElementById('gx-f1'),
+  document.getElementById('gx-f2'),
+  850  // légèrement plus rapide pour Gen-X (personnage plus dynamique)
+);
+
+
+/* ════════════════════════════════════════════════════
+   ROUND ANNOUNCEMENT
+   Affiche le screen de round, relance l'animation
+   de la barre timer, puis appelle `callback` après 3s
+════════════════════════════════════════════════════ */
+function playRound(screenName, timerFillId, callback) {
+  showScreen(screenName);
+
+  // Relance l'animation CSS de la barre
+  // (reflow trick : retire l'anim, force le reflow, repose l'anim)
+  const bar = document.getElementById(timerFillId);
+  bar.style.animation = 'none';
+  void bar.offsetWidth; // force reflow
+  bar.style.animation  = '';
+
+  setTimeout(callback, 2000);
+}
+
+
+/* ════════════════════════════════════════════════════
+   FLOW PRINCIPAL
+   R1 Oracle-7 → R2 Gen-X → R3 Compile → R4 Empath-IA
+   → R5 Ghost-Lover → R6 Lolbot → R7 Medbot-X
+   → R8 Neutral-Net → R9 Phantom-Feed → R10 Tutor-IA
+   → LET'S PLAY
+════════════════════════════════════════════════════ */
+
+// ── R1 : Bouton LET'S PLAY → Round 1 → Oracle-7 ──
+document.getElementById('btn-start').addEventListener('click', () => {
+  playRound('round1', 'rtf1', () => {
+    showScreen('battleOracle7');
+    animOracle7.start();
+  });
+});
+
+// ── R1→R2 : Clic Oracle-7 → Round 2 → Gen-X ──
+SCREENS.battleOracle7.addEventListener('click', () => {
+  animOracle7.stop();
+  playRound('round2', 'rtf2', () => {
+    showScreen('battleGenX');
+    animGenX.start();
+  });
+});
+
+// ── R2→R3 : Clic Gen-X → Round 3 (Compile placeholder) ──
+SCREENS.battleGenX.addEventListener('click', () => {
+  animGenX.stop();
+  playRound('round3', 'rtf3', () => {
+    showScreen('battleCompile');
+  });
+});
+
+// ── R3→R4 : Clic Compile (placeholder) → Round 4 → Empath-IA ──
+SCREENS.battleCompile.addEventListener('click', () => {
+  playRound('round4', 'rtf4', () => {
+    showScreen('battleEmpath');
+  });
+});
+
+// ── R4→R5 : Clic Empath-IA → Round 5 → Ghost-Lover ──
+SCREENS.battleEmpath.addEventListener('click', () => {
+  playRound('round5', 'rtf5', () => {
+    showScreen('battleGhost');
+  });
+});
+
+// ── R5→R6 : Clic Ghost-Lover → Round 6 (Lolbot placeholder) ──
+SCREENS.battleGhost.addEventListener('click', () => {
+  playRound('round6', 'rtf6', () => {
+    showScreen('battleLolbot');
+  });
+});
+
+// ── R6→R7 : Clic Lolbot (placeholder) → Round 7 → Medbot-X ──
+SCREENS.battleLolbot.addEventListener('click', () => {
+  playRound('round7', 'rtf7', () => {
+    showScreen('battleMedbot');
+  });
+});
+
+// ── R7→R8 : Clic Medbot-X → Round 8 → Neutral-Net ──
+SCREENS.battleMedbot.addEventListener('click', () => {
+  playRound('round8', 'rtf8', () => {
+    showScreen('battleNeutral');
+  });
+});
+
+// ── R8→R9 : Clic Neutral-Net → Round 9 → Phantom-Feed ──
+SCREENS.battleNeutral.addEventListener('click', () => {
+  playRound('round9', 'rtf9', () => {
+    showScreen('battlePhantom');
+  });
+});
+
+// ── R9→R10 : Clic Phantom-Feed → Round 10 → Tutor-IA ──
+SCREENS.battlePhantom.addEventListener('click', () => {
+  playRound('round10', 'rtf10', () => {
+    showScreen('battleTutoria');
+  });
+});
+
+// ── R10→FIN : Clic Tutor-IA → retour LET'S PLAY ──
+SCREENS.battleTutoria.addEventListener('click', () => {
+  showScreen('letsplay');
+});
+
+</script>
+</body>
+</html>
