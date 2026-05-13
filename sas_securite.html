@@ -629,6 +629,7 @@ function init() {
     // Récupérer le paramètre d'entrée depuis l'URL
     const urlParams = new URLSearchParams(window.location.search);
     const entryWall = urlParams.get('wall');
+    let spawnNearArcade = urlParams.get('spawn') === 'arcade';
 
     camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 2000);
 
@@ -641,6 +642,10 @@ function init() {
         // Arrivée depuis la_villa mur 3 → Face au mur 3 de sas_securite (mur sud)
         camera.position.set(0, baseEyeHeight, -25);
         camera.lookAt(0, baseEyeHeight, 100);
+    } else if (spawnNearArcade) {
+        // Retour depuis AI Mythology → position provisoire au centre, sera ajustée dès que la borne est chargée
+        camera.position.set(0, baseEyeHeight, 0);
+        camera.lookAt(0, baseEyeHeight, -10);
     } else {
         // Position par défaut (face au mur 1 - nord)
         camera.position.set(0, baseEyeHeight, 25);
@@ -1755,6 +1760,37 @@ function animate() {
             controls.target.copy(camera.position).add(_gpCamNewDir);
             camera.lookAt(controls.target);
         }
+    }
+
+    // SPAWN NEAR ARCADE : repositionner le joueur devant la borne dès qu'elle est chargée
+    if (spawnNearArcade && typeof importedObjects !== 'undefined') {
+        // Chercher la borne d'arcade parmi les objets importés (insensible à la casse)
+        const arcadeKeywords = ['arcade', 'borne', 'cabinet', 'bornearcade'];
+        const arcadeObj = importedObjects.find(obj => {
+            const n = (obj.userData.editorName || obj.name || '').toLowerCase().replace(/[\s\-_']/g, '');
+            return arcadeKeywords.some(kw => n.includes(kw));
+        });
+        if (arcadeObj) {
+            // Calculer la position devant la borne
+            const box = new THREE.Box3().setFromObject(arcadeObj);
+            const center = box.getCenter(new THREE.Vector3());
+            const size   = box.getSize(new THREE.Vector3());
+            // Se placer à 1.5m devant (côté Z positif) de la borne
+            const offsetZ = size.z / 2 + 1.5;
+            camera.position.set(center.x, gamePlayerY || PLAYER_EYE_HEIGHT, center.z + offsetZ);
+            controls.target.set(center.x, gamePlayerY || PLAYER_EYE_HEIGHT, center.z);
+            controls.update();
+            console.log('🕹️ Spawn near arcade machine at', center.x.toFixed(2), center.z.toFixed(2));
+            // Flag consommé : ne plus exécuter ce bloc
+            // On ne peut pas redéclarer spawnNearArcade (const), on utilise une var globale
+            window._arcadeSpawnDone = true;
+        }
+    }
+    // Désactiver le flag une fois positionné (ne pas réexécuter chaque frame)
+    if (window._arcadeSpawnDone) {
+        // eslint-disable-next-line no-undef
+        spawnNearArcade = false;
+        window._arcadeSpawnDone = false;
     }
 
     // MODE JEU: Head bob, hauteur, collisions, zones, audio de pas

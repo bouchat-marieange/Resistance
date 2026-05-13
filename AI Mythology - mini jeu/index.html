@@ -882,11 +882,76 @@
       object-fit: contain;
     }
 
+    /* ════════════════════════════════════════════
+       BOUTON HOME — retour au sas de sécurité
+       Position fixe sur le viewport (hors #game scalé)
+    ════════════════════════════════════════════ */
+    #btn-home-game {
+      position: fixed;
+      top: 18px;
+      right: 18px;
+      z-index: 9999;
+      width: 44px;
+      height: 44px;
+      background: rgba(4, 8, 16, 0.78);
+      border: 1px solid rgba(0, 229, 255, 0.35);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s, transform 0.15s;
+      filter: drop-shadow(0 2px 8px rgba(0, 229, 255, 0.2));
+    }
+    #btn-home-game:hover {
+      background: rgba(0, 229, 255, 0.12);
+      border-color: rgba(0, 229, 255, 0.8);
+      transform: scale(1.08);
+    }
+    #btn-home-game svg {
+      width: 22px;
+      height: 22px;
+      stroke: #00E5FF;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    #btn-home-game .home-tooltip {
+      position: absolute;
+      right: 52px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(4, 8, 16, 0.9);
+      border: 1px solid rgba(0, 229, 255, 0.3);
+      color: #00E5FF;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 2px;
+      white-space: nowrap;
+      padding: 4px 10px;
+      border-radius: 4px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    #btn-home-game:hover .home-tooltip { opacity: 1; }
 
   </style>
 </head>
 
 <body>
+
+<!-- Bouton home — retour au sas de sécurité devant la borne d'arcade -->
+<button id="btn-home-game" title="Retour au jeu" onclick="returnToSas()">
+  <!-- Lucide icon : Home -->
+  <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+    <polyline points="9 22 9 12 15 12 15 22"/>
+  </svg>
+  <span class="home-tooltip">QUITTER LE JEU</span>
+</button>
+
 <div id="game">
 
   <!-- ════════════════════════════════════════════
@@ -2094,6 +2159,21 @@ function startBattle_Tutoria() {
 document.getElementById('btn-start').addEventListener('click', () => {
   playRound('round1', 'rtf1', startBattle_Oracle7);
 });
+
+// ── Bouton home — retour au sas de sécurité devant la borne d'arcade ──
+function returnToSas() {
+  // Transition fade avant navigation
+  const game = document.getElementById('game');
+  if (game) {
+    game.style.transition = 'opacity 0.4s ease';
+    game.style.opacity = '0';
+  }
+  document.getElementById('btn-home-game').style.opacity = '0';
+  setTimeout(() => {
+    // Paramètre ?spawn=arcade : le sas repositionne le joueur devant la borne
+    window.location.href = '../sas_securite.html?spawn=arcade';
+  }, 400);
+}
 
 </script>
 </body>

@@ -1622,12 +1622,21 @@ function freezeStaticObjects() {
 
 function findObjectByRef(objectRef) {
     if (!objectRef) return null;
+    // 1) Match exact UUID
     for (const obj of importedObjects) {
         if (obj.uuid === objectRef.objectUUID) return obj;
     }
     if (objectRef.editorName) {
+        const searchName = objectRef.editorName.toLowerCase().trim();
+        // 2) Exact editorName (case-insensitive)
         for (const obj of importedObjects) {
-            if ((obj.userData.editorName || obj.name) === objectRef.editorName) return obj;
+            const n = (obj.userData.editorName || obj.name || '').toLowerCase().trim();
+            if (n === searchName) return obj;
+        }
+        // 3) Partial match fallback (editorName contient le nom cherché)
+        for (const obj of importedObjects) {
+            const n = (obj.userData.editorName || obj.name || '').toLowerCase().trim();
+            if (n.includes(searchName) || searchName.includes(n)) return obj;
         }
     }
     return null;
@@ -1933,7 +1942,15 @@ function _stopVideoProgressUpdate() {
 function executeZoneAction(zone) {
     switch (zone.actionType) {
         case 'link':
-            if (zone.actionValue) window.location.href = zone.actionValue;
+            if (zone.actionValue) {
+                // Encoder l'URL pour gérer les espaces dans les chemins (ex: "AI Mythology - mini jeu/")
+                const rawUrl = zone.actionValue;
+                const encodedUrl = rawUrl.includes('%') ? rawUrl : encodeURI(rawUrl);
+                console.log('🔗 Navigation zone link :', rawUrl, '→', encodedUrl);
+                window.location.href = encodedUrl;
+            } else {
+                console.warn('⚠️ Zone link sans actionValue (id:', zone.id, '— nom:', zone.customName, ')');
+            }
             break;
         case 'message':
             if (zone.actionValue) alert(zone.actionValue);
