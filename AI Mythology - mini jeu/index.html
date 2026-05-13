@@ -483,10 +483,11 @@
 
     /* Taille et position exactes du sprite Oracle-7 */
     #char-oracle7 {
-      width:  819px;
-      height: 585px;
-      left:   551px;
-      top:    247px;
+      width:  794px;
+      height: 578px;
+      left:   563px;
+      top:    253px;
+      animation: float-char 3s ease-in-out infinite;
     }
 
     /* Hint de clic */
@@ -510,11 +511,10 @@
 
     /* Taille et position exactes du sprite Gen-X */
     #char-genx {
-      width:  718px;
-      height: 715px;
-      left:   632px;
+      width:  733px;
+      height: 727px;
+      left:   630px;
       top:    234px;
-      /* Flottement doux CSS */
       animation: float-char 2.9s ease-in-out infinite;
     }
 
@@ -797,6 +797,91 @@
       transform: rotateY(180deg);
     }
 
+    /* ════════════════════════════════════════════
+       BOUTONS CHOIX — + (bon choix) / − (mauvais)
+    ════════════════════════════════════════════ */
+    .btn-plus, .btn-minus {
+      position: absolute;
+      bottom: 18px;
+      z-index: 100;
+      display: none;          /* JS le passe en 'flex' */
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      background: transparent;
+      border: 0;
+      cursor: pointer;
+      padding: 0;
+      transition: filter 0.15s ease;
+    }
+
+    .btn-choice-symbol {
+      display: block;
+      width: 76px;
+      height: 76px;
+      line-height: 74px;
+      text-align: center;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 56px;
+      border: 2px solid;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+
+    .btn-choice-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    /* Bouton + — BON CHOIX — cyan */
+    .btn-plus              { left: 60px;  color: var(--cyan); filter: drop-shadow(0 0 12px rgba(0,229,255,0.55)); }
+    .btn-plus .btn-choice-symbol { border-color: var(--cyan); }
+    .btn-plus:hover .btn-choice-symbol { background: var(--cyan); color: var(--dark); }
+
+    /* Bouton − — MAUVAIS CHOIX — rouge */
+    .btn-minus             { left: 162px; color: var(--red);  filter: drop-shadow(0 0 12px rgba(255,26,46,0.55)); }
+    .btn-minus .btn-choice-symbol { border-color: var(--red); }
+    .btn-minus:hover .btn-choice-symbol { background: var(--red); color: #fff; }
+
+    /* ════════════════════════════════════════════
+       LABEL D'ÉTAT — VERSION MINI / MAXI
+    ════════════════════════════════════════════ */
+    .state-label {
+      position: absolute;
+      top: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 60;
+      display: none;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      letter-spacing: 8px;
+      text-transform: uppercase;
+      color: rgba(0, 229, 255, 0.7);
+      white-space: nowrap;
+      animation: blink 2s step-end infinite;
+    }
+
+    /* ════════════════════════════════════════════
+       VIDEO OVERLAY — plein écran dans #game
+       Placé au-dessus de tout (z-index 500)
+    ════════════════════════════════════════════ */
+    #video-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 500;
+      background: #000;
+      display: none;
+    }
+
+    #video-player {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
 
   </style>
 </head>
@@ -879,6 +964,9 @@
     </div>
 
     <p class="char-hint" id="hint-char-oracle7">▶ &nbsp; CLIQUER SUR LE PERSONNAGE &nbsp; ◀</p>
+    <p class="state-label" id="state-label-oracle7"></p>
+    <button class="btn-plus"    id="btn-plus-oracle7"><span class="btn-choice-symbol">+</span><span class="btn-choice-label">Bon choix</span></button>
+    <button class="btn-minus"   id="btn-minus-oracle7"><span class="btn-choice-symbol">−</span><span class="btn-choice-label">Mauvais choix</span></button>
     <button class="btn-suivant" id="btn-suivant-oracle7">SUIVANT &nbsp;▶</button>
 
   </section>
@@ -928,6 +1016,9 @@
     </div>
 
     <p class="char-hint" id="hint-char-genx">▶ &nbsp; CLIQUER SUR LE PERSONNAGE &nbsp; ◀</p>
+    <p class="state-label" id="state-label-genx"></p>
+    <button class="btn-plus"    id="btn-plus-genx"><span class="btn-choice-symbol">+</span><span class="btn-choice-label">Bon choix</span></button>
+    <button class="btn-minus"   id="btn-minus-genx"><span class="btn-choice-symbol">−</span><span class="btn-choice-label">Mauvais choix</span></button>
     <button class="btn-suivant" id="btn-suivant-genx">SUIVANT &nbsp;▶</button>
 
   </section>
@@ -960,6 +1051,9 @@
       </div>
     </div>
     <p class="char-hint" id="hint-char-compile">▶ &nbsp; CLIQUER SUR LE PERSONNAGE &nbsp; ◀</p>
+    <p class="state-label" id="state-label-compile"></p>
+    <button class="btn-plus"    id="btn-plus-compile"><span class="btn-choice-symbol">+</span><span class="btn-choice-label">Bon choix</span></button>
+    <button class="btn-minus"   id="btn-minus-compile"><span class="btn-choice-symbol">−</span><span class="btn-choice-label">Mauvais choix</span></button>
     <button class="btn-suivant" id="btn-suivant-compile">SUIVANT &nbsp;▶</button>
   </section>
 
@@ -990,6 +1084,9 @@
       </div>
     </div>
     <p class="char-hint" id="hint-char-empath">▶ &nbsp; CLIQUER SUR LE PERSONNAGE &nbsp; ◀</p>
+    <p class="state-label" id="state-label-empath"></p>
+    <button class="btn-plus"    id="btn-plus-empath"><span class="btn-choice-symbol">+</span><span class="btn-choice-label">Bon choix</span></button>
+    <button class="btn-minus"   id="btn-minus-empath"><span class="btn-choice-symbol">−</span><span class="btn-choice-label">Mauvais choix</span></button>
     <button class="btn-suivant" id="btn-suivant-empath">SUIVANT &nbsp;▶</button>
   </section>
 
@@ -1020,6 +1117,9 @@
       </div>
     </div>
     <p class="char-hint" id="hint-char-ghost">▶ &nbsp; CLIQUER SUR LE PERSONNAGE &nbsp; ◀</p>
+    <p class="state-label" id="state-label-ghost"></p>
+    <button class="btn-plus"    id="btn-plus-ghost"><span class="btn-choice-symbol">+</span><span class="btn-choice-label">Bon choix</span></button>
+    <button class="btn-minus"   id="btn-minus-ghost"><span class="btn-choice-symbol">−</span><span class="btn-choice-label">Mauvais choix</span></button>
     <button class="btn-suivant" id="btn-suivant-ghost">SUIVANT &nbsp;▶</button>
   </section>
 
@@ -1050,6 +1150,9 @@
       </div>
     </div>
     <p class="char-hint" id="hint-char-lolbot">▶ &nbsp; CLIQUER SUR LE PERSONNAGE &nbsp; ◀</p>
+    <p class="state-label" id="state-label-lolbot"></p>
+    <button class="btn-plus"    id="btn-plus-lolbot"><span class="btn-choice-symbol">+</span><span class="btn-choice-label">Bon choix</span></button>
+    <button class="btn-minus"   id="btn-minus-lolbot"><span class="btn-choice-symbol">−</span><span class="btn-choice-label">Mauvais choix</span></button>
     <button class="btn-suivant" id="btn-suivant-lolbot">SUIVANT &nbsp;▶</button>
   </section>
 
@@ -1080,6 +1183,9 @@
       </div>
     </div>
     <p class="char-hint" id="hint-char-medbot">▶ &nbsp; CLIQUER SUR LE PERSONNAGE &nbsp; ◀</p>
+    <p class="state-label" id="state-label-medbot"></p>
+    <button class="btn-plus"    id="btn-plus-medbot"><span class="btn-choice-symbol">+</span><span class="btn-choice-label">Bon choix</span></button>
+    <button class="btn-minus"   id="btn-minus-medbot"><span class="btn-choice-symbol">−</span><span class="btn-choice-label">Mauvais choix</span></button>
     <button class="btn-suivant" id="btn-suivant-medbot">SUIVANT &nbsp;▶</button>
   </section>
 
@@ -1110,6 +1216,9 @@
       </div>
     </div>
     <p class="char-hint" id="hint-char-neutral">▶ &nbsp; CLIQUER SUR LE PERSONNAGE &nbsp; ◀</p>
+    <p class="state-label" id="state-label-neutral"></p>
+    <button class="btn-plus"    id="btn-plus-neutral"><span class="btn-choice-symbol">+</span><span class="btn-choice-label">Bon choix</span></button>
+    <button class="btn-minus"   id="btn-minus-neutral"><span class="btn-choice-symbol">−</span><span class="btn-choice-label">Mauvais choix</span></button>
     <button class="btn-suivant" id="btn-suivant-neutral">SUIVANT &nbsp;▶</button>
   </section>
 
@@ -1140,6 +1249,9 @@
       </div>
     </div>
     <p class="char-hint" id="hint-char-phantom">▶ &nbsp; CLIQUER SUR LE PERSONNAGE &nbsp; ◀</p>
+    <p class="state-label" id="state-label-phantom"></p>
+    <button class="btn-plus"    id="btn-plus-phantom"><span class="btn-choice-symbol">+</span><span class="btn-choice-label">Bon choix</span></button>
+    <button class="btn-minus"   id="btn-minus-phantom"><span class="btn-choice-symbol">−</span><span class="btn-choice-label">Mauvais choix</span></button>
     <button class="btn-suivant" id="btn-suivant-phantom">SUIVANT &nbsp;▶</button>
   </section>
 
@@ -1170,9 +1282,20 @@
       </div>
     </div>
     <p class="char-hint" id="hint-char-tutoria">▶ &nbsp; CLIQUER SUR LE PERSONNAGE &nbsp; ◀</p>
+    <p class="state-label" id="state-label-tutoria"></p>
+    <button class="btn-plus"    id="btn-plus-tutoria"><span class="btn-choice-symbol">+</span><span class="btn-choice-label">Bon choix</span></button>
+    <button class="btn-minus"   id="btn-minus-tutoria"><span class="btn-choice-symbol">−</span><span class="btn-choice-label">Mauvais choix</span></button>
     <button class="btn-suivant" id="btn-suivant-tutoria">SUIVANT &nbsp;▶</button>
   </section>
 
+
+  <!-- ════════════════════════════════════════════
+       VIDEO OVERLAY — transition état personnage
+       (partagé entre tous les personnages)
+  ════════════════════════════════════════════ -->
+  <div id="video-overlay">
+    <video id="video-player" playsinline></video>
+  </div>
 
 </div><!-- /game -->
 
@@ -1184,45 +1307,71 @@
    ASSETS — chemins encodés (caractères spéciaux sûrs)
 ════════════════════════════════════════════════════ */
 const ASSETS = {
-  // Rounds 1 & 2 — Oracle-7 / Gen-X (2 frames sprite)
-  bgOracle7 : 'decors/Cath%C3%A9drale%20de%20Donn%C3%A9es%20.gif',
-  bgGenX    : 'decors/Usine%20%C3%A0%20%C5%93uvres.jpg',
-  o7f1      : 'perso/Oracle-7%20-%20basic-image1.png',
-  o7f2      : 'perso/Oracle-7%20-%20basic-image2.png',
-  gxf1      : 'perso/Gen-X-basic-image1.png',
-  gxf2      : 'perso/Gen-X-basic-image2.png',
+  // ── Rounds 1 & 2 — Oracle-7 / Gen-X (sprite 2 frames) ──
+  bgOracle7  : 'decors/Cath%C3%A9drale%20de%20Donn%C3%A9es%20.gif',
+  bgGenX     : 'decors/Usine%20%C3%A0%20%C5%93uvres.jpg',
+  o7f1       : 'perso/Oracle-7%20-%20basic-image1.png',
+  o7f2       : 'perso/Oracle-7%20-%20basic-image2.png',
+  o7Mini     : 'perso/Oracle-7%20-%20mini.png',
+  o7Maxi     : 'perso/Oracle-7%20-%20maxi.png',
+  gxf1       : 'perso/Gen-X-basic-image1.png',
+  gxf2       : 'perso/Gen-X-basic-image2.png',
+  gxMini     : 'perso/Gen-X%20-%20mini.png',
+  gxMaxi     : 'perso/Gen-X%20-%20maxi.png',
 
-  // Round 4 — Empath-IA
-  bgEmpath  : 'decors/Sanctuaire%20pastel%20%C3%A9motionnel.png',
-  empathB   : 'perso/Empath-IA%20-%20basic.png',
+  // ── Round 3 — Compile ──
+  bgCompile  : 'decors/Forge%20industrielle%20du%20code.png',
+  compileB   : 'perso/Compile%20-%20basic.png',
+  compileMini: 'perso/Compile%20-%20mini.png',
+  compileMaxi: 'perso/Compile%20-%20maxi.png',
 
-  // Round 5 — Ghost-Lover
-  bgGhost   : 'decors/Appartement%20fant%C3%B4me%20AR.png',
-  ghostB    : 'perso/Ghost-Lover%20-%20basic.png',
+  // ── Round 4 — Empath-IA (avec vidéos) ──
+  bgEmpath   : 'decors/Sanctuaire%20pastel%20%C3%A9motionnel.png',
+  empathB    : 'perso/Empath-IA%20-%20basic.png',
+  empathMini : 'perso/Empath-IA%20-%20mini.png',
+  empathMaxi : 'perso/Empath-IA%20-%20maxi.png',
+  vidEmpathMini : 'video%20changement%20etat/Empath-IA%20vers%20mini.mp4',
+  vidEmpathMaxi : 'video%20changement%20etat/Empath-IA%20vers%20maxi.mp4',
 
-  // Round 7 — Medbot-X
-  bgMedbot  : 'decors/Salle%20op%C3%A9ratoire%20biopunk.png',
-  medbotB   : 'perso/Medbot-X%20-%20basic.png',
+  // ── Round 5 — Ghost-Lover (avec vidéos) ──
+  bgGhost    : 'decors/Appartement%20fant%C3%B4me%20AR.png',
+  ghostB     : 'perso/Ghost-Lover%20-%20basic.png',
+  ghostMini  : 'perso/Ghost-Lover%20-%20mini.png',
+  ghostMaxi  : 'perso/Ghost-Lover%20-%20maxi.png',
+  vidGhostMini  : 'video%20changement%20etat/Ghost-Lover%20vers%20mini.mp4',
+  vidGhostMaxi  : 'video%20changement%20etat/Ghost-Lover%20vers%20maxi.mp4',
 
-  // Round 8 — Neutral-Net
-  bgNeutral : 'decors/Tribunal%20blanc%20suspendu.png',
-  neutralB  : 'perso/Neutral-Net%20-%20basic.png',
+  // ── Round 6 — Lolbot ──
+  bgLolbot   : 'decors/Carnaval%20des%20d%C3%A9pendances.png',
+  lolbotB    : 'perso/Lolbot%20-%20basic.png',
+  lolbotMini : 'perso/Lolbot%20-%20mini.png',
+  lolbotMaxi : 'perso/Lolbot%20-%20maxi.png',
 
-  // Round 9 — Phantom-Feed
-  bgPhantom : 'decors/Tour%20panoptique.png',
-  phantomB  : 'perso/Phantom-Feed%20-%20basic.png',
+  // ── Round 7 — Medbot-X (avec vidéos) ──
+  bgMedbot   : 'decors/Salle%20op%C3%A9ratoire%20biopunk.png',
+  medbotB    : 'perso/Medbot-X%20-%20basic.png',
+  medbotMini : 'perso/Medbot-X%20-%20mini.png',
+  medbotMaxi : 'perso/Medbot-X%20-%20maxi.png',
+  vidMedbotMini : 'video%20changement%20etat/Medbot-X%20vers%20mini.mp4',
+  vidMedbotMaxi : 'video%20changement%20etat/Medbot-X%20vers%20maxi.mp4',
 
-  // Round 3 — Compile
-  bgCompile : 'decors/Forge%20industrielle%20du%20code.png',
-  compileB  : 'perso/Compile%20-%20basic.png',
+  // ── Round 8 — Neutral-Net ──
+  bgNeutral  : 'decors/Tribunal%20blanc%20suspendu.png',
+  neutralB   : 'perso/Neutral-Net%20-%20basic.png',
+  neutralMini: 'perso/Neutral-Net%20-%20mini.png',
+  neutralMaxi: 'perso/Neutral-Net%20-%20maxi.png',
 
-  // Round 6 — Lolbot
-  bgLolbot  : 'decors/Carnaval%20des%20d%C3%A9pendances.png',
-  lolbotB   : 'perso/Lolbot%20-%20basic.png',
+  // ── Round 9 — Phantom-Feed ──
+  bgPhantom  : 'decors/Tour%20panoptique.png',
+  phantomB   : 'perso/Phantom-Feed%20-%20basic.png',
+  phantomMini: 'perso/Phantom-Feed%20-%20mini.png',
+  phantomMaxi: 'perso/Phantom-Feed%20-%20maxi.png',
 
-  // Round 10 — Tutor-IA
-  bgTutoria : 'decors/Biblioth%C3%A8que%20suspendue.png',
-  tutoriaB  : 'perso/Tutor-IA%20-%20basic.png',
+  // ── Round 10 — Tutor-IA ──
+  bgTutoria  : 'decors/Biblioth%C3%A8que%20suspendue.png',
+  tutoriaB   : 'perso/Tutor-IA%20-%20basic.png',
+  tutoriaMini: 'perso/Tutor-IA%20-%20mini.png',
+  tutoriaMaxi: 'perso/Tutor-IA%20-%20maxi.png',
 };
 
 // Injection des sources au chargement
@@ -1354,6 +1503,41 @@ const animGenX = new SpriteAnim(
 
 
 /* ════════════════════════════════════════════════════
+   VIDEO OVERLAY — lecture plein écran dans #game
+   showVideo(src, callback) :
+     • affiche l'overlay
+     • charge et lance la vidéo
+     • appelle callback() à la fin
+════════════════════════════════════════════════════ */
+const videoOverlay = document.getElementById('video-overlay');
+const videoPlayer  = document.getElementById('video-player');
+
+function showVideo(src, callback) {
+  videoOverlay.style.display = 'block';
+  videoPlayer.src = src;
+  videoPlayer.load();
+
+  const onEnded = () => {
+    videoOverlay.style.display = 'none';
+    videoPlayer.removeEventListener('ended', onEnded);
+    videoPlayer.src = '';
+    if (callback) callback();
+  };
+  videoPlayer.addEventListener('ended', onEnded);
+
+  videoPlayer.play().catch(err => {
+    // Autoplay bloqué (rare après interaction utilisateur) — clic pour relancer
+    console.warn('[showVideo] autoplay bloqué:', err);
+    videoOverlay.style.cursor = 'pointer';
+    videoOverlay.addEventListener('click', () => {
+      videoOverlay.style.cursor = '';
+      videoPlayer.play();
+    }, { once: true });
+  });
+}
+
+
+/* ════════════════════════════════════════════════════
    CARD SYSTEM v2 — emerge / absorb
    cardEmerge  : carte sort du personnage (mini → taille réelle, dos → face)
    cardAbsorb  : carte rentre dans le personnage (taille réelle → mini, face → dos)
@@ -1406,55 +1590,136 @@ function cardAbsorb(cardEl, innerEl, charEl, callback) {
 
 /* ════════════════════════════════════════════════════
    INIT BATTLE — câble les interactions d'un écran de combat
-   cfg = { charId, cardRevealId, cardInnerId,
-           hintId, suivantId, animToStop, nextFn }
+   cfg = {
+     charId, cardRevealId, cardInnerId,
+     hintId, suivantId,
+     plusId, minusId,          ← boutons choix
+     stateLabelId,             ← label VERSION MINI/MAXI
+     animToStop,
+     videoMini, videoMaxi,     ← chemins mp4 (null = pas de vidéo)
+     charStateSwitch,          ← function(state) pour changer l'image
+     nextFn
+   }
 ════════════════════════════════════════════════════ */
 function initBattle(cfg) {
-  const charEl   = document.getElementById(cfg.charId);
-  const cardEl   = document.getElementById(cfg.cardRevealId);
-  const innerEl  = document.getElementById(cfg.cardInnerId);
-  const hintEl   = document.getElementById(cfg.hintId);
-  const suivEl   = document.getElementById(cfg.suivantId);
+  const charEl  = document.getElementById(cfg.charId);
+  const cardEl  = document.getElementById(cfg.cardRevealId);
+  const innerEl = document.getElementById(cfg.cardInnerId);
+  const hintEl  = document.getElementById(cfg.hintId);
+  const suivEl  = document.getElementById(cfg.suivantId);
+  const plusEl  = cfg.plusId       ? document.getElementById(cfg.plusId)       : null;
+  const minusEl = cfg.minusId      ? document.getElementById(cfg.minusId)      : null;
+  const labelEl = cfg.stateLabelId ? document.getElementById(cfg.stateLabelId) : null;
 
-  // Guard : si un élément est introuvable, affiche l'erreur et expose le bouton SUIVANT
+  // Guard
   if (!charEl || !cardEl || !innerEl || !hintEl || !suivEl) {
     console.error('[initBattle] Élément manquant pour', cfg.charId,
       { charEl, cardEl, innerEl, hintEl, suivEl });
-    // Fallback : bouton SUIVANT toujours accessible même sans carte
     if (suivEl) suivEl.style.display = 'block';
     return;
   }
 
-  // Clic personnage → toggle : ouvre si fermée, ferme si ouverte
+  let state = 'basic'; // 'basic' | 'mini' | 'maxi'
+
+  /* ── Helpers visibilité ── */
+  function show(el, flex) { if (el) el.style.display = flex ? 'flex' : 'block'; }
+  function hide(el)        { if (el) el.style.display = 'none'; }
+
+  function showLabel(txt) {
+    if (labelEl) { labelEl.textContent = txt; labelEl.style.display = 'block'; }
+  }
+  function hideLabel() {
+    if (labelEl) { labelEl.style.display = 'none'; labelEl.textContent = ''; }
+  }
+
+  /* ── Post-carte : montre SUIVANT + boutons choix ── */
+  function onCardDismissed() {
+    show(suivEl);
+    show(plusEl, true);
+    show(minusEl, true);
+  }
+
+  /* ── Applique un état (mini ou maxi) après la vidéo ── */
+  function applyState(newState) {
+    state = newState;
+    if (cfg.charStateSwitch) cfg.charStateSwitch(newState);
+
+    if (newState === 'mini') {
+      hide(plusEl);          // + n'a plus de sens en mini
+      show(minusEl, true);   // − disponible pour basculer en maxi
+      show(suivEl);
+      showLabel('▲ VERSION MINI');
+    } else {                 // 'maxi'
+      hide(plusEl);
+      hide(minusEl);         // plus d'option après maxi
+      show(suivEl);
+      showLabel('▼ VERSION MAXI');
+    }
+  }
+
+  /* ── Lance la transition (vidéo ou immédiate) vers un état ── */
+  function transitionTo(newState) {
+    hide(hintEl);
+    hide(plusEl);
+    hide(minusEl);
+    hide(suivEl);
+    hideLabel();
+
+    const src = newState === 'mini' ? cfg.videoMini : cfg.videoMaxi;
+    if (src) {
+      showVideo(src, () => applyState(newState));
+    } else {
+      applyState(newState);
+    }
+  }
+
+  /* ── Clic personnage : toggle carte (uniquement en état basic) ── */
   charEl.addEventListener('click', (e) => {
     e.stopPropagation();
+    if (state !== 'basic') return;
     if (cardEl.classList.contains('card-hidden')) {
-      // Carte masquée → faire apparaître
       hintEl.style.display = 'none';
       cardEmerge(cardEl, innerEl, charEl);
     } else {
-      // Carte visible → la résorber + montrer SUIVANT
-      cardAbsorb(cardEl, innerEl, charEl, () => {
-        suivEl.style.display = 'block';
-      });
+      cardAbsorb(cardEl, innerEl, charEl, onCardDismissed);
     }
   });
 
-  // Clic carte → même effet que clic personnage (fermeture)
+  /* ── Clic carte → fermeture ── */
   innerEl.addEventListener('click', (e) => {
     e.stopPropagation();
     if (!cardEl.classList.contains('card-hidden')) {
-      cardAbsorb(cardEl, innerEl, charEl, () => {
-        suivEl.style.display = 'block';
-      });
+      cardAbsorb(cardEl, innerEl, charEl, onCardDismissed);
     }
   });
 
-  // Bouton SUIVANT → round suivant
+  /* ── Bouton + : bon choix → VERSION MINI ── */
+  if (plusEl) {
+    plusEl.addEventListener('click', (e) => {
+      e.stopPropagation();
+      transitionTo('mini');
+    });
+  }
+
+  /* ── Bouton − : mauvais choix → VERSION MAXI ── */
+  if (minusEl) {
+    minusEl.addEventListener('click', (e) => {
+      e.stopPropagation();
+      transitionTo('maxi');
+    });
+  }
+
+  /* ── SUIVANT → personnage suivant ── */
   suivEl.addEventListener('click', (e) => {
     e.stopPropagation();
-    suivEl.style.display = 'none';
+    hide(suivEl);
+    hide(plusEl);
+    hide(minusEl);
+    hideLabel();
     hintEl.style.display = '';
+    // Réinitialise l'image du perso à basic si on avait changé d'état
+    if (cfg.charStateSwitch && state !== 'basic') cfg.charStateSwitch('basic');
+    state = 'basic';
     if (cfg.animToStop) cfg.animToStop.stop();
     cfg.nextFn();
   });
@@ -1489,8 +1754,8 @@ function playRound(screenName, timerFillId, callback) {
 
 /* ════════════════════════════════════════════════════
    FLOW — initialisation paresseuse
-   Chaque initBattle est appelé QUAND l'écran est affiché
-   (éléments rendus → offsetLeft/Top fiables)
+   Chaque initBattle est appelé QUAND l'écran est affiché.
+   charStateSwitch(state) gère le changement d'image selon l'état.
 ════════════════════════════════════════════════════ */
 
 function startBattle_Oracle7() {
@@ -1499,7 +1764,30 @@ function startBattle_Oracle7() {
   initBattle({
     charId:'char-oracle7', cardRevealId:'card-oracle7-reveal',
     cardInnerId:'card-oracle7-inner', hintId:'hint-char-oracle7',
-    suivantId:'btn-suivant-oracle7', animToStop: animOracle7,
+    suivantId:'btn-suivant-oracle7', plusId:'btn-plus-oracle7',
+    minusId:'btn-minus-oracle7', stateLabelId:'state-label-oracle7',
+    animToStop: animOracle7,
+    videoMini: null, videoMaxi: null,
+    charStateSwitch: (s) => {
+      const el = document.getElementById('char-oracle7');
+      const f1 = document.getElementById('o7-f1');
+      if (s === 'mini') {
+        animOracle7.stop(); f1.src = ASSETS.o7Mini;
+        el.style.width = '497px';  el.style.height = '224px';
+        el.style.left  = '713px';  el.style.top    = '398px';
+        el.style.animation = 'float-char 3s ease-in-out infinite';
+      } else if (s === 'maxi') {
+        animOracle7.stop(); f1.src = ASSETS.o7Maxi;
+        el.style.width = '1409px'; el.style.height = '1062px';
+        el.style.left  = '257px';  el.style.top    = '18px';
+        el.style.animation = 'none';
+      } else {
+        f1.src = ASSETS.o7f1; animOracle7.start();
+        el.style.width = '794px';  el.style.height = '578px';
+        el.style.left  = '563px';  el.style.top    = '253px';
+        el.style.animation = 'float-char 3s ease-in-out infinite';
+      }
+    },
     nextFn: () => playRound('round2','rtf2', startBattle_GenX)
   });
 }
@@ -1510,7 +1798,30 @@ function startBattle_GenX() {
   initBattle({
     charId:'char-genx', cardRevealId:'card-genx-reveal',
     cardInnerId:'card-genx-inner', hintId:'hint-char-genx',
-    suivantId:'btn-suivant-genx', animToStop: animGenX,
+    suivantId:'btn-suivant-genx', plusId:'btn-plus-genx',
+    minusId:'btn-minus-genx', stateLabelId:'state-label-genx',
+    animToStop: animGenX,
+    videoMini: null, videoMaxi: null,
+    charStateSwitch: (s) => {
+      const el = document.getElementById('char-genx');
+      const f1 = document.getElementById('gx-f1');
+      if (s === 'mini') {
+        animGenX.stop(); f1.src = ASSETS.gxMini;
+        el.style.width = '402px'; el.style.height = '404px';
+        el.style.left  = '796px'; el.style.top    = '497px';
+        el.style.animation = 'float-char 2.9s ease-in-out infinite';
+      } else if (s === 'maxi') {
+        animGenX.stop(); f1.src = ASSETS.gxMaxi;
+        el.style.width = '1279px'; el.style.height = '1024px';
+        el.style.left  = '319px';  el.style.top    = '30px';
+        el.style.animation = 'float-char 2.9s ease-in-out infinite';
+      } else {
+        f1.src = ASSETS.gxf1; animGenX.start();
+        el.style.width = '733px'; el.style.height = '727px';
+        el.style.left  = '630px'; el.style.top    = '234px';
+        el.style.animation = 'float-char 2.9s ease-in-out infinite';
+      }
+    },
     nextFn: () => playRound('round3','rtf3', startBattle_Compile)
   });
 }
@@ -1520,7 +1831,30 @@ function startBattle_Compile() {
   initBattle({
     charId:'char-compile', cardRevealId:'card-compile-reveal',
     cardInnerId:'card-compile-inner', hintId:'hint-char-compile',
-    suivantId:'btn-suivant-compile', animToStop: null,
+    suivantId:'btn-suivant-compile', plusId:'btn-plus-compile',
+    minusId:'btn-minus-compile', stateLabelId:'state-label-compile',
+    animToStop: null,
+    videoMini: null, videoMaxi: null,
+    charStateSwitch: (s) => {
+      const el  = document.getElementById('char-compile');
+      const img = document.getElementById('compile-basic');
+      if (s === 'mini') {
+        img.src = ASSETS.compileMini;
+        el.style.width = '219px'; el.style.height = '357px';
+        el.style.left  = '851px'; el.style.top    = '641px';
+        el.style.animation = 'none';
+      } else if (s === 'maxi') {
+        img.src = ASSETS.compileMaxi;
+        el.style.width = '1200px'; el.style.height = '909px';
+        el.style.left  = '360px';  el.style.top    = '85px';
+        el.style.animation = 'none';
+      } else {
+        img.src = ASSETS.compileB;
+        el.style.width = '571px'; el.style.height = '499px';
+        el.style.left  = '674px'; el.style.top    = '517px';
+        el.style.animation = 'none';
+      }
+    },
     nextFn: () => playRound('round4','rtf4', startBattle_Empath)
   });
 }
@@ -1530,7 +1864,30 @@ function startBattle_Empath() {
   initBattle({
     charId:'char-empath', cardRevealId:'card-empath-reveal',
     cardInnerId:'card-empath-inner', hintId:'hint-char-empath',
-    suivantId:'btn-suivant-empath', animToStop: null,
+    suivantId:'btn-suivant-empath', plusId:'btn-plus-empath',
+    minusId:'btn-minus-empath', stateLabelId:'state-label-empath',
+    animToStop: null,
+    videoMini: ASSETS.vidEmpathMini, videoMaxi: ASSETS.vidEmpathMaxi,
+    charStateSwitch: (s) => {
+      const el  = document.getElementById('char-empath');
+      const img = document.getElementById('empath-basic');
+      if (s === 'mini') {
+        img.src = ASSETS.empathMini;
+        el.style.width = '338px';  el.style.height = '588px';
+        el.style.left  = '867px';  el.style.top    = '407px';
+        el.style.animation = 'float-char 3.1s ease-in-out infinite';
+      } else if (s === 'maxi') {
+        img.src = ASSETS.empathMaxi;
+        el.style.width = '1197px'; el.style.height = '915px';
+        el.style.left  = '401px';  el.style.top    = '165px';
+        el.style.animation = 'none';
+      } else {
+        img.src = ASSETS.empathB;
+        el.style.width = '596px';  el.style.height = '815px';
+        el.style.left  = '662px';  el.style.top    = '228px';
+        el.style.animation = 'float-char 3.1s ease-in-out infinite';
+      }
+    },
     nextFn: () => playRound('round5','rtf5', startBattle_Ghost)
   });
 }
@@ -1540,7 +1897,30 @@ function startBattle_Ghost() {
   initBattle({
     charId:'char-ghost', cardRevealId:'card-ghost-reveal',
     cardInnerId:'card-ghost-inner', hintId:'hint-char-ghost',
-    suivantId:'btn-suivant-ghost', animToStop: null,
+    suivantId:'btn-suivant-ghost', plusId:'btn-plus-ghost',
+    minusId:'btn-minus-ghost', stateLabelId:'state-label-ghost',
+    animToStop: null,
+    videoMini: ASSETS.vidGhostMini, videoMaxi: ASSETS.vidGhostMaxi,
+    charStateSwitch: (s) => {
+      const el  = document.getElementById('char-ghost');
+      const img = document.getElementById('ghost-basic');
+      if (s === 'mini') {
+        img.src = ASSETS.ghostMini;
+        el.style.width = '419px';  el.style.height = '422px';
+        el.style.left  = '808px';  el.style.top    = '448px';
+        el.style.animation = 'none';
+      } else if (s === 'maxi') {
+        img.src = ASSETS.ghostMaxi;
+        el.style.width = '1437px'; el.style.height = '1038px';
+        el.style.left  = '242px';  el.style.top    = '21px';
+        el.style.animation = 'none';
+      } else {
+        img.src = ASSETS.ghostB;
+        el.style.width = '691px';  el.style.height = '729px';
+        el.style.left  = '615px';  el.style.top    = '289px';
+        el.style.animation = 'none';
+      }
+    },
     nextFn: () => playRound('round6','rtf6', startBattle_Lolbot)
   });
 }
@@ -1550,7 +1930,30 @@ function startBattle_Lolbot() {
   initBattle({
     charId:'char-lolbot', cardRevealId:'card-lolbot-reveal',
     cardInnerId:'card-lolbot-inner', hintId:'hint-char-lolbot',
-    suivantId:'btn-suivant-lolbot', animToStop: null,
+    suivantId:'btn-suivant-lolbot', plusId:'btn-plus-lolbot',
+    minusId:'btn-minus-lolbot', stateLabelId:'state-label-lolbot',
+    animToStop: null,
+    videoMini: null, videoMaxi: null,
+    charStateSwitch: (s) => {
+      const el  = document.getElementById('char-lolbot');
+      const img = document.getElementById('lolbot-basic');
+      if (s === 'mini') {
+        img.src = ASSETS.lolbotMini;
+        el.style.width = '488px'; el.style.height = '533px';
+        el.style.left  = '780px'; el.style.top    = '519px';
+        el.style.animation = 'none';
+      } else if (s === 'maxi') {
+        img.src = ASSETS.lolbotMaxi;
+        el.style.width = '1191px'; el.style.height = '947px';
+        el.style.left  = '324px';  el.style.top    = '133px';
+        el.style.animation = 'none';
+      } else {
+        img.src = ASSETS.lolbotB;
+        el.style.width = '798px'; el.style.height = '771px';
+        el.style.left  = '561px'; el.style.top    = '276px';
+        el.style.animation = 'none';
+      }
+    },
     nextFn: () => playRound('round7','rtf7', startBattle_Medbot)
   });
 }
@@ -1560,7 +1963,30 @@ function startBattle_Medbot() {
   initBattle({
     charId:'char-medbot', cardRevealId:'card-medbot-reveal',
     cardInnerId:'card-medbot-inner', hintId:'hint-char-medbot',
-    suivantId:'btn-suivant-medbot', animToStop: null,
+    suivantId:'btn-suivant-medbot', plusId:'btn-plus-medbot',
+    minusId:'btn-minus-medbot', stateLabelId:'state-label-medbot',
+    animToStop: null,
+    videoMini: ASSETS.vidMedbotMini, videoMaxi: ASSETS.vidMedbotMaxi,
+    charStateSwitch: (s) => {
+      const el  = document.getElementById('char-medbot');
+      const img = document.getElementById('medbot-basic');
+      if (s === 'mini') {
+        img.src = ASSETS.medbotMini;
+        el.style.width = '247px';  el.style.height = '384px';
+        el.style.left  = '1293px'; el.style.top    = '574px';
+        el.style.animation = 'float-char 3s ease-in-out infinite';
+      } else if (s === 'maxi') {
+        img.src = ASSETS.medbotMaxi;
+        el.style.width = '936px';  el.style.height = '1080px';
+        el.style.left  = '493px';  el.style.top    = '0px';
+        el.style.animation = 'none';
+      } else {
+        img.src = ASSETS.medbotB;
+        el.style.width = '494px';  el.style.height = '568px';
+        el.style.left  = '1020px'; el.style.top    = '492px';
+        el.style.animation = 'none';
+      }
+    },
     nextFn: () => playRound('round8','rtf8', startBattle_Neutral)
   });
 }
@@ -1570,7 +1996,30 @@ function startBattle_Neutral() {
   initBattle({
     charId:'char-neutral', cardRevealId:'card-neutral-reveal',
     cardInnerId:'card-neutral-inner', hintId:'hint-char-neutral',
-    suivantId:'btn-suivant-neutral', animToStop: null,
+    suivantId:'btn-suivant-neutral', plusId:'btn-plus-neutral',
+    minusId:'btn-minus-neutral', stateLabelId:'state-label-neutral',
+    animToStop: null,
+    videoMini: null, videoMaxi: null,
+    charStateSwitch: (s) => {
+      const el  = document.getElementById('char-neutral');
+      const img = document.getElementById('neutral-basic');
+      if (s === 'mini') {
+        img.src = ASSETS.neutralMini;
+        el.style.width = '310px'; el.style.height = '486px';
+        el.style.left  = '805px'; el.style.top    = '372px';
+        el.style.animation = 'float-vertical 3.4s ease-in-out infinite';
+      } else if (s === 'maxi') {
+        img.src = ASSETS.neutralMaxi;
+        el.style.width = '587px';  el.style.height = '1021px';
+        el.style.left  = '667px';  el.style.top    = '30px';
+        el.style.animation = 'float-vertical 3.4s ease-in-out infinite';
+      } else {
+        img.src = ASSETS.neutralB;
+        el.style.width = '392px'; el.style.height = '719px';
+        el.style.left  = '756px'; el.style.top    = '246px';
+        el.style.animation = 'float-vertical 3.4s ease-in-out infinite';
+      }
+    },
     nextFn: () => playRound('round9','rtf9', startBattle_Phantom)
   });
 }
@@ -1580,7 +2029,30 @@ function startBattle_Phantom() {
   initBattle({
     charId:'char-phantom', cardRevealId:'card-phantom-reveal',
     cardInnerId:'card-phantom-inner', hintId:'hint-char-phantom',
-    suivantId:'btn-suivant-phantom', animToStop: null,
+    suivantId:'btn-suivant-phantom', plusId:'btn-plus-phantom',
+    minusId:'btn-minus-phantom', stateLabelId:'state-label-phantom',
+    animToStop: null,
+    videoMini: null, videoMaxi: null,
+    charStateSwitch: (s) => {
+      const el  = document.getElementById('char-phantom');
+      const img = document.getElementById('phantom-basic');
+      if (s === 'mini') {
+        img.src = ASSETS.phantomMini;
+        el.style.width = '644px'; el.style.height = '544px';
+        el.style.left  = '638px'; el.style.top    = '484px';
+        el.style.animation = 'none';
+      } else if (s === 'maxi') {
+        img.src = ASSETS.phantomMaxi;
+        el.style.width = '1074px'; el.style.height = '962px';
+        el.style.left  = '423px';  el.style.top    = '59px';
+        el.style.animation = 'none';
+      } else {
+        img.src = ASSETS.phantomB;
+        el.style.width = '728px'; el.style.height = '744px';
+        el.style.left  = '596px'; el.style.top    = '275px';
+        el.style.animation = 'none';
+      }
+    },
     nextFn: () => playRound('round10','rtf10', startBattle_Tutoria)
   });
 }
@@ -1590,7 +2062,30 @@ function startBattle_Tutoria() {
   initBattle({
     charId:'char-tutoria', cardRevealId:'card-tutoria-reveal',
     cardInnerId:'card-tutoria-inner', hintId:'hint-char-tutoria',
-    suivantId:'btn-suivant-tutoria', animToStop: null,
+    suivantId:'btn-suivant-tutoria', plusId:'btn-plus-tutoria',
+    minusId:'btn-minus-tutoria', stateLabelId:'state-label-tutoria',
+    animToStop: null,
+    videoMini: null, videoMaxi: null,
+    charStateSwitch: (s) => {
+      const el  = document.getElementById('char-tutoria');
+      const img = document.getElementById('tutoria-basic');
+      if (s === 'mini') {
+        img.src = ASSETS.tutoriaMini;
+        el.style.width = '332px'; el.style.height = '260px';
+        el.style.left  = '960px'; el.style.top    = '782px';
+        el.style.animation = 'none';
+      } else if (s === 'maxi') {
+        img.src = ASSETS.tutoriaMaxi;
+        el.style.width = '1092px'; el.style.height = '766px';
+        el.style.left  = '436px';  el.style.top    = '264px';
+        el.style.animation = 'none';
+      } else {
+        img.src = ASSETS.tutoriaB;
+        el.style.width = '639px'; el.style.height = '530px';
+        el.style.left  = '746px'; el.style.top    = '448px';
+        el.style.animation = 'float-char 3.3s ease-in-out infinite';
+      }
+    },
     nextFn: () => showScreen('letsplay')
   });
 }
