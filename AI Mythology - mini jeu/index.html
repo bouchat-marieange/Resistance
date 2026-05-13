@@ -703,6 +703,101 @@
       animation: float-char 3.3s ease-in-out infinite;
     }
 
+    /* ════════════════════════════════════════════
+       CARTE PERSONNAGE — flip 3D
+       Structure : .card-reveal > .card-flip-inner > .card-face (.card-front / .card-back)
+    ════════════════════════════════════════════ */
+    .card-reveal {
+      position: absolute;
+      perspective: 1800px;
+      z-index: 50;
+      /* Dimensions communes à toutes les cartes */
+      width:  522px;
+      height: 905px;
+      left:    48px;
+      top:     88px;
+    }
+
+    .card-reveal.card-hidden {
+      display: none;
+    }
+
+    .card-flip-inner {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      /* transform et transition gérés entièrement par JS cardEmerge / cardAbsorb */
+      cursor: pointer;
+    }
+
+    /* Personnage cliquable */
+    .char-clickable { cursor: pointer; pointer-events: auto; }
+    .char-clickable:hover {
+      filter: brightness(1.7)
+              drop-shadow(0 0 20px rgba(0,229,255,1))
+              drop-shadow(0 0 50px rgba(0,229,255,0.7))
+              drop-shadow(0 0 90px rgba(0,229,255,0.3));
+      transition: filter 0.2s ease;
+    }
+
+    /* Hint "cliquer sur le personnage" */
+    .char-hint {
+      position: absolute;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 50;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 17px;
+      letter-spacing: 5px;
+      color: rgba(0, 229, 255, 0.75);
+      white-space: nowrap;
+      animation: blink 1.6s step-end infinite;
+    }
+
+    /* Bouton provisoire SUIVANT */
+    .btn-suivant {
+      position: absolute;
+      bottom: 28px;
+      right: 60px;
+      z-index: 100;
+      display: none;
+      background: transparent;
+      border: 2px solid var(--cyan);
+      color: var(--cyan);
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 26px;
+      letter-spacing: 5px;
+      padding: 10px 36px;
+      cursor: pointer;
+    }
+    .btn-suivant:hover {
+      background: var(--cyan);
+      color: var(--dark);
+    }
+
+    .card-face {
+      position: absolute;
+      inset: 0;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+    }
+
+    .card-face img {
+      width: 100%;
+      height: 100%;
+      object-fit: fill; /* remplit exactement le conteneur */
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+
+    /* Dos de carte : pré-retourné pour le backface */
+    .card-face.card-back {
+      transform: rotateY(180deg);
+    }
+
+
   </style>
 </head>
 
@@ -765,13 +860,26 @@
     <!-- Fond GIF animé plein écran -->
     <img id="bg-oracle7" class="battle-bg" alt="Cathédrale de Données" />
 
-    <!-- Sprite Oracle-7 : 2 frames superposées -->
-    <div id="char-oracle7" class="char-sprite">
+    <!-- Sprite Oracle-7 : cliquable pour révéler la carte -->
+    <div id="char-oracle7" class="char-sprite char-clickable">
       <img id="o7-f1" class="char-frame"     alt="Oracle-7 frame 1" />
       <img id="o7-f2" class="char-frame off" alt="Oracle-7 frame 2" />
     </div>
 
-    <p class="click-hint">▶ &nbsp; CLIQUER POUR CONTINUER &nbsp; ◀</p>
+    <!-- Carte Oracle-7 — flip 3D -->
+    <div class="card-reveal card-hidden" id="card-oracle7-reveal">
+      <div class="card-flip-inner" id="card-oracle7-inner">
+        <div class="card-face card-front">
+          <img src="Cartes/carte-Oracle-7.png" alt="Carte Oracle-7" />
+        </div>
+        <div class="card-face card-back">
+          <img src="Cartes/dos-carte.png" alt="Dos de carte" />
+        </div>
+      </div>
+    </div>
+
+    <p class="char-hint" id="hint-char-oracle7">▶ &nbsp; CLIQUER SUR LE PERSONNAGE &nbsp; ◀</p>
+    <button class="btn-suivant" id="btn-suivant-oracle7">SUIVANT &nbsp;▶</button>
 
   </section>
 
@@ -803,11 +911,24 @@
     <!-- Fond JPG statique plein écran -->
     <img id="bg-genx" class="battle-bg" alt="Usine à œuvres" />
 
-    <!-- Sprite Gen-X : 2 frames superposées + flottement CSS -->
-    <div id="char-genx" class="char-sprite">
+    <div id="char-genx" class="char-sprite char-clickable">
       <img id="gx-f1" class="char-frame"     alt="Gen-X frame 1" />
       <img id="gx-f2" class="char-frame off" alt="Gen-X frame 2" />
     </div>
+
+    <div class="card-reveal card-hidden" id="card-genx-reveal">
+      <div class="card-flip-inner" id="card-genx-inner">
+        <div class="card-face card-front">
+          <img src="Cartes/carte-Gen-X.png" alt="Carte Gen-X" />
+        </div>
+        <div class="card-face card-back">
+          <img src="Cartes/dos-carte.png" alt="Dos de carte" />
+        </div>
+      </div>
+    </div>
+
+    <p class="char-hint" id="hint-char-genx">▶ &nbsp; CLIQUER SUR LE PERSONNAGE &nbsp; ◀</p>
+    <button class="btn-suivant" id="btn-suivant-genx">SUIVANT &nbsp;▶</button>
 
   </section>
 
@@ -829,10 +950,17 @@
 
   <section id="s-battle-compile" class="screen scanlines bg-sweep">
     <img id="bg-compile" class="battle-bg" alt="Forge industrielle du code" />
-    <div id="char-compile" class="char-sprite">
+    <div id="char-compile" class="char-sprite char-clickable">
       <img id="compile-basic" class="char-solo" alt="Compile" />
     </div>
-    <p class="click-hint">▶ &nbsp; CLIQUER POUR CONTINUER &nbsp; ◀</p>
+    <div class="card-reveal card-hidden" id="card-compile-reveal">
+      <div class="card-flip-inner" id="card-compile-inner">
+        <div class="card-face card-front"><img src="Cartes/carte-Compile.png" alt="Carte Compile" /></div>
+        <div class="card-face card-back"><img src="Cartes/dos-carte.png" alt="Dos de carte" /></div>
+      </div>
+    </div>
+    <p class="char-hint" id="hint-char-compile">▶ &nbsp; CLIQUER SUR LE PERSONNAGE &nbsp; ◀</p>
+    <button class="btn-suivant" id="btn-suivant-compile">SUIVANT &nbsp;▶</button>
   </section>
 
 
@@ -852,10 +980,17 @@
 
   <section id="s-battle-empath" class="screen scanlines bg-sweep">
     <img id="bg-empath" class="battle-bg" alt="Sanctuaire pastel émotionnel" />
-    <div id="char-empath" class="char-sprite">
+    <div id="char-empath" class="char-sprite char-clickable">
       <img id="empath-basic" class="char-solo" alt="Empath-IA" />
     </div>
-    <p class="click-hint">▶ &nbsp; CLIQUER POUR CONTINUER &nbsp; ◀</p>
+    <div class="card-reveal card-hidden" id="card-empath-reveal">
+      <div class="card-flip-inner" id="card-empath-inner">
+        <div class="card-face card-front"><img src="Cartes/carte-Empath-IA.png" alt="Carte Empath-IA" /></div>
+        <div class="card-face card-back"><img src="Cartes/dos-carte.png" alt="Dos de carte" /></div>
+      </div>
+    </div>
+    <p class="char-hint" id="hint-char-empath">▶ &nbsp; CLIQUER SUR LE PERSONNAGE &nbsp; ◀</p>
+    <button class="btn-suivant" id="btn-suivant-empath">SUIVANT &nbsp;▶</button>
   </section>
 
 
@@ -875,10 +1010,17 @@
 
   <section id="s-battle-ghost" class="screen scanlines bg-sweep">
     <img id="bg-ghost" class="battle-bg" alt="Appartement fantôme AR" />
-    <div id="char-ghost" class="char-sprite">
+    <div id="char-ghost" class="char-sprite char-clickable">
       <img id="ghost-basic" class="char-solo" alt="Ghost-Lover" />
     </div>
-    <p class="click-hint">▶ &nbsp; CLIQUER POUR CONTINUER &nbsp; ◀</p>
+    <div class="card-reveal card-hidden" id="card-ghost-reveal">
+      <div class="card-flip-inner" id="card-ghost-inner">
+        <div class="card-face card-front"><img src="Cartes/carte-Ghost-Lover.png" alt="Carte Ghost-Lover" /></div>
+        <div class="card-face card-back"><img src="Cartes/dos-carte.png" alt="Dos de carte" /></div>
+      </div>
+    </div>
+    <p class="char-hint" id="hint-char-ghost">▶ &nbsp; CLIQUER SUR LE PERSONNAGE &nbsp; ◀</p>
+    <button class="btn-suivant" id="btn-suivant-ghost">SUIVANT &nbsp;▶</button>
   </section>
 
 
@@ -898,10 +1040,17 @@
 
   <section id="s-battle-lolbot" class="screen scanlines bg-sweep">
     <img id="bg-lolbot" class="battle-bg" alt="Carnaval des dépendances" />
-    <div id="char-lolbot" class="char-sprite">
+    <div id="char-lolbot" class="char-sprite char-clickable">
       <img id="lolbot-basic" class="char-solo" alt="Lolbot" />
     </div>
-    <p class="click-hint">▶ &nbsp; CLIQUER POUR CONTINUER &nbsp; ◀</p>
+    <div class="card-reveal card-hidden" id="card-lolbot-reveal">
+      <div class="card-flip-inner" id="card-lolbot-inner">
+        <div class="card-face card-front"><img src="Cartes/carte-Lolbot.png" alt="Carte Lolbot" /></div>
+        <div class="card-face card-back"><img src="Cartes/dos-carte.png" alt="Dos de carte" /></div>
+      </div>
+    </div>
+    <p class="char-hint" id="hint-char-lolbot">▶ &nbsp; CLIQUER SUR LE PERSONNAGE &nbsp; ◀</p>
+    <button class="btn-suivant" id="btn-suivant-lolbot">SUIVANT &nbsp;▶</button>
   </section>
 
 
@@ -921,10 +1070,17 @@
 
   <section id="s-battle-medbot" class="screen scanlines bg-sweep">
     <img id="bg-medbot" class="battle-bg" alt="Salle opératoire biopunk" />
-    <div id="char-medbot" class="char-sprite">
+    <div id="char-medbot" class="char-sprite char-clickable">
       <img id="medbot-basic" class="char-solo" alt="Medbot-X" />
     </div>
-    <p class="click-hint">▶ &nbsp; CLIQUER POUR CONTINUER &nbsp; ◀</p>
+    <div class="card-reveal card-hidden" id="card-medbot-reveal">
+      <div class="card-flip-inner" id="card-medbot-inner">
+        <div class="card-face card-front"><img src="Cartes/carte-Medbot-X.png" alt="Carte Medbot-X" /></div>
+        <div class="card-face card-back"><img src="Cartes/dos-carte.png" alt="Dos de carte" /></div>
+      </div>
+    </div>
+    <p class="char-hint" id="hint-char-medbot">▶ &nbsp; CLIQUER SUR LE PERSONNAGE &nbsp; ◀</p>
+    <button class="btn-suivant" id="btn-suivant-medbot">SUIVANT &nbsp;▶</button>
   </section>
 
 
@@ -944,10 +1100,17 @@
 
   <section id="s-battle-neutral" class="screen scanlines bg-sweep">
     <img id="bg-neutral" class="battle-bg" alt="Tribunal blanc suspendu" />
-    <div id="char-neutral" class="char-sprite">
+    <div id="char-neutral" class="char-sprite char-clickable">
       <img id="neutral-basic" class="char-solo" alt="Neutral-Net" />
     </div>
-    <p class="click-hint">▶ &nbsp; CLIQUER POUR CONTINUER &nbsp; ◀</p>
+    <div class="card-reveal card-hidden" id="card-neutral-reveal">
+      <div class="card-flip-inner" id="card-neutral-inner">
+        <div class="card-face card-front"><img src="Cartes/carte-Neutral-Net.png" alt="Carte Neutral-Net" /></div>
+        <div class="card-face card-back"><img src="Cartes/dos-carte.png" alt="Dos de carte" /></div>
+      </div>
+    </div>
+    <p class="char-hint" id="hint-char-neutral">▶ &nbsp; CLIQUER SUR LE PERSONNAGE &nbsp; ◀</p>
+    <button class="btn-suivant" id="btn-suivant-neutral">SUIVANT &nbsp;▶</button>
   </section>
 
 
@@ -967,10 +1130,17 @@
 
   <section id="s-battle-phantom" class="screen scanlines bg-sweep">
     <img id="bg-phantom" class="battle-bg" alt="Tour panoptique" />
-    <div id="char-phantom" class="char-sprite">
+    <div id="char-phantom" class="char-sprite char-clickable">
       <img id="phantom-basic" class="char-solo" alt="Phantom-Feed" />
     </div>
-    <p class="click-hint">▶ &nbsp; CLIQUER POUR CONTINUER &nbsp; ◀</p>
+    <div class="card-reveal card-hidden" id="card-phantom-reveal">
+      <div class="card-flip-inner" id="card-phantom-inner">
+        <div class="card-face card-front"><img src="Cartes/carte-Phantom-Feed.png" alt="Carte Phantom-Feed" /></div>
+        <div class="card-face card-back"><img src="Cartes/dos-carte.png" alt="Dos de carte" /></div>
+      </div>
+    </div>
+    <p class="char-hint" id="hint-char-phantom">▶ &nbsp; CLIQUER SUR LE PERSONNAGE &nbsp; ◀</p>
+    <button class="btn-suivant" id="btn-suivant-phantom">SUIVANT &nbsp;▶</button>
   </section>
 
 
@@ -990,10 +1160,17 @@
 
   <section id="s-battle-tutoria" class="screen scanlines bg-sweep">
     <img id="bg-tutoria" class="battle-bg" alt="Bibliothèque suspendue" />
-    <div id="char-tutoria" class="char-sprite">
+    <div id="char-tutoria" class="char-sprite char-clickable">
       <img id="tutoria-basic" class="char-solo" alt="Tutor-IA" />
     </div>
-    <p class="click-hint">▶ &nbsp; CLIQUER POUR CONTINUER &nbsp; ◀</p>
+    <div class="card-reveal card-hidden" id="card-tutoria-reveal">
+      <div class="card-flip-inner" id="card-tutoria-inner">
+        <div class="card-face card-front"><img src="Cartes/carte-Tutor-IA.png" alt="Carte Tutor-IA" /></div>
+        <div class="card-face card-back"><img src="Cartes/dos-carte.png" alt="Dos de carte" /></div>
+      </div>
+    </div>
+    <p class="char-hint" id="hint-char-tutoria">▶ &nbsp; CLIQUER SUR LE PERSONNAGE &nbsp; ◀</p>
+    <button class="btn-suivant" id="btn-suivant-tutoria">SUIVANT &nbsp;▶</button>
   </section>
 
 
@@ -1177,6 +1354,114 @@ const animGenX = new SpriteAnim(
 
 
 /* ════════════════════════════════════════════════════
+   CARD SYSTEM v2 — emerge / absorb
+   cardEmerge  : carte sort du personnage (mini → taille réelle, dos → face)
+   cardAbsorb  : carte rentre dans le personnage (taille réelle → mini, face → dos)
+════════════════════════════════════════════════════ */
+const CARD_DURATION = 1400; // ms — durée de la transition
+
+function cardEmerge(cardEl, innerEl, charEl) {
+  // ① Révéler la carte AVANT de calculer les offsets
+  //    (un élément display:none a toujours offsetLeft/Top = 0)
+  cardEl.classList.remove('card-hidden');
+  void cardEl.offsetWidth; // reflow → coordonnées réelles
+
+  // ② Trajectoire : du centre du personnage vers la position de la carte
+  const charCX = charEl.offsetLeft + charEl.offsetWidth  / 2;
+  const charCY = charEl.offsetTop  + charEl.offsetHeight / 2;
+  const cardCX = cardEl.offsetLeft + cardEl.offsetWidth  / 2;
+  const cardCY = cardEl.offsetTop  + cardEl.offsetHeight / 2;
+  const dx = charCX - cardCX;
+  const dy = charCY - cardCY;
+
+  // ③ État initial sans transition (minuscule, au centre du personnage, dos visible)
+  innerEl.style.transition = 'none';
+  innerEl.style.transform  = `translate(${dx}px,${dy}px) scale(0.05) rotateY(180deg)`;
+  void innerEl.offsetWidth; // 2e reflow : verrouille l'état initial AVANT la transition
+
+  // ④ Transition vers la position/taille définitive (synchrone, fiable tous navigateurs)
+  innerEl.style.transition = `transform ${CARD_DURATION}ms cubic-bezier(0.25,0.46,0.45,0.94)`;
+  innerEl.style.transform  = 'translate(0,0) scale(1) rotateY(0deg)';
+}
+
+function cardAbsorb(cardEl, innerEl, charEl, callback) {
+  const charCX = charEl.offsetLeft + charEl.offsetWidth  / 2;
+  const charCY = charEl.offsetTop  + charEl.offsetHeight / 2;
+  const cardCX = cardEl.offsetLeft + cardEl.offsetWidth  / 2;
+  const cardCY = cardEl.offsetTop  + cardEl.offsetHeight / 2;
+  const dx = charCX - cardCX;
+  const dy = charCY - cardCY;
+
+  // Transition vers le personnage : rétrécit + tourne + se déplace
+  innerEl.style.transition = `transform ${CARD_DURATION}ms cubic-bezier(0.55,0.06,0.68,0.19)`;
+  innerEl.style.transform  = `translate(${dx}px,${dy}px) scale(0.05) rotateY(180deg)`;
+
+  setTimeout(() => {
+    cardEl.classList.add('card-hidden');
+    innerEl.style.transition = 'none';
+    innerEl.style.transform  = '';
+    if (callback) callback();
+  }, CARD_DURATION);
+}
+
+/* ════════════════════════════════════════════════════
+   INIT BATTLE — câble les interactions d'un écran de combat
+   cfg = { charId, cardRevealId, cardInnerId,
+           hintId, suivantId, animToStop, nextFn }
+════════════════════════════════════════════════════ */
+function initBattle(cfg) {
+  const charEl   = document.getElementById(cfg.charId);
+  const cardEl   = document.getElementById(cfg.cardRevealId);
+  const innerEl  = document.getElementById(cfg.cardInnerId);
+  const hintEl   = document.getElementById(cfg.hintId);
+  const suivEl   = document.getElementById(cfg.suivantId);
+
+  // Guard : si un élément est introuvable, affiche l'erreur et expose le bouton SUIVANT
+  if (!charEl || !cardEl || !innerEl || !hintEl || !suivEl) {
+    console.error('[initBattle] Élément manquant pour', cfg.charId,
+      { charEl, cardEl, innerEl, hintEl, suivEl });
+    // Fallback : bouton SUIVANT toujours accessible même sans carte
+    if (suivEl) suivEl.style.display = 'block';
+    return;
+  }
+
+  // Clic personnage → toggle : ouvre si fermée, ferme si ouverte
+  charEl.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (cardEl.classList.contains('card-hidden')) {
+      // Carte masquée → faire apparaître
+      hintEl.style.display = 'none';
+      cardEmerge(cardEl, innerEl, charEl);
+    } else {
+      // Carte visible → la résorber + montrer SUIVANT
+      cardAbsorb(cardEl, innerEl, charEl, () => {
+        suivEl.style.display = 'block';
+      });
+    }
+  });
+
+  // Clic carte → même effet que clic personnage (fermeture)
+  innerEl.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (!cardEl.classList.contains('card-hidden')) {
+      cardAbsorb(cardEl, innerEl, charEl, () => {
+        suivEl.style.display = 'block';
+      });
+    }
+  });
+
+  // Bouton SUIVANT → round suivant
+  suivEl.addEventListener('click', (e) => {
+    e.stopPropagation();
+    suivEl.style.display = 'none';
+    hintEl.style.display = '';
+    if (cfg.animToStop) cfg.animToStop.stop();
+    cfg.nextFn();
+  });
+}
+
+
+/* ════════════════════════════════════════════════════
    ROUND ANNOUNCEMENT
    Affiche le screen de round, relance l'animation
    de la barre timer, puis appelle `callback` après 3s
@@ -1197,89 +1482,122 @@ function playRound(screenName, timerFillId, callback) {
 
 /* ════════════════════════════════════════════════════
    FLOW PRINCIPAL
-   R1 Oracle-7 → R2 Gen-X → R3 Compile → R4 Empath-IA
-   → R5 Ghost-Lover → R6 Lolbot → R7 Medbot-X
-   → R8 Neutral-Net → R9 Phantom-Feed → R10 Tutor-IA
-   → LET'S PLAY
+   R1 Oracle-7 → R2 Gen-X → … → R10 Tutor-IA → LET'S PLAY
+   Chaque écran de combat est initialisé une seule fois.
+   La progression se fait via le bouton SUIVANT.
 ════════════════════════════════════════════════════ */
 
-// ── R1 : Bouton LET'S PLAY → Round 1 → Oracle-7 ──
+/* ════════════════════════════════════════════════════
+   FLOW — initialisation paresseuse
+   Chaque initBattle est appelé QUAND l'écran est affiché
+   (éléments rendus → offsetLeft/Top fiables)
+════════════════════════════════════════════════════ */
+
+function startBattle_Oracle7() {
+  showScreen('battleOracle7');
+  animOracle7.start();
+  initBattle({
+    charId:'char-oracle7', cardRevealId:'card-oracle7-reveal',
+    cardInnerId:'card-oracle7-inner', hintId:'hint-char-oracle7',
+    suivantId:'btn-suivant-oracle7', animToStop: animOracle7,
+    nextFn: () => playRound('round2','rtf2', startBattle_GenX)
+  });
+}
+
+function startBattle_GenX() {
+  showScreen('battleGenX');
+  animGenX.start();
+  initBattle({
+    charId:'char-genx', cardRevealId:'card-genx-reveal',
+    cardInnerId:'card-genx-inner', hintId:'hint-char-genx',
+    suivantId:'btn-suivant-genx', animToStop: animGenX,
+    nextFn: () => playRound('round3','rtf3', startBattle_Compile)
+  });
+}
+
+function startBattle_Compile() {
+  showScreen('battleCompile');
+  initBattle({
+    charId:'char-compile', cardRevealId:'card-compile-reveal',
+    cardInnerId:'card-compile-inner', hintId:'hint-char-compile',
+    suivantId:'btn-suivant-compile', animToStop: null,
+    nextFn: () => playRound('round4','rtf4', startBattle_Empath)
+  });
+}
+
+function startBattle_Empath() {
+  showScreen('battleEmpath');
+  initBattle({
+    charId:'char-empath', cardRevealId:'card-empath-reveal',
+    cardInnerId:'card-empath-inner', hintId:'hint-char-empath',
+    suivantId:'btn-suivant-empath', animToStop: null,
+    nextFn: () => playRound('round5','rtf5', startBattle_Ghost)
+  });
+}
+
+function startBattle_Ghost() {
+  showScreen('battleGhost');
+  initBattle({
+    charId:'char-ghost', cardRevealId:'card-ghost-reveal',
+    cardInnerId:'card-ghost-inner', hintId:'hint-char-ghost',
+    suivantId:'btn-suivant-ghost', animToStop: null,
+    nextFn: () => playRound('round6','rtf6', startBattle_Lolbot)
+  });
+}
+
+function startBattle_Lolbot() {
+  showScreen('battleLolbot');
+  initBattle({
+    charId:'char-lolbot', cardRevealId:'card-lolbot-reveal',
+    cardInnerId:'card-lolbot-inner', hintId:'hint-char-lolbot',
+    suivantId:'btn-suivant-lolbot', animToStop: null,
+    nextFn: () => playRound('round7','rtf7', startBattle_Medbot)
+  });
+}
+
+function startBattle_Medbot() {
+  showScreen('battleMedbot');
+  initBattle({
+    charId:'char-medbot', cardRevealId:'card-medbot-reveal',
+    cardInnerId:'card-medbot-inner', hintId:'hint-char-medbot',
+    suivantId:'btn-suivant-medbot', animToStop: null,
+    nextFn: () => playRound('round8','rtf8', startBattle_Neutral)
+  });
+}
+
+function startBattle_Neutral() {
+  showScreen('battleNeutral');
+  initBattle({
+    charId:'char-neutral', cardRevealId:'card-neutral-reveal',
+    cardInnerId:'card-neutral-inner', hintId:'hint-char-neutral',
+    suivantId:'btn-suivant-neutral', animToStop: null,
+    nextFn: () => playRound('round9','rtf9', startBattle_Phantom)
+  });
+}
+
+function startBattle_Phantom() {
+  showScreen('battlePhantom');
+  initBattle({
+    charId:'char-phantom', cardRevealId:'card-phantom-reveal',
+    cardInnerId:'card-phantom-inner', hintId:'hint-char-phantom',
+    suivantId:'btn-suivant-phantom', animToStop: null,
+    nextFn: () => playRound('round10','rtf10', startBattle_Tutoria)
+  });
+}
+
+function startBattle_Tutoria() {
+  showScreen('battleTutoria');
+  initBattle({
+    charId:'char-tutoria', cardRevealId:'card-tutoria-reveal',
+    cardInnerId:'card-tutoria-inner', hintId:'hint-char-tutoria',
+    suivantId:'btn-suivant-tutoria', animToStop: null,
+    nextFn: () => showScreen('letsplay')
+  });
+}
+
+// ── Point d'entrée ──
 document.getElementById('btn-start').addEventListener('click', () => {
-  playRound('round1', 'rtf1', () => {
-    showScreen('battleOracle7');
-    animOracle7.start();
-  });
-});
-
-// ── R1→R2 : Clic Oracle-7 → Round 2 → Gen-X ──
-SCREENS.battleOracle7.addEventListener('click', () => {
-  animOracle7.stop();
-  playRound('round2', 'rtf2', () => {
-    showScreen('battleGenX');
-    animGenX.start();
-  });
-});
-
-// ── R2→R3 : Clic Gen-X → Round 3 (Compile placeholder) ──
-SCREENS.battleGenX.addEventListener('click', () => {
-  animGenX.stop();
-  playRound('round3', 'rtf3', () => {
-    showScreen('battleCompile');
-  });
-});
-
-// ── R3→R4 : Clic Compile (placeholder) → Round 4 → Empath-IA ──
-SCREENS.battleCompile.addEventListener('click', () => {
-  playRound('round4', 'rtf4', () => {
-    showScreen('battleEmpath');
-  });
-});
-
-// ── R4→R5 : Clic Empath-IA → Round 5 → Ghost-Lover ──
-SCREENS.battleEmpath.addEventListener('click', () => {
-  playRound('round5', 'rtf5', () => {
-    showScreen('battleGhost');
-  });
-});
-
-// ── R5→R6 : Clic Ghost-Lover → Round 6 (Lolbot placeholder) ──
-SCREENS.battleGhost.addEventListener('click', () => {
-  playRound('round6', 'rtf6', () => {
-    showScreen('battleLolbot');
-  });
-});
-
-// ── R6→R7 : Clic Lolbot (placeholder) → Round 7 → Medbot-X ──
-SCREENS.battleLolbot.addEventListener('click', () => {
-  playRound('round7', 'rtf7', () => {
-    showScreen('battleMedbot');
-  });
-});
-
-// ── R7→R8 : Clic Medbot-X → Round 8 → Neutral-Net ──
-SCREENS.battleMedbot.addEventListener('click', () => {
-  playRound('round8', 'rtf8', () => {
-    showScreen('battleNeutral');
-  });
-});
-
-// ── R8→R9 : Clic Neutral-Net → Round 9 → Phantom-Feed ──
-SCREENS.battleNeutral.addEventListener('click', () => {
-  playRound('round9', 'rtf9', () => {
-    showScreen('battlePhantom');
-  });
-});
-
-// ── R9→R10 : Clic Phantom-Feed → Round 10 → Tutor-IA ──
-SCREENS.battlePhantom.addEventListener('click', () => {
-  playRound('round10', 'rtf10', () => {
-    showScreen('battleTutoria');
-  });
-});
-
-// ── R10→FIN : Clic Tutor-IA → retour LET'S PLAY ──
-SCREENS.battleTutoria.addEventListener('click', () => {
-  showScreen('letsplay');
+  playRound('round1', 'rtf1', startBattle_Oracle7);
 });
 
 </script>
