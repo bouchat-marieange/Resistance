@@ -12,6 +12,12 @@ const GamepadManager = (function() {
     let gamepadIndex = null;
     let prevButtonStates = {};  // Pour détecter les fronts montants (press)
 
+    // Indices des axes du stick droit (détectés dynamiquement à la connexion)
+    // Certains contrôleurs PS4/PS5 placent L2/R2 sur axes[2]/[3] (valeur -1 au repos)
+    // et le stick droit sur axes[4]/[5] — on détecte automatiquement.
+    let _rightStickAxisX = 2;
+    let _rightStickAxisY = 3;
+
     // ═══════════════════════════════════════════
     //  CONNEXION / DÉCONNEXION
     // ═══════════════════════════════════════════
@@ -21,6 +27,23 @@ const GamepadManager = (function() {
         gamepadIndex = e.gamepad.index;
         connected = true;
         prevButtonStates = {};
+
+        // Détecter si axes[2]/[3] sont des triggers L2/R2 (valeur au repos ≈ -1)
+        // plutôt que le stick droit (valeur au repos ≈ 0).
+        // Seuil : < -0.7 = quasi certainement un trigger non-pressé.
+        const axes = e.gamepad.axes;
+        if (axes.length >= 4 && (axes[2] < -0.7 || axes[3] < -0.7)) {
+            // Mapping non-standard (ex. DualShock 4 / DualSense via Bluetooth sans driver XInput)
+            // L2/R2 sur axes[2]/[3] → stick droit sur axes[4]/[5]
+            _rightStickAxisX = (axes.length > 4) ? 4 : 2;
+            _rightStickAxisY = (axes.length > 5) ? 5 : 3;
+            console.log('🎮 Triggers détectés sur axes[2]/[3] → stick droit sur axes[', _rightStickAxisX, '/', _rightStickAxisY, ']');
+        } else {
+            _rightStickAxisX = 2;
+            _rightStickAxisY = 3;
+            console.log('🎮 Mapping standard → stick droit sur axes[2]/[3]');
+        }
+
         // Notification visuelle
         showGamepadNotification('🎮 Manette connectée');
     });
@@ -134,8 +157,9 @@ const GamepadManager = (function() {
         if (!gp) return { x: 0, y: 0 };
 
         const deadzone = InputConfig.gamepadDeadzone;
-        let x = gp.axes[2] || 0;
-        let y = gp.axes[3] || 0;
+        // Utiliser les axes détectés à la connexion (standard : 2/3, PS via HID : 4/5)
+        let x = gp.axes[_rightStickAxisX] || 0;
+        let y = gp.axes[_rightStickAxisY] || 0;
 
         if (Math.abs(x) < deadzone) x = 0;
         if (Math.abs(y) < deadzone) y = 0;
