@@ -329,6 +329,22 @@
 </head>
 <body>
 
+<!-- ═══════════════════════════════════════════════
+     OVERLAY PAUSE — Escape (clavier) / Share (manette)
+════════════════════════════════════════════════ -->
+<div id="pause-overlay-3d" style="
+  display:none; position:fixed; inset:0; z-index:99999;
+  background:rgba(2,5,10,0.90);
+  flex-direction:column; align-items:center; justify-content:center; gap:24px;
+  font-family:'Courier New',monospace;
+">
+  <div style="font-size:clamp(48px,8vw,96px);color:#00E5FF;letter-spacing:16px;
+              text-shadow:0 0 50px rgba(0,229,255,0.7);font-weight:bold;">PAUSE</div>
+  <div style="font-size:clamp(12px,1.4vw,18px);color:rgba(255,255,255,0.5);letter-spacing:3px;">
+    ÉCHAP &nbsp;·&nbsp; SHARE &nbsp;— pour reprendre
+  </div>
+</div>
+
 <!-- ========== LOADING SCREEN ========== -->
 <div id="loading-screen">
     <div style="text-align: center; display: flex; flex-direction: column; align-items: center;">
@@ -542,6 +558,7 @@ var lastClickTime = 0;
 var lastClickZone = null;
 var _cinematicPlaying = false;
 var _currentCinematicZone = null;
+var _gamePaused = false;        // Pause générale (Escape / Share)
 var initialCameraSettings = { position: new THREE.Vector3(), fov: 75 };
 let scene, camera, renderer, world, controls;
 let rug, babyModel, babyBody, groundMesh;
@@ -793,6 +810,12 @@ function init() {
         // TEST TFE - Touche T : ouvre le dialogue Naby (placeholder avant integration 3D)
         if (e.key.toLowerCase() === 't' && typeof DialogueManager !== 'undefined') {
             DialogueManager.start('naby');
+            e.preventDefault();
+            return;
+        }
+        // Escape → Pause générale du jeu
+        if (e.key === 'Escape') {
+            togglePause3D();
             e.preventDefault();
             return;
         }
@@ -1722,6 +1745,7 @@ function animate() {
     // Suspendre tout le rendu/physique pendant une cinématique vidéo
     // pour libérer le GPU et éviter les saccades
     if (_cinematicPlaying) return;
+    if (_gamePaused) return;
 
     const delta = clock.getDelta();
     // Physique cannon.js uniquement si des corps dynamiques existent (pas en mode jeu FPS)
@@ -1864,6 +1888,10 @@ function animate() {
         if (GamepadManager.isActionJustPressed('map') && typeof MinimapManager !== 'undefined') {
             MinimapManager.toggle();
         }
+        // Share → Pause générale
+        if (GamepadManager.isActionJustPressed('pause')) {
+            togglePause3D();
+        }
         // Mettre à jour les états précédents pour la détection des fronts
         GamepadManager.updatePrevStates();
     }
@@ -1882,6 +1910,46 @@ function animate() {
 
 // Variables temporaires pour la minimap (evite 3 allocations par frame)
 var _mmLookDx = 0, _mmLookDz = 0, _mmYaw = 0;
+
+/* ═══════════════════════════════════════════════════
+   PAUSE GÉNÉRALE — Escape (clavier) / Share (manette)
+════════════════════════════════════════════════════ */
+var _pausedMediaList3D = [];
+var _pauseOverlay3D    = document.getElementById('pause-overlay-3d');
+
+function pauseGame3D() {
+    if (_gamePaused) return;
+    _gamePaused = true;
+    _pausedMediaList3D = [];
+    // Mettre en pause toutes les pistes audio enregistrées
+    AUDIO_CATEGORIES.forEach(cat => {
+        audioTracks[cat].forEach(track => {
+            if (track.audioElement && !track.audioElement.paused) {
+                track.audioElement.pause();
+                _pausedMediaList3D.push(track.audioElement);
+            }
+        });
+    });
+    // Mettre en pause les éléments actifs (autoplay)
+    activeAudioElements.forEach(a => {
+        if (!a.paused) { a.pause(); _pausedMediaList3D.push(a); }
+    });
+    // Mettre en pause les vidéos du DOM
+    document.querySelectorAll('video').forEach(v => {
+        if (!v.paused) { v.pause(); _pausedMediaList3D.push(v); }
+    });
+    if (_pauseOverlay3D) _pauseOverlay3D.style.display = 'flex';
+}
+
+function resumeGame3D() {
+    if (!_gamePaused) return;
+    _gamePaused = false;
+    _pausedMediaList3D.forEach(m => m.play().catch(() => {}));
+    _pausedMediaList3D = [];
+    if (_pauseOverlay3D) _pauseOverlay3D.style.display = 'none';
+}
+
+function togglePause3D() { _gamePaused ? resumeGame3D() : pauseGame3D(); }
 
 /**
  * SYSTÈME DE VISÉE CROSSHAIR — détecte ce que le joueur vise au centre de l'écran

@@ -2760,6 +2760,28 @@
 
   </section>
 
+
+  <!-- ════════════════════════════════════════════
+       OVERLAY PAUSE — Espace (clavier) / Share (manette)
+  ════════════════════════════════════════════ -->
+  <div id="pause-overlay" style="
+    display:none; position:absolute; inset:0; z-index:9998;
+    background:rgba(4,8,16,0.88);
+    flex-direction:column; align-items:center; justify-content:center; gap:28px;
+  ">
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:120px;color:#00E5FF;
+                letter-spacing:20px;text-shadow:0 0 60px rgba(0,229,255,0.65);">PAUSE</div>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:18px;
+                color:rgba(255,255,255,0.55);letter-spacing:4px;">
+      ESPACE &nbsp;·&nbsp; SHARE &nbsp;— pour reprendre
+    </div>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:13px;
+                color:rgba(0,229,255,0.35);letter-spacing:2px;margin-top:8px;text-align:center;line-height:2;">
+      ◁  Réponse A &nbsp;·&nbsp; ▷  Réponse B &nbsp;·&nbsp; ✕  Envoyer / Confirmer<br>
+      R1  Carte IA &nbsp;·&nbsp; □  Carte Humaine &nbsp;·&nbsp; △  Passer audio
+    </div>
+  </div>
+
 </div><!-- /game -->
 
 
@@ -5200,6 +5222,134 @@ document.getElementById('btn-start').addEventListener('click', () => {
   }, { once: true });
 
   startCycle();
+})();
+
+/* ════════════════════════════════════════════════════
+   PAUSE GÉNÉRAL — Espace (clavier) / Share bouton 8 (manette)
+════════════════════════════════════════════════════ */
+let _gamePaused    = false;
+const _pauseOverlay = document.getElementById('pause-overlay');
+let _pausedMedia   = [];   // audio / video mis en pause par nous
+
+function pauseGame() {
+  if (_gamePaused) return;
+  _gamePaused = true;
+  _pausedMedia = [];
+  // Audio dynamiques créés avec new Audio()
+  [_csbAudio, _feedbackAudio].forEach(a => {
+    if (a && !a.paused) { a.pause(); _pausedMedia.push(a); }
+  });
+  // Toutes les balises <audio> et <video> du DOM
+  document.querySelectorAll('#game audio, #game video').forEach(m => {
+    if (!m.paused) { m.pause(); _pausedMedia.push(m); }
+  });
+  _pauseOverlay.style.display = 'flex';
+}
+
+function resumeGame() {
+  if (!_gamePaused) return;
+  _gamePaused = false;
+  _pausedMedia.forEach(m => m.play().catch(() => {}));
+  _pausedMedia = [];
+  _pauseOverlay.style.display = 'none';
+}
+
+function togglePause() { _gamePaused ? resumeGame() : pauseGame(); }
+
+// Espace → pause (sauf si focus sur un champ texte)
+document.addEventListener('keydown', (e) => {
+  if (e.code === 'Space' && !['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)) {
+    e.preventDefault();
+    togglePause();
+  }
+});
+
+/* ════════════════════════════════════════════════════
+   GAMEPAD — Navigation manette dans AI Mythology
+   Mapping PS4 / standard :
+     8  = Share     → Pause / Reprendre
+     14 = D-pad ←   → Sélectionner réponse A (gauche)
+     15 = D-pad →   → Sélectionner réponse B (droite)
+     0  = Croix (✕) → ENVOYER / Confirmer / Round suivant / Start
+     5  = R1         → Toggle carte personnage IA (clic sur le sprite)
+     2  = Carré (□)  → Toggle carte humaine (bouton Human Power)
+     3  = Triangle   → Passer la lecture audio du feedback
+════════════════════════════════════════════════════ */
+(function initGamepadNavigation() {
+  let _prev = {};
+
+  function justPressed(gp, idx) {
+    const now = gp.buttons[idx]?.pressed || false;
+    const was = _prev[idx] || false;
+    return now && !was;
+  }
+
+  function gpSelectAnswer(side) {
+    const id  = side === 'left' ? 'hud-screen-left' : 'hud-screen-right';
+    const scr = document.getElementById(id);
+    if (scr && (scr.classList.contains('choice-good') || scr.classList.contains('choice-bad'))) {
+      scr.click();
+    }
+  }
+
+  function gpConfirm() {
+    // 1. ENVOYER actif → soumettre la réponse
+    const sendBtn = document.getElementById('hud-send-btn');
+    if (sendBtn && sendBtn.classList.contains('send-active')) { sendBtn.click(); return; }
+    // 2. Panneau feedback → round suivant (si déverrouillé)
+    const nextBtn   = document.getElementById('expl-next-btn');
+    const explPanel = document.getElementById('expl-panel');
+    if (nextBtn && explPanel && explPanel.style.display !== 'none'
+        && !nextBtn.classList.contains('locked')) { nextBtn.click(); return; }
+    // 3. Écran start → lancer le jeu
+    const startBtn = document.getElementById('btn-start');
+    const sStart   = document.getElementById('s-start');
+    if (startBtn && sStart?.classList.contains('active')) { startBtn.click(); return; }
+    // 4. Écran score → rejouer
+    const replayBtn = document.getElementById('score-replay-btn');
+    const sScore    = document.getElementById('s-score');
+    if (replayBtn && sScore?.classList.contains('active')) { replayBtn.click(); return; }
+  }
+
+  function gpToggleCharCard() {
+    const activeScr = document.querySelector('#game .screen.active');
+    const charEl    = activeScr?.querySelector('.char-clickable');
+    if (charEl) charEl.click();
+  }
+
+  function gpToggleHumanCard() {
+    const hpBtn = document.getElementById('hp-btn-wrap');
+    if (hpBtn) hpBtn.click();
+  }
+
+  function gpSkipFeedbackAudio() {
+    const skipBtn = document.getElementById('expl-audio-skip-btn');
+    if (skipBtn?.classList.contains('active')) skipBtn.click();
+  }
+
+  (function loop() {
+    requestAnimationFrame(loop);
+    const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+    const gp = Array.from(gamepads).find(g => g);
+    if (!gp) { _prev = {}; return; }
+
+    // Share (8) → Pause / Reprendre (toujours actif, même en pause)
+    if (justPressed(gp, 8)) togglePause();
+
+    if (!_gamePaused) {
+      if (justPressed(gp, 14)) gpSelectAnswer('left');   // D-pad ←
+      if (justPressed(gp, 15)) gpSelectAnswer('right');  // D-pad →
+      if (justPressed(gp, 0))  gpConfirm();              // Croix (✕)
+      if (justPressed(gp, 5))  gpToggleCharCard();       // R1
+      if (justPressed(gp, 2))  gpToggleHumanCard();      // Carré (□)
+      if (justPressed(gp, 3))  gpSkipFeedbackAudio();    // Triangle
+    }
+
+    // Sauvegarder l'état pour la prochaine frame
+    for (let i = 0; i < gp.buttons.length; i++) {
+      _prev[i] = gp.buttons[i]?.pressed || false;
+    }
+  })();
 })();
 
 // ── Bouton home — retour au sas de sécurité devant la borne d'arcade ──
