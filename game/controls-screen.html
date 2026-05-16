@@ -1,0 +1,1298 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Résistance — Configuration des contrôles</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    background: linear-gradient(180deg, #0b0d14 0%, #12121a 100%);
+    color: #eaeaf2;
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+/* ══════ HEADER ══════ */
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 30px;
+    border-bottom: 1px solid rgba(126,214,223,0.25);
+    background: rgba(18,18,26,0.96);
+    backdrop-filter: blur(4px);
+}
+.header h1 {
+    font-size: 13px;
+    color: #7ed6df;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+}
+.btn-back {
+    background: transparent;
+    border: 1px solid rgba(126,214,223,0.5);
+    color: #7ed6df;
+    padding: 6px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    letter-spacing: 1px;
+    transition: all 0.2s;
+}
+.btn-back:hover {
+    background: rgba(126,214,223,0.15);
+    border-color: #7ed6df;
+    box-shadow: 0 0 12px rgba(126,214,223,0.35);
+}
+
+/* ══════ TABS ══════ */
+.tabs {
+    display: flex;
+    justify-content: center;
+    gap: 0;
+    margin: 0;
+    border-bottom: 1px solid rgba(126,214,223,0.2);
+    background: rgba(18,18,26,0.6);
+}
+.tab {
+    padding: 12px 30px;
+    cursor: pointer;
+    color: #888;
+    font-size: 12px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: all 0.2s;
+    user-select: none;
+    font-weight: 600;
+}
+.tab:hover { color: #c8d0dc; }
+.tab.active { color: #7ed6df; border-bottom-color: #7ed6df; }
+
+/* ══════ PANELS ══════ */
+.panel { display: none; padding: 10px 20px 10px; margin-top: 15px; }
+.panel.active { display: block; }
+#panel-keyboard { margin-top: 45px; }
+
+/* ══════════════════════════════════════
+   KEYBOARD PANEL — VISUAL LAYOUT
+   ══════════════════════════════════════ */
+.kb-visual {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 30px;
+    flex-wrap: nowrap;
+    max-width: 1400px;
+    margin: 10px auto 0;
+    padding: 0 40px;
+}
+
+/* ── Keyboard ── */
+.keyboard-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    background: rgba(18,18,26,0.88);
+    padding: 22px 14px 18px;
+    border-radius: 14px;
+    border: 1px solid rgba(126,214,223,0.25);
+    box-shadow: 0 0 30px rgba(126,214,223,0.08);
+    flex: 2;
+    min-width: 0;
+}
+.kb-row-keys {
+    display: flex;
+    gap: 3px;
+}
+.key {
+    min-width: 38px;
+    height: 38px;
+    flex: 1;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-family: 'Segoe UI', monospace;
+    color: #9aa3b0;
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+    position: relative;
+    flex-shrink: 0;
+}
+.key:hover {
+    border-color: rgba(126,214,223,0.4);
+    background: rgba(126,214,223,0.08);
+    color: #eaeaf2;
+}
+.key.bound {
+    background: rgba(126,214,223,0.12);
+    border-color: #7ed6df;
+    color: #7ed6df;
+    font-weight: 700;
+    box-shadow: 0 0 8px rgba(126,214,223,0.25);
+}
+.key.bound::after {
+    content: attr(data-action-label);
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 8px;
+    color: #7ed6df;
+    letter-spacing: 0.6px;
+    white-space: nowrap;
+    opacity: 0.9;
+    pointer-events: none;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+}
+.key.listening {
+    background: rgba(255,107,53,0.18);
+    border-color: #ff6b35;
+    color: #ff6b35;
+    animation: pulse 0.6s infinite alternate;
+}
+@keyframes pulse { from { opacity: 0.6; } to { opacity: 1; } }
+
+/* Special keys sizing — flex ratios */
+.key-esc   { flex: 1.1; }
+.key-fn    { flex: 0.85; font-size: 9px; }
+.key-tab   { flex: 1.5; font-size: 10px; }
+.key-caps  { flex: 1.7; font-size: 8px; }
+.key-shift-l { flex: 1.3; font-size: 9px; }
+.key-shift-r { flex: 2.8; font-size: 9px; }
+.key-ctrl  { flex: 1.3; font-size: 9px; }
+.key-alt   { flex: 1.1; font-size: 10px; }
+.key-space { flex: 6; font-size: 10px; }
+.key-enter { flex: 1.2; font-size: 10px; }
+.key-back  { flex: 1.8; font-size: 9px; }
+.key-gap   { flex: 0.4; min-width: 8px; background: none; border: none; cursor: default; }
+.key-gap:hover { background: none; }
+
+/* ── Mouse ── */
+.mouse-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    flex: 1;
+    min-width: 280px;
+}
+.mouse-svg-area {
+    position: relative;
+    width: 340px;
+    height: 280px;
+    display: flex;
+    justify-content: center;
+}
+.mouse-svg-area svg {
+    margin-top: 15px;
+}
+.mouse-label {
+    position: absolute;
+    font-size: 11px;
+    color: #9aa3b0;
+    white-space: nowrap;
+}
+.mouse-label-action {
+    color: #7ed6df;
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+}
+
+/* ── Action Legend (below keyboard + mouse) ── */
+.action-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 45px;
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+}
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 7px 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.legend-item:hover {
+    border-color: rgba(126,214,223,0.6);
+    background: rgba(126,214,223,0.08);
+    transform: translateY(-1px);
+}
+.legend-item.active {
+    border-color: #ff6b35;
+    background: rgba(255,107,53,0.08);
+}
+.legend-key {
+    background: rgba(126,214,223,0.12);
+    border: 1px solid #7ed6df;
+    color: #7ed6df;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: 'Segoe UI', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    box-shadow: 0 0 6px rgba(126,214,223,0.2);
+}
+.legend-action {
+    color: #c8d0dc;
+    font-size: 13px;
+}
+.legend-rebind {
+    color: #7ed6df;
+    font-size: 12px;
+    cursor: pointer;
+    margin-left: 4px;
+    opacity: 0.55;
+    transition: opacity 0.2s, color 0.2s;
+}
+.legend-rebind:hover { color: #ff6b35; opacity: 1; }
+
+.conflict-warning {
+    color: #ff4f4f;
+    font-size: 12px;
+    margin-top: 12px;
+    text-align: center;
+    letter-spacing: 0.3px;
+}
+
+/* ── Modal de configuration des touches (style carnet) ── */
+.key-modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.82);
+    backdrop-filter: blur(6px);
+    z-index: 9998;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.key-modal {
+    background: rgba(18,18,26,0.96);
+    border: 1px solid rgba(126,214,223,0.4);
+    border-radius: 14px;
+    padding: 24px 30px;
+    min-width: 320px;
+    max-width: 440px;
+    box-shadow: 0 0 40px rgba(126,214,223,0.2);
+    text-align: center;
+}
+.key-modal h3 {
+    color: #7ed6df;
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin: 0 0 10px;
+    font-weight: 700;
+    border-bottom: 1px solid rgba(126,214,223,0.25);
+    padding-bottom: 8px;
+}
+.key-modal .modal-key-display {
+    display: inline-block;
+    background: rgba(126,214,223,0.15);
+    border: 2px solid #7ed6df;
+    color: #7ed6df;
+    padding: 8px 22px;
+    border-radius: 8px;
+    font-size: 20px;
+    font-weight: 700;
+    font-family: 'Segoe UI', monospace;
+    margin: 12px 0;
+    box-shadow: 0 0 12px rgba(126,214,223,0.3);
+}
+.key-modal p {
+    color: #c8d0dc;
+    font-size: 13px;
+    line-height: 1.5;
+    margin: 8px 0 16px;
+}
+.key-modal select {
+    width: 100%;
+    padding: 9px 12px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(126,214,223,0.3);
+    color: #eaeaf2;
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: 'Segoe UI', sans-serif;
+    margin-bottom: 18px;
+    cursor: pointer;
+}
+.key-modal select:focus {
+    border-color: #7ed6df;
+    outline: none;
+    box-shadow: 0 0 8px rgba(126,214,223,0.25);
+}
+.key-modal .modal-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+}
+.key-modal .btn-modal {
+    padding: 8px 22px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    transition: all 0.2s;
+    font-family: 'Segoe UI', sans-serif;
+}
+.key-modal .btn-cancel {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #c8d0dc;
+}
+.key-modal .btn-cancel:hover {
+    border-color: rgba(255,255,255,0.45);
+    color: #eaeaf2;
+    background: rgba(255,255,255,0.04);
+}
+.key-modal .btn-confirm {
+    background: #39ff14;
+    border: 1px solid #39ff14;
+    color: #0a0a0a;
+    font-weight: 700;
+}
+.key-modal .btn-confirm:hover {
+    background: #2dd610;
+    box-shadow: 0 0 12px rgba(57,255,20,0.4);
+}
+.key-modal .btn-danger {
+    background: transparent;
+    border: 1px solid #ff4f4f;
+    color: #ff4f4f;
+}
+.key-modal .btn-danger:hover { background: rgba(255,79,79,0.2); color: #fff; }
+
+/* Bouton X sur les touches liées */
+.key.bound {
+    position: relative;
+}
+.key-unbind {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 14px;
+    height: 14px;
+    background: #ff4f4f;
+    border: 1px solid rgba(255,255,255,0.8);
+    border-radius: 50%;
+    color: #fff;
+    font-size: 9px;
+    line-height: 12px;
+    text-align: center;
+    cursor: pointer;
+    display: none;
+    padding: 0;
+    z-index: 3;
+    box-shadow: 0 0 6px rgba(255,79,79,0.5);
+}
+.key.bound:hover .key-unbind {
+    display: block;
+}
+
+/* ══════════════════════════════════════
+   GAMEPAD PANEL
+   ══════════════════════════════════════ */
+.gp-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    max-width: 1050px;
+    margin: 0 auto;
+}
+.gp-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 20px;
+    background: rgba(18,18,26,0.88);
+    border-radius: 8px;
+    border: 1px solid rgba(126,214,223,0.25);
+    font-size: 12px;
+    color: #c8d0dc;
+    backdrop-filter: blur(3px);
+}
+.gp-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: #ff4444;
+    box-shadow: 0 0 6px rgba(255,68,68,0.5);
+}
+.gp-dot.connected {
+    background: #39ff14;
+    box-shadow: 0 0 8px rgba(57,255,20,0.6);
+}
+
+/* ── Controller image with overlaid labels ── */
+.controller-map {
+    position: relative;
+    width: 100%;
+    margin: 0 auto;
+}
+.controller-map img {
+    width: 100%;
+    height: auto;
+    filter: invert(1) hue-rotate(165deg) saturate(0.6);
+    opacity: 0.85;
+    display: block;
+}
+/* Action labels positioned on the SVG rectangles */
+.gp-label {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: #7ed6df;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+    text-align: center;
+    z-index: 2;
+    letter-spacing: 0.5px;
+}
+.gp-label:hover {
+    color: #fff;
+    text-shadow: 0 0 8px rgba(126,214,223,0.9);
+}
+.gp-label.listening {
+    color: #ff6b35;
+    animation: pulse 0.6s infinite alternate;
+}
+/* Right side labels — 9 rectangles cote droit */
+.gp-lbl-r1  { top: 4.4%;  left: 76.8%; width: 22%; height: 4.2%; }
+.gp-lbl-r2  { top: 11.2%; left: 76.8%; width: 22%; height: 4.2%; }
+.gp-lbl-r3  { top: 21.1%; left: 76.8%; width: 22%; height: 4.2%; }
+.gp-lbl-r4  { top: 28.2%; left: 76.8%; width: 22%; height: 4.2%; }
+.gp-lbl-r5  { top: 33.6%; left: 76.8%; width: 22%; height: 4.2%; }
+.gp-lbl-r6  { top: 39.3%; left: 76.8%; width: 22%; height: 4.2%; }
+.gp-lbl-r7  { top: 45.2%; left: 76.8%; width: 22%; height: 4.2%; }
+.gp-lbl-r8  { top: 55.2%; left: 76.8%; width: 22%; height: 4.2%; }
+.gp-lbl-r9  { top: 60.7%; left: 76.8%; width: 22%; height: 4.2%; }
+/* Left side labels — 9 rectangles cote gauche */
+.gp-lbl-l1  { top: 4.4%;  left: 1.3%;  width: 22%; height: 4.2%; }
+.gp-lbl-l2  { top: 11.2%; left: 1.3%;  width: 22%; height: 4.2%; }
+.gp-lbl-l3  { top: 21.1%; left: 1.3%;  width: 22%; height: 4.2%; }
+.gp-lbl-l4  { top: 28.2%; left: 1.3%;  width: 22%; height: 4.2%; }
+.gp-lbl-l5  { top: 33.6%; left: 1.3%;  width: 22%; height: 4.2%; }
+.gp-lbl-l6  { top: 39.3%; left: 1.3%;  width: 22%; height: 4.2%; }
+.gp-lbl-l7  { top: 45.2%; left: 1.3%;  width: 22%; height: 4.2%; }
+.gp-lbl-l8  { top: 55.2%; left: 1.3%;  width: 22%; height: 4.2%; }
+.gp-lbl-l9  { top: 60.7%; left: 1.3%;  width: 22%; height: 4.2%; }
+/* Extra left side labels (4 sous le stick gauche) */
+.gp-lbl-l10 { top: 66.6%; left: 1.3%;  width: 22%; height: 4.2%; }
+.gp-lbl-l11 { top: 72.5%; left: 1.3%;  width: 22%; height: 4.2%; }
+/* Extra right side labels (4 sous le stick droit) */
+.gp-lbl-r10 { top: 66.6%; left: 76.8%; width: 22%; height: 4.2%; }
+.gp-lbl-r11 { top: 72.5%; left: 76.8%; width: 22%; height: 4.2%; }
+/* Center labels */
+.gp-lbl-c-touchpad { top: 8.7%;  left: 44.2%; width: 11.2%; height: 4.2%; }
+.gp-lbl-c-home     { top: 82.2%; left: 44%; width: 11.2%; height: 4.2%; }
+/* Bottom L3 / R3 */
+.gp-lbl-b-l3       { top: 92.8%; left: 36.8%; width: 11.2%; height: 4.2%; }
+.gp-lbl-b-r3       { top: 92.8%; left: 51.8%; width: 11.2%; height: 4.2%; }
+
+/* gp-label pour --- (non assigne) */
+.gp-label.unassigned { color: #555; font-style: italic; }
+
+/* ── Sliders inside controller-map (positioned like labels) ── */
+.slider-overlay {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    z-index: 2;
+}
+.slider-overlay label {
+    font-size: 11px;
+    color: #7ed6df;
+    white-space: nowrap;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+.slider-overlay input[type="range"] {
+    width: 80px;
+    accent-color: #7ed6df;
+}
+.slider-overlay .slider-val {
+    font-family: monospace;
+    color: #7ed6df;
+    font-size: 11px;
+    min-width: 28px;
+    text-align: right;
+}
+/* Position: sous les labels stick gauche (avec espace visuel) */
+.slider-deadzone    { top: 83%;  left: 1.3%;  width: 22%; }
+/* Position: sous les labels stick droit (avec espace visuel) */
+.slider-sensitivity { top: 83%;  left: 76.8%; width: 22%; }
+
+/* ══════ FOOTER ══════ */
+.footer {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    padding: 12px 8px;
+    border-top: 1px solid rgba(126,214,223,0.25);
+    margin-top: 30px;
+    background: rgba(18,18,26,0.6);
+}
+.btn-action {
+    padding: 9px 28px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    font-weight: 600;
+    transition: all 0.2s;
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+}
+.btn-reset {
+    background: transparent;
+    border: 1px solid rgba(126,214,223,0.4);
+    color: #c8d0dc;
+}
+.btn-reset:hover {
+    background: rgba(126,214,223,0.08);
+    color: #7ed6df;
+    border-color: rgba(126,214,223,0.7);
+    box-shadow: 0 0 10px rgba(126,214,223,0.3);
+}
+.btn-save {
+    background: rgba(126,214,223,0.15);
+    border: 1px solid #7ed6df;
+    color: #7ed6df;
+    font-weight: 700;
+    box-shadow: 0 0 10px rgba(126,214,223,0.25);
+}
+.btn-save:hover {
+    background: rgba(126,214,223,0.28);
+    color: #fff;
+    box-shadow: 0 0 18px rgba(126,214,223,0.55);
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+    <h1>CONFIGURATION DES CONTRÔLES</h1>
+    <button class="btn-back" onclick="goBack()">&#8592; Retour</button>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+    <div class="tab active" data-tab="keyboard" onclick="switchTab('keyboard')">
+        Clavier + Souris
+    </div>
+    <div class="tab" data-tab="gamepad" onclick="switchTab('gamepad')">
+        Manette de jeu
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════ -->
+<!--  KEYBOARD + MOUSE PANEL                       -->
+<!-- ══════════════════════════════════════════════ -->
+<div class="panel active" id="panel-keyboard">
+    <div class="kb-visual">
+
+        <!-- ═══ CLAVIER AZERTY BELGE ═══ -->
+        <div class="keyboard-wrapper" id="keyboard-visual">
+            <!-- Row 0: Esc + F-keys -->
+            <div class="kb-row-keys">
+                <div class="key key-esc" data-key="escape">Esc</div>
+                <div class="key key-gap"></div>
+                <div class="key key-fn" data-key="f1">F1</div>
+                <div class="key key-fn" data-key="f2">F2</div>
+                <div class="key key-fn" data-key="f3">F3</div>
+                <div class="key key-fn" data-key="f4">F4</div>
+                <div class="key key-gap"></div>
+                <div class="key key-fn" data-key="f5">F5</div>
+                <div class="key key-fn" data-key="f6">F6</div>
+                <div class="key key-fn" data-key="f7">F7</div>
+                <div class="key key-fn" data-key="f8">F8</div>
+                <div class="key key-gap"></div>
+                <div class="key key-fn" data-key="f9">F9</div>
+                <div class="key key-fn" data-key="f10">F10</div>
+                <div class="key key-fn" data-key="f11">F11</div>
+                <div class="key key-fn" data-key="f12">F12</div>
+            </div>
+            <!-- Row 1: Numbers (AZERTY belge) -->
+            <div class="kb-row-keys" style="margin-top:8px;">
+                <div class="key" data-key="²">²</div>
+                <div class="key" data-key="&">&amp;</div>
+                <div class="key" data-key="é">é</div>
+                <div class="key" data-key="&quot;">"</div>
+                <div class="key" data-key="'">'</div>
+                <div class="key" data-key="(">(</div>
+                <div class="key" data-key="§">§</div>
+                <div class="key" data-key="è">è</div>
+                <div class="key" data-key="!">!</div>
+                <div class="key" data-key="ç">ç</div>
+                <div class="key" data-key="à">à</div>
+                <div class="key" data-key=")">)</div>
+                <div class="key" data-key="-">-</div>
+                <div class="key key-back" data-key="backspace">←</div>
+            </div>
+            <!-- Row 2: AZERTY belge top row -->
+            <div class="kb-row-keys">
+                <div class="key key-tab" data-key="tab">Tab</div>
+                <div class="key" data-key="a">A</div>
+                <div class="key" data-key="z">Z</div>
+                <div class="key" data-key="e">E</div>
+                <div class="key" data-key="r">R</div>
+                <div class="key" data-key="t">T</div>
+                <div class="key" data-key="y">Y</div>
+                <div class="key" data-key="u">U</div>
+                <div class="key" data-key="i">I</div>
+                <div class="key" data-key="o">O</div>
+                <div class="key" data-key="p">P</div>
+                <div class="key" data-key="^">^</div>
+                <div class="key" data-key="$">*</div>
+                <div class="key key-enter" data-key="enter" style="width:48px; font-size:10px;">Enter</div>
+            </div>
+            <!-- Row 3: Home row -->
+            <div class="kb-row-keys">
+                <div class="key key-caps" data-key="capslock" style="font-size:8px;">Shift Lock</div>
+                <div class="key" data-key="q">Q</div>
+                <div class="key" data-key="s">S</div>
+                <div class="key" data-key="d">D</div>
+                <div class="key" data-key="f">F</div>
+                <div class="key" data-key="g">G</div>
+                <div class="key" data-key="h">H</div>
+                <div class="key" data-key="j">J</div>
+                <div class="key" data-key="k">K</div>
+                <div class="key" data-key="l">L</div>
+                <div class="key" data-key="m">M</div>
+                <div class="key" data-key="ù">%</div>
+                <div class="key" data-key="µ">£</div>
+            </div>
+            <!-- Row 4: Bottom row -->
+            <div class="kb-row-keys">
+                <div class="key key-shift-l" data-key="shift">Shift</div>
+                <div class="key" data-key="<">&lt;</div>
+                <div class="key" data-key="w">W</div>
+                <div class="key" data-key="x">X</div>
+                <div class="key" data-key="c">C</div>
+                <div class="key" data-key="v">V</div>
+                <div class="key" data-key="b">B</div>
+                <div class="key" data-key="n">N</div>
+                <div class="key" data-key="?">?</div>
+                <div class="key" data-key=";">;</div>
+                <div class="key" data-key=":">:</div>
+                <div class="key" data-key="=">=</div>
+                <div class="key key-shift-r" data-key="shift">Shift</div>
+            </div>
+            <!-- Row 5: Space bar row -->
+            <div class="kb-row-keys">
+                <div class="key key-ctrl" data-key="control">Ctrl</div>
+                <div class="key" data-key="meta" style="width:36px;font-size:14px;">⊞</div>
+                <div class="key key-alt" data-key="alt">Alt</div>
+                <div class="key key-space" data-key=" ">Espace</div>
+                <div class="key key-alt" data-key="altgraph">Alt.Gr</div>
+                <div class="key" data-key="meta" style="width:36px;font-size:14px;">⊞</div>
+                <div class="key key-ctrl" data-key="control">Ctrl</div>
+            </div>
+        </div>
+
+        <!-- ═══ SOURIS ═══ -->
+        <div class="mouse-wrapper">
+            <div class="mouse-svg-area">
+                <svg viewBox="0 0 140 220" width="140" height="220" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Body -->
+                    <rect x="10" y="40" width="120" height="160" rx="50" fill="#2a2a2a" stroke="#444" stroke-width="2"/>
+                    <!-- Top curve -->
+                    <path d="M10,100 L10,80 C10,50 30,20 70,20 C110,20 130,50 130,80 L130,100" fill="#2a2a2a" stroke="#444" stroke-width="2"/>
+                    <!-- Center divider -->
+                    <line x1="70" y1="20" x2="70" y2="115" stroke="#555" stroke-width="1.5"/>
+                    <!-- Left button area -->
+                    <path d="M12,80 C12,52 32,22 70,22 L70,115 L12,115 Z" fill="#333" stroke="none" id="mouse-left-btn"/>
+                    <!-- Right button area -->
+                    <path d="M128,80 C128,52 108,22 70,22 L70,115 L128,115 Z" fill="#333" stroke="none" id="mouse-right-btn"/>
+                    <!-- Scroll wheel -->
+                    <rect x="60" y="55" width="20" height="35" rx="10" fill="#444" stroke="#666" stroke-width="1.5"/>
+                    <!-- Scroll lines -->
+                    <line x1="65" y1="65" x2="75" y2="65" stroke="#888" stroke-width="1"/>
+                    <line x1="65" y1="72" x2="75" y2="72" stroke="#888" stroke-width="1"/>
+                    <line x1="65" y1="79" x2="75" y2="79" stroke="#888" stroke-width="1"/>
+                </svg>
+
+                <!-- Mouse labels -->
+                <!-- Interagir — à gauche du bouton gauche -->
+                <div class="mouse-label" style="top:50px; right:calc(50% + 75px); text-align:right;">
+                    <div class="mouse-label-action">Interagir</div>
+                    <div>Clic gauche</div>
+                </div>
+                <!-- Tourner la vue — à droite du bouton droit (même niveau) -->
+                <div class="mouse-label" style="top:50px; left:calc(50% + 75px); text-align:left;">
+                    <div class="mouse-label-action">Tourner la vue</div>
+                    <div>Clic droit</div>
+                </div>
+                <!-- Zoom — centré sous la molette -->
+                <div class="mouse-label" style="top:130px; left:50%; transform:translateX(-50%); text-align:center;">
+                    <div class="mouse-label-action">Zoom</div>
+                    <div>Molette</div>
+                </div>
+                <!-- Regarder Mouvement — centré sous la souris -->
+                <div class="mouse-label" style="bottom:2px; left:50%; transform:translateX(-50%); text-align:center;">
+                    <div class="mouse-label-action">Regarder</div>
+                    <div>Mouvement</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ACTION LEGEND (bindings configurables) -->
+    <div class="action-legend" id="action-legend"></div>
+    <div class="conflict-warning" id="kb-conflicts"></div>
+</div>
+
+<!-- ══════════════════════════════════════════════ -->
+<!--  GAMEPAD PANEL                                -->
+<!-- ══════════════════════════════════════════════ -->
+<div class="panel" id="panel-gamepad">
+    <div class="gp-container">
+        <div class="gp-status">
+            <div class="gp-dot" id="gp-dot"></div>
+            <span id="gp-status-text">Aucune manette detectee</span>
+        </div>
+
+        <!-- PS4 Controller with action labels overlaid on rectangles -->
+        <div class="controller-map" id="controller-map">
+            <img src="../images/ps4-controller.svg" alt="Manette PlayStation 4">
+
+            <!-- LEFT SIDE — SHARE, L2, L1, D-Pad, Stick gauche -->
+            <div class="gp-label gp-lbl-l1"  data-gp="share"  >Pause</div>
+            <div class="gp-label gp-lbl-l2"  data-gp="l2"     >Viser (L2)</div>
+            <div class="gp-label gp-lbl-l3"  data-gp="l1"     >Courir (L1)</div>
+            <div class="gp-label gp-lbl-l4"  data-gp="dup"    >Indices</div>
+            <div class="gp-label gp-lbl-l5"  data-gp="dright" >Zoom avant</div>
+            <div class="gp-label gp-lbl-l6"  data-gp="ddown"  >Carte</div>
+            <div class="gp-label gp-lbl-l7"  data-gp="dleft"  >Zoom arriere</div>
+            <div class="gp-label gp-lbl-l8"  data-gp="lstk-x" >Deplacement droite</div>
+            <div class="gp-label gp-lbl-l9"  data-gp="lstk-y" >Deplacement avant</div>
+            <div class="gp-label gp-lbl-l10" data-gp="lstk-xl">Deplacement gauche</div>
+            <div class="gp-label gp-lbl-l11" data-gp="lstk-yl">Deplacement arriere</div>
+
+            <!-- RIGHT SIDE — OPTIONS, R2, R1, Boutons, Stick droit -->
+            <div class="gp-label gp-lbl-r1"  data-gp="options" >Inventaire</div>
+            <div class="gp-label gp-lbl-r2"  data-gp="r2"      >Interagir (R2)</div>
+            <div class="gp-label gp-lbl-r3"  data-gp="r1"      >Ouvrir/Fermer (R1)</div>
+            <div class="gp-label gp-lbl-r4"  data-gp="square"  >Carre - Interagir</div>
+            <div class="gp-label gp-lbl-r5"  data-gp="triangle">Triangle - Ouvrir</div>
+            <div class="gp-label gp-lbl-r6"  data-gp="circle"  >Rond - S'accroupir</div>
+            <div class="gp-label gp-lbl-r7"  data-gp="cross"   >Croix - Sauter</div>
+            <div class="gp-label gp-lbl-r8"  data-gp="rstk-x"  >Camera droite</div>
+            <div class="gp-label gp-lbl-r9"  data-gp="rstk-y"  >Camera haut</div>
+            <div class="gp-label gp-lbl-r10" data-gp="rstk-xl" >Camera gauche</div>
+            <div class="gp-label gp-lbl-r11" data-gp="rstk-yl" >Camera bas</div>
+
+            <!-- CENTER -->
+            <div class="gp-label gp-lbl-c-touchpad" data-gp="touchpad">Carnet</div>
+            <div class="gp-label gp-lbl-c-home"     data-gp="home"    >Menu</div>
+
+            <!-- BOTTOM L3 / R3 -->
+            <div class="gp-label gp-lbl-b-l3" data-gp="l3">Indice</div>
+            <div class="gp-label gp-lbl-b-r3" data-gp="r3">Carte</div>
+
+            <!-- SLIDERS overlaid on controller image -->
+            <div class="slider-overlay slider-deadzone">
+                <label>Zone morte</label>
+                <input type="range" id="gp-deadzone" min="0.05" max="0.40" step="0.01" value="0.15">
+                <span class="slider-val" id="gp-deadzone-val">0.15</span>
+            </div>
+            <div class="slider-overlay slider-sensitivity">
+                <label>Sensibilite camera</label>
+                <input type="range" id="gp-sensitivity" min="0.5" max="5.0" step="0.1" value="2.5">
+                <span class="slider-val" id="gp-sensitivity-val">2.5</span>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+    <button class="btn-action btn-reset" onclick="resetBindings()">Réinitialiser</button>
+    <button class="btn-action btn-save" onclick="saveAndClose()">Sauvegarder</button>
+</div>
+
+<!-- SCRIPTS -->
+<script src="input-config.js"></script>
+<script>
+// ═══════════════════════════════════════════
+//  TAB SWITCHING
+// ═══════════════════════════════════════════
+let currentTab = 'keyboard';
+
+function switchTab(tab) {
+    currentTab = tab;
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+    document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + tab));
+    InputConfig.preferredDevice = tab === 'keyboard' ? 'keyboard' : 'gamepad';
+}
+
+// ═══════════════════════════════════════════
+//  KEYBOARD VISUAL — Highlight bound keys
+// ═══════════════════════════════════════════
+
+const KEY_DISPLAY_NAMES = {
+    ' ': 'Espace', 'control': 'Ctrl', 'shift': 'Maj', 'escape': 'Echap',
+    'tab': 'Tab', 'enter': 'Entree', 'backspace': 'Retour', 'delete': 'Suppr',
+    'arrowup': '&#8593;', 'arrowdown': '&#8595;', 'arrowleft': '&#8592;', 'arrowright': '&#8594;',
+    'capslock': 'Caps'
+};
+
+function keyDisplayName(key) {
+    return KEY_DISPLAY_NAMES[key.toLowerCase()] || key.toUpperCase();
+}
+
+// Map action -> short label for the key overlay
+const ACTION_SHORT_LABELS = {
+    forward: 'Avancer', backward: 'Reculer', left: 'Gauche', right: 'Droite',
+    jump: 'Sauter', crouch: 'Accroupir', run: 'Courir', aim: 'Viser',
+    grab: 'Interagir', door: 'Porte', map: 'Carte', hints: 'Indices',
+    inventory: 'Inventaire', pause: 'Pause'
+};
+
+let selectedAction = null; // action en cours de rebind
+
+function highlightBoundKeys() {
+    // Reset all keys
+    document.querySelectorAll('#keyboard-visual .key').forEach(k => {
+        k.classList.remove('bound');
+        k.removeAttribute('data-action-label');
+        const oldX = k.querySelector('.key-unbind');
+        if (oldX) oldX.remove();
+    });
+
+    const bindings = InputConfig.getKeyboardBindings();
+
+    // Build reverse map: key -> action
+    const keyToAction = {};
+    for (const action in bindings) {
+        for (const key of bindings[action]) {
+            keyToAction[key.toLowerCase()] = action;
+        }
+    }
+
+    // Highlight + ajouter bouton X
+    document.querySelectorAll('#keyboard-visual .key[data-key]').forEach(el => {
+        const dataKey = el.getAttribute('data-key').toLowerCase();
+        if (keyToAction[dataKey]) {
+            el.classList.add('bound');
+            el.setAttribute('data-action-label', ACTION_SHORT_LABELS[keyToAction[dataKey]] || keyToAction[dataKey]);
+
+            // Bouton X pour délier
+            const xBtn = document.createElement('button');
+            xBtn.className = 'key-unbind';
+            xBtn.textContent = '✕';
+            xBtn.title = 'Retirer cette touche';
+            xBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                onUnbindKey(dataKey, keyToAction[dataKey]);
+            });
+            el.appendChild(xBtn);
+        }
+    });
+}
+
+function buildActionLegend() {
+    const legend = document.getElementById('action-legend');
+    legend.innerHTML = '';
+    const bindings = InputConfig.getKeyboardBindings();
+
+    for (const action in InputConfig.ACTIONS) {
+        const info = InputConfig.ACTIONS[action];
+        const keys = bindings[action] || [];
+
+        const item = document.createElement('div');
+        item.className = 'legend-item';
+        item.dataset.action = action;
+
+        const keysHtml = keys.map(k => `<span class="legend-key">${keyDisplayName(k)}</span>`).join(' ');
+
+        item.innerHTML = `
+            ${keysHtml}
+            <span class="legend-action">${info.label}</span>
+            <span class="legend-rebind" title="Cliquer pour modifier">&#9998;</span>
+        `;
+
+        // Click to rebind
+        item.querySelector('.legend-rebind').addEventListener('click', (e) => {
+            e.stopPropagation();
+            startKeyboardListen(action, item);
+        });
+
+        legend.appendChild(item);
+    }
+
+    checkKeyboardConflicts();
+}
+
+function startKeyboardListen(action, legendItem) {
+    // Cancel previous
+    document.querySelectorAll('.legend-item.active').forEach(i => i.classList.remove('active'));
+    document.querySelectorAll('#keyboard-visual .key.listening').forEach(k => k.classList.remove('listening'));
+
+    selectedAction = action;
+    if (legendItem) legendItem.classList.add('active');
+
+    let collectedKeys = [];
+
+    const handler = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const key = e.key.toLowerCase();
+        if (key === 'f5' || key === 'f12' || (e.ctrlKey && key === 'r')) return;
+
+        if (!collectedKeys.includes(key)) {
+            collectedKeys.push(key);
+            // Highlight the pressed key on the visual keyboard
+            document.querySelectorAll(`#keyboard-visual .key[data-key="${key}"]`).forEach(el => {
+                el.classList.add('listening');
+            });
+        }
+    };
+
+    const finalize = () => {
+        window.removeEventListener('keydown', handler, true);
+        window.removeEventListener('keyup', finalize, true);
+
+        if (collectedKeys.length > 0) {
+            InputConfig.setKeyboardBinding(action, collectedKeys);
+        }
+        selectedAction = null;
+        highlightBoundKeys();
+        buildActionLegend();
+    };
+
+    window.addEventListener('keydown', handler, true);
+    window.addEventListener('keyup', finalize, true);
+}
+
+// ═══════════════════════════════════════════
+//  SYSTEME DE MODALES — Attribution de touches
+// ═══════════════════════════════════════════
+
+function closeModal() {
+    const old = document.querySelector('.key-modal-overlay');
+    if (old) old.remove();
+}
+
+function createModal(content) {
+    closeModal();
+    const overlay = document.createElement('div');
+    overlay.className = 'key-modal-overlay';
+    const modal = document.createElement('div');
+    modal.className = 'key-modal';
+    modal.innerHTML = content;
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(); });
+    return modal;
+}
+
+// Retourne la liste des touches non attribuees
+function getUnboundKeys() {
+    const bindings = InputConfig.getKeyboardBindings();
+    const boundKeys = new Set();
+    for (const action in bindings) {
+        for (const k of bindings[action]) boundKeys.add(k);
+    }
+    const allKeys = [];
+    document.querySelectorAll('#keyboard-visual .key[data-key]').forEach(el => {
+        const k = el.getAttribute('data-key').toLowerCase();
+        if (k && k !== 'capslock' && k !== 'meta' && k !== 'altgraph' && k !== 'tab' && k !== 'backspace' && k !== 'enter') {
+            if (!boundKeys.has(k)) allKeys.push(k);
+        }
+    });
+    return [...new Set(allKeys)];
+}
+
+// 1) Clic sur touche LIBRE → confirmation puis choix d'action
+function onUnboundKeyClick(key) {
+    const label = keyDisplayName(key);
+    const modal = createModal(
+        '<h3>Attribuer une action à cette touche ?</h3>' +
+        '<div class="modal-key-display">' + label + '</div>' +
+        '<p>Voulez-vous associer la touche <b>' + label + '</b> à une action ?</p>' +
+        '<div class="modal-buttons">' +
+            '<button class="btn-modal btn-cancel">Annuler</button>' +
+            '<button class="btn-modal btn-confirm">Confirmer</button>' +
+        '</div>'
+    );
+    modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
+    modal.querySelector('.btn-confirm').addEventListener('click', () => showActionSelector(key));
+}
+
+// 2) Sélecteur d'action avec liste déroulante
+function showActionSelector(key) {
+    const label = keyDisplayName(key);
+    let options = '';
+    for (const action in InputConfig.ACTIONS) {
+        const info = InputConfig.ACTIONS[action];
+        options += '<option value="' + action + '">' + info.label + '</option>';
+    }
+    const modal = createModal(
+        '<h3>Choisir une action</h3>' +
+        '<div class="modal-key-display">' + label + '</div>' +
+        '<p>Associer la touche <b>' + label + '</b> à :</p>' +
+        '<select id="modal-action-select">' + options + '</select>' +
+        '<div class="modal-buttons">' +
+            '<button class="btn-modal btn-cancel">Annuler</button>' +
+            '<button class="btn-modal btn-confirm">Confirmer</button>' +
+        '</div>'
+    );
+    modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
+    modal.querySelector('.btn-confirm').addEventListener('click', () => {
+        const action = modal.querySelector('#modal-action-select').value;
+        const bindings = InputConfig.getKeyboardBindings();
+        const keys = bindings[action] || [];
+        if (!keys.includes(key)) keys.push(key);
+        InputConfig.setKeyboardBinding(action, keys);
+        closeModal();
+        highlightBoundKeys();
+        buildActionLegend();
+    });
+}
+
+// 3) Clic sur le X d'une touche LIÉE → délier + proposer réassociation
+function onUnbindKey(key, currentAction) {
+    const label = keyDisplayName(key);
+    const actionLabel = ACTION_SHORT_LABELS[currentAction] || currentAction;
+
+    // Délier immédiatement
+    const bindings = InputConfig.getKeyboardBindings();
+    const prevKeys = bindings[currentAction].filter(k => k !== key);
+    InputConfig.setKeyboardBinding(currentAction, prevKeys);
+    highlightBoundKeys();
+    buildActionLegend();
+
+    // Proposer de réassocier l'action à une autre touche
+    const unboundKeys = getUnboundKeys();
+    if (unboundKeys.length === 0) {
+        closeModal();
+        return;
+    }
+
+    let options = '';
+    for (const k of unboundKeys) {
+        options += '<option value="' + k + '">' + keyDisplayName(k) + '</option>';
+    }
+    const modal = createModal(
+        '<h3>Touche ' + label + ' retirée</h3>' +
+        '<p>L\'action <b>' + actionLabel + '</b> n\'a plus de touche associée.<br>Voulez-vous l\'associer à une autre touche ?</p>' +
+        '<select id="modal-key-select">' + options + '</select>' +
+        '<div class="modal-buttons">' +
+            '<button class="btn-modal btn-cancel">Non merci</button>' +
+            '<button class="btn-modal btn-confirm">Confirmer</button>' +
+        '</div>'
+    );
+    modal.querySelector('.btn-cancel').addEventListener('click', () => {
+        closeModal();
+    });
+    modal.querySelector('.btn-confirm').addEventListener('click', () => {
+        const newKey = modal.querySelector('#modal-key-select').value;
+        const newBindings = InputConfig.getKeyboardBindings();
+        const actionKeys = newBindings[currentAction] || [];
+        if (!actionKeys.includes(newKey)) actionKeys.push(newKey);
+        InputConfig.setKeyboardBinding(currentAction, actionKeys);
+        closeModal();
+        highlightBoundKeys();
+        buildActionLegend();
+    });
+}
+
+// Gestionnaire de clics sur les touches du clavier visuel
+document.querySelectorAll('#keyboard-visual .key[data-key]').forEach(el => {
+    el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (e.target.classList.contains('key-unbind')) return; // géré par le bouton X
+        const key = el.getAttribute('data-key').toLowerCase();
+        if (key === 'capslock' || key === 'meta' || key === 'altgraph' || key === 'tab' || key === 'backspace' || key === 'enter') return;
+
+        // Vérifier si la touche est déjà attribuée
+        const bindings = InputConfig.getKeyboardBindings();
+        let currentAction = null;
+        for (const action in bindings) {
+            if (bindings[action].includes(key)) { currentAction = action; break; }
+        }
+
+        if (currentAction) {
+            // Touche liée → flash la légende correspondante
+            const item = document.querySelector('.legend-item[data-action="' + currentAction + '"]');
+            if (item) {
+                item.style.transform = 'scale(1.05)';
+                item.style.borderColor = '#39ff14';
+                setTimeout(() => { item.style.transform = ''; item.style.borderColor = ''; }, 600);
+            }
+        } else {
+            // Touche libre → proposer d'attribuer une action
+            onUnboundKeyClick(key);
+        }
+    });
+});
+
+function checkKeyboardConflicts() {
+    const conflicts = InputConfig.getKeyboardConflicts();
+    const el = document.getElementById('kb-conflicts');
+    if (conflicts.length === 0) { el.textContent = ''; return; }
+    el.innerHTML = conflicts.map(c => {
+        const labels = c.actions.map(a => InputConfig.ACTIONS[a]?.label || a).join(' / ');
+        return `&#9888; Conflit : la touche <b>${keyDisplayName(c.key)}</b> est assignee a ${labels}`;
+    }).join('<br>');
+}
+
+// ═══════════════════════════════════════════
+//  GAMEPAD PANEL — Labels on controller image
+// ═══════════════════════════════════════════
+
+// Style "---" labels as unassigned
+document.querySelectorAll('.gp-label').forEach(el => {
+    if (el.textContent.trim() === '---') el.classList.add('unassigned');
+});
+
+// Update gamepad connection status + live axis/button debug
+setInterval(() => {
+    const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+    let found = false;
+    for (const g of gamepads) {
+        if (g) {
+            found = true;
+            document.getElementById('gp-dot').classList.add('connected');
+            document.getElementById('gp-status-text').innerHTML = '&#10003; ' + g.id;
+
+            // Live debug panel — axes and buttons
+            let debugEl = document.getElementById('gp-debug-panel');
+            if (!debugEl) {
+                debugEl = document.createElement('div');
+                debugEl.id = 'gp-debug-panel';
+                debugEl.style.cssText = 'background:rgba(18,18,26,0.88);border:1px solid rgba(126,214,223,0.35);border-radius:8px;padding:12px 16px;margin:10px auto;max-width:700px;font-family:monospace;font-size:12px;color:#c8d0dc;backdrop-filter:blur(4px);';
+                debugEl.innerHTML = '<div style="color:#7ed6df;font-weight:bold;margin-bottom:6px;letter-spacing:1px;text-transform:uppercase;font-size:11px;">Diagnostic manette (temps reel)</div><div id="gp-debug-axes"></div><div id="gp-debug-buttons" style="margin-top:6px;"></div>';
+                // Insert after the status bar
+                const statusBar = document.querySelector('.gp-status');
+                if (statusBar) statusBar.after(debugEl);
+            }
+            // Axes
+            const axesHtml = g.axes.map((v, i) => {
+                const bar = Math.round(Math.abs(v) * 20);
+                const color = Math.abs(v) > 0.15 ? '#7ed6df' : '#444';
+                return `<span style="display:inline-block;width:160px;">Axe ${i}: <span style="color:${color}">${v >= 0 ? '+' : ''}${v.toFixed(3)}</span> ${'█'.repeat(bar)}</span>`;
+            }).join('');
+            document.getElementById('gp-debug-axes').innerHTML = axesHtml;
+            // Pressed buttons
+            const pressed = [];
+            for (let i = 0; i < g.buttons.length; i++) {
+                if (g.buttons[i].pressed) pressed.push('Btn ' + i + (g.buttons[i].value < 1 ? ' (' + g.buttons[i].value.toFixed(2) + ')' : ''));
+            }
+            document.getElementById('gp-debug-buttons').innerHTML = pressed.length > 0
+                ? 'Boutons actifs: <span style="color:#ff6b35;">' + pressed.join(', ') + '</span>'
+                : 'Boutons actifs: <span style="color:#555;">aucun</span>';
+            break;
+        }
+    }
+    if (!found) {
+        document.getElementById('gp-dot').classList.remove('connected');
+        document.getElementById('gp-status-text').textContent = 'Aucune manette detectee — branchez une manette USB ou Bluetooth';
+        const debugEl = document.getElementById('gp-debug-panel');
+        if (debugEl) debugEl.remove();
+    }
+}, 100);
+
+document.getElementById('gp-deadzone').addEventListener('input', (e) => {
+    const val = parseFloat(e.target.value);
+    document.getElementById('gp-deadzone-val').textContent = val.toFixed(2);
+    InputConfig.gamepadDeadzone = val;
+});
+
+document.getElementById('gp-sensitivity').addEventListener('input', (e) => {
+    const val = parseFloat(e.target.value);
+    document.getElementById('gp-sensitivity-val').textContent = val.toFixed(1);
+    InputConfig.gamepadCameraSensitivity = val;
+});
+
+// ═══════════════════════════════════════════
+//  ACTIONS
+// ═══════════════════════════════════════════
+
+function resetBindings() {
+    if (currentTab === 'keyboard') {
+        InputConfig.resetKeyboard();
+        highlightBoundKeys();
+        buildActionLegend();
+    } else {
+        InputConfig.resetGamepad();
+    }
+}
+
+function saveAndClose() {
+    const msg = InputConfig.saveWithFeedback();
+    // Afficher le message de confirmation
+    const toast = document.createElement('div');
+    toast.textContent = msg;
+    toast.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#39ff14;color:#0a0a0a;padding:12px 24px;border-radius:8px;font-weight:600;font-size:14px;z-index:9999;animation:fadeInOut 3s forwards;';
+    const style = document.createElement('style');
+    style.textContent = '@keyframes fadeInOut{0%{opacity:0;transform:translateX(-50%) translateY(-10px)}10%{opacity:1;transform:translateX(-50%) translateY(0)}80%{opacity:1}100%{opacity:0}}';
+    document.head.appendChild(style);
+    document.body.appendChild(toast);
+    setTimeout(() => { toast.remove(); goBack(); }, 2500);
+}
+
+function goBack() {
+    // Retourner vers le jeu (page precedente ou point d'entree cocoon_nexus.html)
+    const gamePages = ['cocoon_nexus', 'salle_controle_nexus', 'hall_entree_nexus', 'la_villa', 'sas_securite', 'room_model', 'room_'];
+    if (document.referrer && gamePages.some(function (p) { return document.referrer.includes(p); })) {
+        window.location.href = document.referrer;
+    } else {
+        window.history.back();
+    }
+}
+
+// ═══════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════
+
+if (InputConfig.preferredDevice === 'gamepad') switchTab('gamepad');
+
+highlightBoundKeys();
+buildActionLegend();
+
+// Message de bienvenue (uniquement si on vient de l'écran de démarrage, pas du jeu)
+const comingFromGame = document.referrer && document.referrer.includes('room_');
+const welcomeMsg = !comingFromGame ? InputConfig.getWelcomeMessage() : null;
+if (welcomeMsg) {
+    const banner = document.createElement('div');
+    banner.textContent = welcomeMsg;
+    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#1a2a10;border-bottom:1px solid #39ff14;color:#39ff14;padding:10px;text-align:center;font-size:13px;z-index:9999;cursor:pointer;';
+    banner.onclick = () => banner.remove();
+    document.body.appendChild(banner);
+    setTimeout(() => banner.remove(), 5000);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Résistance - Éditeur</title>
+
+    <!-- Tailwind CSS + DaisyUI (requis par l'éditeur) -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.14/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="editor/editor.css">
+
+    <style>
+        body {
+            margin: 0; overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #111; user-select: none; touch-action: none;
+        }
+        canvas { display: block; outline: none; }
+
+        /* ========== LOADING SCREEN ========== */
+        #loading-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #111; z-index: 10000;
+            display: flex; align-items: center; justify-content: center;
+            transition: opacity 0.6s ease;
+        }
+        #loading-screen.fade-out { opacity: 0; pointer-events: none; }
+        .loading-title { color: #39ff14; font-size: 28px; font-weight: 700; letter-spacing: 2px; margin-bottom: 6px; }
+        .loading-subtitle { color: #888; font-size: 14px; margin-bottom: 18px; }
+        .loading-bar-container { width: 220px; height: 4px; background: #333; border-radius: 2px; overflow: hidden; }
+        .loading-bar { width: 0; height: 100%; background: #39ff14; animation: loadBar 2s ease-in-out forwards; }
+        @keyframes loadBar { 0% { width: 0; } 100% { width: 90%; } }
+
+        /* ========== ROOM SELECTOR ========== */
+        #room-selector-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 20000;
+            display: flex; align-items: center; justify-content: center;
+        }
+        #room-selector-panel {
+            background: #1a1a2e; border: 1px solid #333; border-radius: 16px;
+            padding: 32px 40px; min-width: 420px; max-width: 600px;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+        }
+        #room-selector-panel h2 {
+            color: #39ff14; font-size: 22px; font-weight: 700;
+            margin: 0 0 8px 0; letter-spacing: 1px;
+        }
+        #room-selector-panel p { color: #888; font-size: 13px; margin: 0 0 20px 0; }
+        .room-list { max-height: 300px; overflow-y: auto; margin-bottom: 16px; }
+        .room-card {
+            display: flex; justify-content: space-between; align-items: center;
+            background: #222; border: 1px solid #333; border-radius: 10px;
+            padding: 12px 16px; margin-bottom: 8px; cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .room-card:hover { border-color: #39ff14; background: #2a2a3e; }
+        .room-card .room-name { color: #eee; font-size: 15px; font-weight: 600; }
+        .room-card .room-title { color: #888; font-size: 12px; margin-top: 2px; }
+        .room-card .room-date { color: #555; font-size: 11px; }
+        .room-card-btn {
+            background: #39ff14; color: #111; border: none; border-radius: 8px;
+            padding: 8px 18px; font-size: 13px; font-weight: 600; cursor: pointer;
+        }
+        .room-card-btn:hover { background: #2de00f; }
+        #btn-new-room {
+            display: block; width: 100%; background: #333; color: #aaa;
+            border: 1px dashed #555; border-radius: 10px; padding: 12px;
+            font-size: 14px; cursor: pointer; text-align: center;
+        }
+        #btn-new-room:hover { border-color: #39ff14; color: #39ff14; }
+        .new-room-form { margin-top: 12px; }
+        .new-room-form input {
+            background: #222; border: 1px solid #444; color: #eee;
+            border-radius: 8px; padding: 8px 12px; font-size: 14px; width: 100%;
+            margin-bottom: 8px; outline: none;
+        }
+        .new-room-form input:focus { border-color: #39ff14; }
+
+        /* ========== LOAD ROOM BUTTON (dans l'éditeur) ========== */
+        #btn-load-room {
+            position: fixed; top: 16px; left: 16px; z-index: 100;
+            background: rgba(30,30,30,0.85); border: 1px solid #39ff14;
+            border-radius: 10px; padding: 8px 16px; cursor: pointer;
+            color: #39ff14; font-size: 13px; font-weight: 600;
+            display: flex; align-items: center; gap: 6px;
+            transition: background 0.2s;
+        }
+        #btn-load-room:hover { background: rgba(57,255,20,0.15); }
+    </style>
+</head>
+<body>
+
+<!-- ========== LOADING SCREEN ========== -->
+<div id="loading-screen">
+    <div style="text-align: center; display: flex; flex-direction: column; align-items: center;">
+        <img src="images/lapin fond transpa.png" alt="Logo" style="width: 140px; height: auto; margin-bottom: 20px; filter: drop-shadow(0 4px 16px rgba(57,255,20,0.3));">
+        <div class="loading-title">Résistance — Éditeur</div>
+        <div class="loading-subtitle">Chargement de l'éditeur...</div>
+        <div class="loading-bar-container">
+            <div class="loading-bar" id="loading-bar"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ========== ROOM SELECTOR ========== -->
+<div id="room-selector-overlay">
+    <div id="room-selector-panel">
+        <h2>Charger une pièce</h2>
+        <p>Sélectionnez une pièce existante ou créez-en une nouvelle pour l'éditer.</p>
+        <div class="room-list" id="room-list"></div>
+        <button id="btn-new-room" onclick="showNewRoomForm()">+ Nouvelle pièce</button>
+        <div class="new-room-form" id="new-room-form" style="display:none;">
+            <input type="text" id="new-room-name" placeholder="Identifiant (ex: room_3)">
+            <input type="text" id="new-room-title" placeholder="Titre affiché (ex: Salle de contrôle)">
+            <div style="display:flex; gap:8px;">
+                <button class="room-card-btn" onclick="createNewRoom()">Créer</button>
+                <button style="background:#333; color:#aaa; border:1px solid #444; border-radius:8px; padding:8px 16px; cursor:pointer;" onclick="document.getElementById('new-room-form').style.display='none';">Annuler</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========== BOUTON CHARGER UNE PIÈCE ========== -->
+<button id="btn-load-room" style="display:none;" onclick="showRoomSelector()">
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    Charger une pièce
+</button>
+
+<!-- Conteneur éditeur -->
+<div id="editor-container"></div>
+
+<!-- ========== BOUTONS INFO / VOLUME / SETTINGS ========== -->
+<div id="info-icon" title="Informations" style="position:fixed; top:20px; left:20px; width:36px; height:36px; background:transparent; border-radius:6px; display:flex; justify-content:center; align-items:center; cursor:pointer; z-index:60; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+</div>
+<div id="volume-icon" title="Réglage du volume" style="position:fixed; top:60px; left:20px; width:40px; height:40px; background:transparent; border-radius:6px; display:flex; justify-content:center; align-items:center; cursor:pointer; z-index:60; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
+    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+</div>
+<div id="settings-icon" title="Paramètres" onclick="window.location.href='game/controls-screen.html'" style="position:fixed; top:100px; left:20px; width:36px; height:36px; background:transparent; border-radius:6px; display:flex; justify-content:center; align-items:center; cursor:pointer; z-index:60; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
+    <img src="icones/settings.svg" width="28" height="28" alt="Paramètres" style="filter: invert(1);">
+</div>
+
+<!-- Panneau d'informations -->
+<div id="controls-info" style="position:fixed; top:60px; left:60px; display:none; background:rgba(20,20,20,0.95); color:#ccc; padding:16px 20px; border-radius:10px; border:1px solid #333; z-index:61; max-width:350px; font-size:13px;">
+    <button onclick="this.parentElement.style.display='none'" style="position:absolute; top:6px; right:10px; background:none; border:none; color:#aaa; font-size:18px; cursor:pointer;">&#10005;</button>
+    <p style="margin:0; color:#a0a0a0; font-style:italic;">Contrôles éditeur :<br>
+    <b>Z/W</b> Avancer &nbsp; <b>S</b> Reculer<br>
+    <b>Q/A</b> Gauche &nbsp; <b>D/E</b> Droite<br>
+    <b>Shift</b> Courir &nbsp; <b>Espace</b> Main (pan)<br>
+    <b>Clic droit</b> Tourner la vue<br>
+    <b>Molette</b> Zoom<br>
+    <b>Ctrl+S</b> Sauvegarder &nbsp; <b>Ctrl+Z</b> Annuler</p>
+</div>
+
+<!-- Popup de réglage du volume -->
+<div id="volume-popup" style="display:none; position:fixed; top:60px; left:70px; background:rgba(20,20,20,0.95); padding:16px 20px; border-radius:10px; border:1px solid #333; z-index:61; min-width:220px;">
+    <button onclick="this.parentElement.style.display='none'" style="position:absolute; top:6px; right:10px; background:none; border:none; color:#aaa; font-size:18px; cursor:pointer;">&#10005;</button>
+    <h4 style="color:#eee; margin:0 0 10px 0; font-size:14px;">Volume</h4>
+    <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+        <label style="color:#ccc; font-size:12px; width:70px;">Dialogues</label>
+        <input type="range" min="0" max="100" value="80" id="vol-dialogues" style="flex:1;">
+        <span style="color:#aaa; font-size:11px; width:24px;" id="vol-dialogues-val">80</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+        <label style="color:#ccc; font-size:12px; width:70px;">Musique</label>
+        <input type="range" min="0" max="100" value="0" id="vol-musique" style="flex:1;">
+        <span style="color:#aaa; font-size:11px; width:24px;" id="vol-musique-val">0</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:8px;">
+        <label style="color:#ccc; font-size:12px; width:70px;">Bruitages</label>
+        <input type="range" min="0" max="100" value="80" id="vol-bruitages" style="flex:1;">
+        <span style="color:#aaa; font-size:11px; width:24px;" id="vol-bruitages-val">80</span>
+    </div>
+</div>
+
+<!-- ========== OVERLAY SYSTEM ========== -->
+<div id="video-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:9999;">
+    <div id="video-player-container" style="position:absolute; top:0; left:0; width:100%; height:100%; display:flex; align-items:center; justify-content:center;">
+        <video id="overlay-video-player" preload="auto" style="width:100%; height:100%; object-fit:contain;"></video>
+        <iframe id="video-iframe" style="display:none; width:100%; height:100%; border:none;" allowfullscreen></iframe>
+        <div id="video-skip-hint" style="position:absolute; bottom:40px; left:50%; transform:translateX(-50%); color:rgba(255,255,255,0.5); font-size:13px; pointer-events:none; opacity:0;">Appuyez sur Echap ou cliquez pour passer</div>
+        <div id="video-controls" style="display:none;">
+            <span id="video-time-current">0:00</span>
+            <input type="range" id="video-progress" min="0" max="100" value="0" step="0.1">
+            <span id="video-time-total">0:00</span>
+            <button id="video-btn-back5"></button><button id="video-btn-play"></button><button id="video-btn-fwd5"></button>
+            <button id="video-btn-mute"></button><input type="range" id="video-volume" min="0" max="1" step="0.05" value="1">
+            <button id="video-btn-fullscreen"></button><button id="video-close-btn"></button>
+        </div>
+    </div>
+</div>
+<div id="lightbox-image-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.92); z-index:9999;">
+    <img id="lightbox-image" style="max-width:90%; max-height:85%; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); border-radius:8px; object-fit:contain;">
+    <button id="lightbox-image-close" style="position:absolute; top:20px; right:30px; background:rgba(255,255,255,0.15); border:none; color:#fff; font-size:28px; cursor:pointer; width:48px; height:48px; border-radius:50%; display:flex; align-items:center; justify-content:center;">&#10005;</button>
+</div>
+<div id="lightbox-text-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.92); z-index:9999;">
+    <div id="lightbox-text-content" style="max-width:700px; max-height:80%; overflow-y:auto; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:#1a1a1a; color:#e0e0e0; padding:32px 40px; border-radius:12px; font-size:16px; line-height:1.7;"></div>
+    <button id="lightbox-text-close" style="position:absolute; top:20px; right:30px; background:rgba(255,255,255,0.15); border:none; color:#fff; font-size:28px; cursor:pointer; width:48px; height:48px; border-radius:50%; display:flex; align-items:center; justify-content:center;">&#10005;</button>
+</div>
+
+<!-- ========== CDN SCRIPTS ========== -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/loaders/DRACOLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/controls/TransformControls.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/utils/BufferGeometryUtils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/polygon-clipping@0.15.7/dist/polygon-clipping.umd.min.js"></script>
+
+<!-- Score Manager -->
+<script src="game/score-manager.js"></script>
+
+<!-- ========== EDITOR SCRIPTS (tous chargés) ========== -->
+<script src="editor/editor-state.js"></script>
+<script src="editor/editor-utils.js"></script>
+<script src="editor/editor-objects.js"></script>
+<script src="editor/editor-camera-lights.js"></script>
+<script src="editor/editor-audio.js"></script>
+<script src="editor/editor-save.js"></script>
+<script src="editor/editor-floorplan.js"></script>
+
+<script>
+/**
+ * ============================================
+ * ÉDITEUR AUTONOME — Résistance
+ * ============================================
+ * Outil séparé du jeu pour éditer les pièces.
+ * Les pages de jeu (room_X.html) utilisent scene-loader.js.
+ */
+
+let scene, camera, renderer, controls;
+let groundMesh;
+let rug = null;
+let babyBody = null;
+
+// Variables bridge (nécessaires pour la compatibilité avec les scripts éditeur)
+let walls = [];
+let characterCollisionProxies = [];
+let savedNabyTransform = null;
+let nabyRawHeight = null;
+let babyModel = null;
+let mixer;
+let isMoving = false;
+let wasMoving = false;
+let collisionCacheCounter = 0;
+let _cinematicPlaying = false;
+const walkSpeed = 3.0;
+const runSpeed = 6.0;
+const keysPressed = {};
+const _dracoLoader = new THREE.DRACOLoader();
+_dracoLoader.setDecoderPath('https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/libs/draco/');
+const sharedGLTFLoader = new THREE.GLTFLoader();
+sharedGLTFLoader.setDRACOLoader(_dracoLoader);
+
+// Stubs pour fonctions spécifiques aux pages de jeu
+function getMasterVolume(category) {
+    const el = category === 'musique' ? document.getElementById('vol-musique')
+             : category === 'ambiance' ? document.getElementById('vol-dialogues')
+             : document.getElementById('vol-bruitages');
+    return el ? parseInt(el.value) / 100 : 0.8;
+}
+function updateGameVolume() {
+    // Mettre à jour le volume de tous les éléments audio actifs
+    if (typeof activeAudioElements !== 'undefined') {
+        activeAudioElements.forEach(function(el) {
+            if (el && el._trackCategory) {
+                const master = getMasterVolume(el._trackCategory);
+                el.volume = (el._trackVolume / 100) * master;
+            }
+        });
+    }
+}
+function setupFPSCamera() {}
+function createCharacterCollisionProxy() {}
+function removeCharacterCollisionProxy() {}
+function updateCharacterCollisionProxy() {}
+function loadPermanentObjects() {}
+function invalidateCollisionCache() {}
+function updateControlsForMode() {}
+function getCollisionMeshes() { return []; }
+
+// Chargement de Naby (version éditeur — sans physique CANNON)
+function loadAnimatedCharacter() {
+    return new Promise((resolve) => {
+        sharedGLTFLoader.load('3D/perso/nabydance.glb',
+            (gltf) => {
+                babyModel = gltf.scene;
+                babyModel.scale.set(1, 1, 1);
+                babyModel.updateMatrixWorld(true);
+
+                const boneMeasure = measureCharacterByBones(babyModel);
+                let effectiveRawHeight;
+                if (boneMeasure) {
+                    effectiveRawHeight = boneMeasure.height;
+                } else {
+                    const rawBox = new THREE.Box3().setFromObject(babyModel);
+                    effectiveRawHeight = rawBox.max.y - rawBox.min.y;
+                }
+                nabyRawHeight = effectiveRawHeight;
+                babyModel.userData.referenceHeightAtScale1 = effectiveRawHeight;
+                babyModel.userData.isCharacter = true;
+
+                const TARGET_HEIGHT = 1.70;
+
+                if (savedNabyTransform) {
+                    babyModel.position.set(savedNabyTransform.position.x, savedNabyTransform.position.y, savedNabyTransform.position.z);
+                    babyModel.rotation.set(savedNabyTransform.rotation.x || 0, savedNabyTransform.rotation.y || 0, savedNabyTransform.rotation.z || 0);
+                    babyModel.scale.set(savedNabyTransform.scale.x, savedNabyTransform.scale.y, savedNabyTransform.scale.z);
+                } else {
+                    const nabyScale = TARGET_HEIGHT / effectiveRawHeight;
+                    babyModel.scale.set(nabyScale, nabyScale, nabyScale);
+                    babyModel.updateMatrixWorld(true);
+                    const posBox = new THREE.Box3().setFromObject(babyModel);
+                    babyModel.position.set(26, -posBox.min.y + 0.08, -30);
+                }
+
+                babyModel.traverse((child) => {
+                    if (child.isMesh) {
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                        child.userData.isCharacter = true;
+                        child.frustumCulled = false;
+                    }
+                });
+
+                scene.add(babyModel);
+                babyModel.updateMatrixWorld(true);
+
+                // Animation
+                mixer = new THREE.AnimationMixer(babyModel);
+                if (gltf.animations && gltf.animations.length > 0) {
+                    const action = mixer.clipAction(gltf.animations[0]);
+                    action.setLoop(THREE.LoopRepeat, Infinity);
+                    action.play();
+                }
+
+                makeObjectsSelectable();
+                if (typeof updateObjectsList === 'function') updateObjectsList();
+                console.log('✅ Naby chargée dans l\'éditeur');
+                resolve(true);
+            },
+            undefined,
+            (error) => {
+                console.warn("⚠️ nabydance.glb introuvable:", error.message);
+                resolve(false);
+            }
+        );
+    });
+}
+
+// ========== ROOM SELECTOR ==========
+
+function populateRoomList() {
+    const listEl = document.getElementById('room-list');
+    listEl.innerHTML = '';
+
+    // Rooms connues par défaut (ordre narratif TFE)
+    const defaultRooms = [
+        { name: 'cocoon_nexus', title: 'Cocoon du Nexus' },
+        { name: 'salle_controle_nexus', title: 'Salle de contrôle du Nexus' },
+        { name: 'hall_entree_nexus', title: 'Hall d\'entrée du Nexus' },
+        { name: 'la_villa', title: 'La Villa' },
+        { name: 'sas_securite', title: 'Sas de sécurité — Naby' }
+    ];
+
+    // Rooms enregistrées dans localStorage
+    let savedRooms = [];
+    try { savedRooms = JSON.parse(localStorage.getItem('resistance_rooms_list') || '[]'); } catch (e) {}
+
+    // Fusionner : defaults + saved (sans doublons)
+    const allRooms = [...defaultRooms];
+    for (const sr of savedRooms) {
+        if (!allRooms.find(r => r.name === sr.name)) {
+            allRooms.push(sr);
+        }
+    }
+
+    if (allRooms.length === 0) {
+        listEl.innerHTML = '<p style="color:#666; text-align:center; padding:20px;">Aucune pièce trouvée</p>';
+        return;
+    }
+
+    allRooms.forEach(room => {
+        const card = document.createElement('div');
+        card.className = 'room-card';
+        card.innerHTML = `
+            <div>
+                <div class="room-name">${room.name}</div>
+                <div class="room-title">${room.title || ''}</div>
+                ${room.createdAt ? '<div class="room-date">Créée le ' + new Date(room.createdAt).toLocaleDateString('fr-FR') + '</div>' : ''}
+            </div>
+            <button class="room-card-btn" onclick="selectRoom('${room.name}', '${(room.title || '').replace(/'/g, "\\'")}')">Ouvrir</button>
+        `;
+        listEl.appendChild(card);
+    });
+}
+
+function showNewRoomForm() {
+    document.getElementById('new-room-form').style.display = 'block';
+    document.getElementById('new-room-name').focus();
+}
+
+function createNewRoom() {
+    const name = document.getElementById('new-room-name').value.trim().replace(/\s+/g, '_').toLowerCase();
+    const title = document.getElementById('new-room-title').value.trim() || 'Nouvelle Pièce';
+    if (!name) { alert('Veuillez entrer un identifiant pour la pièce.'); return; }
+
+    // Enregistrer dans la liste
+    let rooms = [];
+    try { rooms = JSON.parse(localStorage.getItem('resistance_rooms_list') || '[]'); } catch (e) {}
+    if (!rooms.find(r => r.name === name)) {
+        rooms.push({ name, title, createdAt: new Date().toISOString() });
+        localStorage.setItem('resistance_rooms_list', JSON.stringify(rooms));
+    }
+
+    selectRoom(name, title);
+}
+
+function showRoomSelector() {
+    populateRoomList();
+    document.getElementById('room-selector-overlay').style.display = 'flex';
+    document.getElementById('new-room-form').style.display = 'none';
+}
+
+async function selectRoom(name, title) {
+    console.log(`🏠 Chargement de la pièce: ${name} (${title})`);
+    document.getElementById('room-selector-overlay').style.display = 'none';
+    document.title = 'Résistance - Éditeur — ' + (title || name);
+
+    // Nettoyer la scène actuelle si elle existe
+    if (scene) {
+        // Supprimer tous les objets sauf sol et lumières par défaut
+        const toRemove = [];
+        scene.traverse(child => {
+            if (child !== scene && child !== groundMesh && !child.userData.isDefault &&
+                child.name !== 'ground' && child.type !== 'AmbientLight') {
+                toRemove.push(child);
+            }
+        });
+        toRemove.forEach(obj => {
+            scene.remove(obj);
+            if (obj.geometry) obj.geometry.dispose();
+            disposeMaterial(obj.material);
+        });
+        // Reset des tableaux
+        floorPlanWalls.length = 0;
+        floorPlanRooms.length = 0;
+        importedObjects.length = 0;
+        importedCharacters.length = 0;
+        selectableObjects.length = 0;
+        customLights.length = 0;
+        interactionZones.length = 0;
+    }
+
+    // Configurer le nom de la pièce
+    currentRoomName = name;
+
+    // Initialiser la scène si pas encore fait
+    if (!scene) {
+        initScene();
+        await initEditorPanel();
+    }
+
+    // Supprimer les lumières par défaut (sauf ambiante) avant restauration
+    // pour éviter la surexposition avec les lumières sauvegardées
+    const lightsToRemove = [];
+    scene.traverse(child => {
+        if (child.isLight && child.userData.isDefault && child.type !== 'AmbientLight') {
+            lightsToRemove.push(child);
+        }
+    });
+    lightsToRemove.forEach(l => scene.remove(l));
+
+    // Charger le projet
+    await bootstrapFromFiles();
+    await loadProjectOnStartup();
+
+    // Charger Naby (personnage animé) si la fonction existe dans les scripts éditeur
+    if (typeof loadAnimatedCharacter === 'function') {
+        try {
+            await loadAnimatedCharacter();
+        } catch (e) {
+            console.warn("⚠️ Personnage Naby non trouvé ou erreur de chargement:", e.message);
+        }
+    }
+
+    // Appliquer le spawn en mode dev
+    if (spawnPosition && spawnSaved) {
+        camera.position.set(spawnPosition.x, spawnPosition.y + PLAYER_EYE_HEIGHT + 3, spawnPosition.z + 5);
+        controls.target.set(spawnPosition.x, spawnPosition.y + 1, spawnPosition.z);
+    }
+
+    // Optimiser les ombres : limiter les shadow maps aux spots/directionelles
+    scene.traverse(child => {
+        if (child.isLight && child.isPointLight) {
+            child.castShadow = false; // Les PointLight shadows sont très coûteuses
+        }
+    });
+
+    // Rafraîchir les ombres une fois après chargement complet
+    renderer.shadowMap.needsUpdate = true;
+
+    // Démarrer l'audio (ambiance + bruitages, musique à 0 par défaut)
+    loadingScreenDismissed = true;
+    if (typeof startGameAudio === 'function') {
+        startGameAudio();
+    }
+
+    // Afficher le bouton "Charger une pièce"
+    document.getElementById('btn-load-room').style.display = 'flex';
+
+    // Masquer l'écran de chargement
+    hideLoadingScreen();
+
+    console.log(`✅ Pièce "${name}" chargée dans l'éditeur`);
+}
+
+// ========== SCENE 3D ==========
+
+function initScene() {
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xb3e5fc); // Ciel bleu clair (même que sas_securite)
+
+    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 5, 10);
+
+    renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Limiter à 2x pour la perf
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFShadowMap; // PCFShadowMap (léger, même que sas_securite)
+    renderer.shadowMap.autoUpdate = false; // Mise à jour manuelle des ombres (perf++)
+    renderer.physicallyCorrectLights = true; // Atténuation réaliste des lumières
+    document.body.appendChild(renderer.domElement);
+
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = false; // Pas d'inertie — arrêt net quand on lâche la souris
+    controls.screenSpacePanning = false;
+    controls.minDistance = 0.5;
+    controls.maxDistance = 150;
+    controls.maxPolarAngle = Math.PI / 2.1;
+    controls.mouseButtons = { LEFT: null, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE };
+
+    // Sol
+    const floorGeo = new THREE.PlaneGeometry(200, 200);
+    const floorMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
+    groundMesh = new THREE.Mesh(floorGeo, floorMat);
+    groundMesh.rotation.x = -Math.PI / 2;
+    groundMesh.receiveShadow = true;
+    groundMesh.name = 'ground';
+    scene.add(groundMesh);
+
+    // Lumière ambiante (faible par défaut — loadProjectOnStartup restaure l'intensité sauvegardée)
+    const ambient = new THREE.AmbientLight(0xffffff, 0.3);
+    ambient.userData.isDefault = true;
+    window.defaultAmbientLight = ambient;
+    scene.add(ambient);
+
+    // Pas de directionnelle par défaut — les lumières custom sont restaurées par loadProjectOnStartup
+
+    // ========== NAVIGATION CLAVIER ZQSD ==========
+    const _editorKeys = {};
+    const EDITOR_WALK_SPEED = 3.0;    // unités/s — déplacement précis
+    const EDITOR_RUN_SPEED = 9.0;     // unités/s (Shift) — déplacement rapide
+
+    window.addEventListener('keydown', (e) => {
+        // Ne pas capturer si on tape dans un input/textarea
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        _editorKeys[e.key.toLowerCase()] = true;
+    });
+    window.addEventListener('keyup', (e) => {
+        _editorKeys[e.key.toLowerCase()] = false;
+    });
+    // Reset des touches si la fenêtre perd le focus (évite les touches "bloquées")
+    window.addEventListener('blur', () => {
+        Object.keys(_editorKeys).forEach(k => _editorKeys[k] = false);
+    });
+
+    const _moveDir = new THREE.Vector3();
+    const _forward = new THREE.Vector3();
+    const _right = new THREE.Vector3();
+
+    function updateEditorMovement(delta) {
+        // Limiter delta pour éviter les sauts lors de tabulation ou lag
+        const dt = Math.min(delta, 0.05);
+        _moveDir.set(0, 0, 0);
+
+        // Calculer la direction avant/arrière depuis la caméra vers la cible OrbitControls
+        _forward.copy(controls.target).sub(camera.position).normalize();
+        _forward.y = 0; // Garder le mouvement horizontal
+        if (_forward.lengthSq() > 0) _forward.normalize();
+
+        // Calculer la direction droite
+        _right.crossVectors(_forward, camera.up).normalize();
+
+        // AZERTY : Z/W = avancer, S = reculer, Q/A = gauche, D/E = droite
+        if (_editorKeys['z'] || _editorKeys['w']) _moveDir.add(_forward);
+        if (_editorKeys['s'])                      _moveDir.sub(_forward);
+        if (_editorKeys['q'] || _editorKeys['a']) _moveDir.sub(_right);
+        if (_editorKeys['d'] || _editorKeys['e']) _moveDir.add(_right);
+
+        if (_moveDir.lengthSq() === 0) return;
+
+        _moveDir.normalize();
+        const speed = _editorKeys['shift'] ? EDITOR_RUN_SPEED : EDITOR_WALK_SPEED;
+        const displacement = _moveDir.multiplyScalar(speed * dt);
+
+        // Déplacer caméra ET cible ensemble (pour que OrbitControls suive)
+        camera.position.add(displacement);
+        controls.target.add(displacement);
+    }
+
+    // Boucle d'animation
+    const _clock = new THREE.Clock();
+    function animate() {
+        requestAnimationFrame(animate);
+        if (_cinematicPlaying) return;
+        const delta = _clock.getDelta();
+        // Navigation clavier ZQSD
+        updateEditorMovement(delta);
+        controls.update();
+        // Mettre à jour les mixers d'animation
+        if (mixer) mixer.update(delta);
+        importedCharacters.forEach(char => {
+            if (char.userData.mixer) char.userData.mixer.update(delta);
+        });
+        renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+}
+
+// ========== EDITOR PANEL ==========
+
+async function initEditorPanel() {
+    // Charger le panneau HTML
+    try {
+        const resp = await fetch('editor/editor-panel.html');
+        if (resp.ok) {
+            document.getElementById('editor-container').innerHTML = await resp.text();
+        }
+    } catch (e) { console.warn('Chargement editor-panel.html échoué:', e); }
+
+    // Ajouter les éléments UI de l'éditeur
+    addEditorUIElements();
+
+    // Charger editor-core.js en dernier (dépend du panneau HTML)
+    await new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'editor/editor-core.js';
+        script.onload = resolve;
+        script.onerror = reject;
+        document.body.appendChild(script);
+    });
+
+    // Initialiser — l'éditeur est toujours actif dans editor.html
+    interactionMode = 'developer';
+    editorMode = true;
+    try {
+        initEditor();
+        if (typeof initEditorObjectsListeners === 'function') initEditorObjectsListeners();
+        initAccordions();
+    } catch (e) {
+        console.warn('⚠️ Erreur init éditeur:', e);
+    }
+
+    // Afficher le panneau éditeur (il est caché par défaut dans editor-panel.html)
+    const editorPanel = document.getElementById('editor-panel');
+    if (editorPanel) editorPanel.style.display = 'flex';
+    const collapseBtn = document.getElementById('toggle-panel-collapse');
+    if (collapseBtn) collapseBtn.style.display = 'block';
+
+    // Cacher le switch Jeu/Développeur dans le panneau (pas de mode jeu dans l'éditeur)
+    const modeSwitch = document.getElementById('interaction-mode-switch');
+    if (modeSwitch) {
+        modeSwitch.parentElement.style.display = 'none';
+    }
+
+    // Dans editor.html, l'éditeur est TOUJOURS actif.
+    // Empêcher toggleEditor() de désactiver editorMode.
+    const toggleBtn = document.getElementById('toggle-editor-btn');
+    if (toggleBtn) {
+        toggleBtn.onclick = function() {
+            // Toggle le panneau visuellement, mais garder editorMode = true
+            const panel = document.getElementById('editor-panel');
+            if (panel) {
+                const isVisible = panel.style.display !== 'none';
+                panel.style.display = isVisible ? 'none' : 'flex';
+            }
+            // Ne JAMAIS mettre editorMode à false dans editor.html
+            editorMode = true;
+        };
+    }
+}
+
+function addEditorUIElements() {
+    // Bouton toggle éditeur (requis par editor-core.js mais invisible — l'éditeur est toujours actif)
+    if (!document.getElementById('toggle-editor-btn')) {
+        const btn = document.createElement('button');
+        btn.id = 'toggle-editor-btn';
+        btn.style.display = 'none'; // Caché — pas de mode jeu dans l'éditeur
+        document.body.appendChild(btn);
+    }
+
+    // Bouton plier/déplier panneau
+    if (!document.getElementById('toggle-panel-collapse')) {
+        const btn = document.createElement('button');
+        btn.id = 'toggle-panel-collapse';
+        btn.title = 'Plier/Déplier le panneau';
+        btn.innerHTML = '<img src="icones/circle-chevron-right.svg" alt="Déplier" width="24" height="24" style="filter: brightness(0) invert(1);">';
+        document.body.appendChild(btn);
+        btn.addEventListener('click', function() {
+            const panel = document.getElementById('editor-panel');
+            const btnEl = document.getElementById('toggle-panel-collapse');
+            isPanelCollapsed = !isPanelCollapsed;
+            const btnImg = btnEl.querySelector('img');
+            if (isPanelCollapsed) {
+                panel.classList.add('collapsed'); btnEl.classList.add('collapsed');
+                btnImg.src = 'icones/circle-chevron-left.svg';
+            } else {
+                panel.classList.remove('collapsed'); btnEl.classList.remove('collapsed');
+                btnImg.src = 'icones/circle-chevron-right.svg';
+            }
+        });
+    }
+
+    // Pas de switch Jeu/Développeur dans l'éditeur — mode développeur permanent
+    // Le floating-mode-switch est créé vide pour éviter les erreurs dans editor-core.js
+    if (!document.getElementById('floating-mode-switch')) {
+        const sw = document.createElement('div');
+        sw.id = 'floating-mode-switch';
+        sw.style.display = 'none';
+        document.body.appendChild(sw);
+    }
+
+    // Étiquette dimensions
+    if (!document.getElementById('object-dimensions-label')) {
+        const label = document.createElement('div');
+        label.id = 'object-dimensions-label';
+        label.style.display = 'none';
+        label.innerHTML = '<div class="dim-title" id="dim-label-name">Objet</div><div class="dim-row"><span>L: <span class="dim-val" id="dim-label-w">-</span><span class="dim-unit"> cm</span></span><span>l: <span class="dim-val" id="dim-label-d">-</span><span class="dim-unit"> cm</span></span><span>H: <span class="dim-val" id="dim-label-h">-</span><span class="dim-unit"> cm</span></span></div>';
+        document.body.appendChild(label);
+    }
+}
+
+// ========== INITIALISATION ==========
+
+window.onload = function() {
+    populateRoomList();
+
+    // Si un paramètre URL est fourni, charger directement
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomParam = urlParams.get('room');
+    if (roomParam) {
+        const titleParam = urlParams.get('title') || roomParam;
+        selectRoom(roomParam, titleParam);
+    }
+
+    // ========== EVENT LISTENERS BOUTONS INFO / VOLUME ==========
+    document.getElementById('info-icon').addEventListener('click', function() {
+        const panel = document.getElementById('controls-info');
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    });
+    document.getElementById('volume-icon').addEventListener('click', function() {
+        const popup = document.getElementById('volume-popup');
+        popup.style.display = popup.style.display === 'none' ? 'block' : 'none';
+    });
+    // Mise à jour des valeurs affichées et du volume en temps réel
+    ['vol-dialogues', 'vol-musique', 'vol-bruitages'].forEach(function(id) {
+        const slider = document.getElementById(id);
+        if (slider) {
+            slider.addEventListener('input', function() {
+                document.getElementById(id + '-val').textContent = this.value;
+                if (typeof updateGameVolume === 'function') updateGameVolume();
+            });
+        }
+    });
+};
+</script>
+
+</body>
+</html>

@@ -1,0 +1,2206 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shape Sorter 3D - Expert WebGL</title>
+
+    <!-- Tailwind/DaisyUI et éditeur chargés uniquement via editor.html -->
+
+    <style>
+        /* ========== LOADING SCREEN ========== */
+        #loading-screen {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #1a1a1a;
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.6s ease;
+        }
+        #loading-screen.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .loading-title {
+            color: #e0e0e0;
+            font-size: 28px;
+            font-weight: 300;
+            margin-bottom: 8px;
+            letter-spacing: 2px;
+        }
+        .loading-subtitle {
+            color: #666;
+            font-size: 12px;
+            margin-bottom: 30px;
+        }
+        .loading-bar-container {
+            width: 240px;
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .loading-bar {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #39FF14, #7CFC00);
+            border-radius: 2px;
+            box-shadow: 0 0 8px rgba(57, 255, 20, 0.6);
+            animation: loading-progress 2.5s ease-out forwards;
+        }
+        @keyframes loading-progress {
+            0% { width: 0%; }
+            20% { width: 15%; }
+            40% { width: 35%; }
+            60% { width: 55%; }
+            80% { width: 72%; }
+            100% { width: 88%; }
+        }
+    </style>
+
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f0f0;
+            user-select: none;
+            touch-action: none;
+        }
+
+        #ui-container {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            pointer-events: none;
+            color: #333;
+            text-shadow: 1px 1px 2px white;
+            z-index: 10;
+        }
+
+        /* Icône info en haut à gauche */
+        #info-icon {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            width: 36px;
+            height: 36px;
+            background: transparent;
+            border-radius: 6px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            pointer-events: auto;
+            transition: all 0.2s;
+            z-index: 60;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+        }
+
+        #info-icon:hover {
+            transform: scale(1.1);
+            filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.4));
+        }
+
+        #info-icon svg {
+            stroke: #ffffff;
+            width: 28px;
+            height: 28px;
+        }
+
+        /* Icône volume en mode jeu */
+        #volume-icon {
+            position: fixed;
+            top: 60px;
+            left: 20px;
+            width: 36px;
+            height: 36px;
+            background: transparent;
+            border-radius: 6px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            pointer-events: auto;
+            transition: all 0.2s;
+            z-index: 60;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+        }
+        #volume-icon:hover, #settings-icon:hover {
+            transform: scale(1.1);
+            filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.4));
+        }
+
+        /* Popup de réglage du volume */
+        #volume-popup {
+            position: fixed;
+            top: 60px;
+            left: 64px;
+            background: rgba(26, 26, 26, 0.95);
+            border: 1px solid #3a3a3a;
+            border-radius: 10px;
+            padding: 16px 18px;
+            z-index: 200;
+            min-width: 200px;
+            backdrop-filter: blur(8px);
+            display: none;
+        }
+        #volume-popup h4 {
+            color: #e0e0e0;
+            font-size: 12px;
+            margin: 0 0 12px;
+            font-weight: 500;
+        }
+        .volume-slider-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .volume-slider-row img {
+            filter: brightness(0) invert(0.7);
+            flex-shrink: 0;
+        }
+        .volume-slider-row label {
+            color: #aaa;
+            font-size: 10px;
+            min-width: 60px;
+            flex-shrink: 0;
+        }
+        /* Étiquette dimensions objet sélectionné */
+        #object-dimensions-label {
+            position: fixed;
+            display: none;
+            pointer-events: none;
+            z-index: 200;
+            background: rgba(0, 0, 0, 0.85);
+            border: 1px solid #00CED1;
+            border-radius: 6px;
+            padding: 5px 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            color: #e0e0e0;
+            white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(0, 206, 209, 0.3);
+            transform: translate(-50%, -100%);
+            margin-top: -12px;
+        }
+        #object-dimensions-label .dim-title {
+            color: #00CED1;
+            font-weight: bold;
+            font-size: 10px;
+            margin-bottom: 2px;
+        }
+        #object-dimensions-label .dim-row {
+            display: flex;
+            gap: 10px;
+        }
+        #object-dimensions-label .dim-val {
+            color: #fff;
+        }
+        #object-dimensions-label .dim-unit {
+            color: #888;
+            font-size: 9px;
+        }
+
+        /* (Curseurs vitesse de déplacement supprimés — valeurs fixes) */
+
+        .volume-slider-row input[type="range"] {
+            flex: 1;
+            height: 4px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: #333;
+            border-radius: 2px;
+            outline: none;
+            cursor: pointer;
+        }
+        .volume-slider-row input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #00CED1;
+            cursor: pointer;
+        }
+        .volume-slider-row input[type="range"]::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #00CED1;
+            border: none;
+            cursor: pointer;
+        }
+        .volume-slider-row .volume-value {
+            color: #d4d4d4;
+            font-size: 10px;
+            min-width: 24px;
+            text-align: right;
+        }
+        #volume-popup-close {
+            position: absolute;
+            top: 6px;
+            right: 8px;
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 2px 5px;
+            line-height: 1;
+        }
+        #volume-popup-close:hover { color: #fff; }
+
+        /* Panneau info rétractable */
+        #controls-info {
+            position: fixed;
+            top: 20px;
+            left: 64px;
+            font-size: 13px;
+            background: rgba(40, 40, 40, 0.95);
+            color: #e0e0e0;
+            padding: 16px;
+            border-radius: 8px;
+            pointer-events: auto;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 55;
+            display: none; /* Masqué par défaut */
+            max-width: 320px;
+            backdrop-filter: blur(10px);
+        }
+
+        #controls-info.visible {
+            display: block;
+        }
+
+        /* (styles d'aide / indices à venir) */
+
+        #controls-info-close {
+            position: absolute;
+            top: 6px;
+            right: 8px;
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 2px 5px;
+            line-height: 1;
+        }
+        #controls-info-close:hover { color: #fff; }
+
+        #reset-btn {
+            margin-top: 15px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            pointer-events: auto;
+            transition: background 0.3s, transform 0.1s;
+        }
+
+        #reset-btn:hover {
+            background-color: #c0392b;
+            transform: scale(1.05);
+        }
+
+        canvas {
+            display: block;
+            outline: none;
+        }
+
+        #overlay-video-player {
+            width: auto;
+            max-width: 100%;
+            max-height: calc(100vh - 120px);
+            object-fit: contain;
+            background-color: black;
+        }
+
+    </style>
+</head>
+<body>
+
+<!-- ========== LOADING SCREEN ========== -->
+<div id="loading-screen">
+    <div style="text-align: center; display: flex; flex-direction: column; align-items: center;">
+        <img src="images/lapin fond transpa.png" alt="Logo" style="width: 140px; height: auto; margin-bottom: 20px; filter: drop-shadow(0 4px 16px rgba(57,255,20,0.3));">
+        <div class="loading-title">Résistance</div>
+        <div class="loading-subtitle">Chargement en cours...</div>
+        <div class="loading-bar-container">
+            <div class="loading-bar" id="loading-bar"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Icône info cliquable en haut à gauche -->
+<div id="info-icon" title="Afficher/Masquer les informations">
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+</div>
+
+<!-- Icône volume cliquable sous l'icône info -->
+<div id="volume-icon" title="Réglage du volume">
+    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+</div>
+
+<!-- Popup de réglage du volume -->
+<div id="volume-popup">
+    <button id="volume-popup-close" onclick="document.getElementById('volume-popup').style.display='none';">&#10005;</button>
+    <h4>Volume</h4>
+    <div class="volume-slider-row">
+        <img src="icones/message-circle-more.svg" width="16" height="16">
+        <label>Dialogues</label>
+        <input type="range" min="0" max="100" value="80" id="vol-dialogues" oninput="updateGameVolume()">
+        <span class="volume-value" id="vol-dialogues-val">80</span>
+    </div>
+    <div class="volume-slider-row">
+        <img src="icones/music.svg" width="16" height="16">
+        <label>Musique</label>
+        <input type="range" min="0" max="100" value="0" id="vol-musique" oninput="updateGameVolume()">
+        <span class="volume-value" id="vol-musique-val">0</span>
+    </div>
+    <div class="volume-slider-row">
+        <img src="icones/footprints.svg" width="16" height="16">
+        <label>Bruitages</label>
+        <input type="range" min="0" max="100" value="80" id="vol-bruitages" oninput="updateGameVolume()">
+        <span class="volume-value" id="vol-bruitages-val">80</span>
+    </div>
+</div>
+
+<!-- Switch Mode Jeu/Développeur FLOTTANT (masqué en mode jeu pur) -->
+<button id="floating-mode-switch" title="Basculer entre mode Jeu et mode Développeur" style="display: none;">
+</button>
+
+<!-- Panneau d'aide / indices (masqué par défaut, affiché au clic sur l'icône) -->
+<div id="controls-info" style="position:fixed;">
+    <button id="controls-info-close" onclick="document.getElementById('controls-info').classList.remove('visible');">&#10005;</button>
+    <p style="margin:0; padding:8px 24px 8px 0; color:#a0a0a0; font-style:italic;">Ici s'afficheront les indices et informations d'aide.</p>
+</div>
+
+<!-- ========== PLAYER HUD (pseudo + axe lucidite/emprise) — charte carnet ========== -->
+<div id="player-hud" style="position:fixed; bottom:16px; left:16px; z-index:100; background:rgba(18,18,26,0.92); border:1px solid rgba(126,214,223,0.35); border-radius:10px; padding:12px 16px; min-width:270px; font-family:'Segoe UI',Tahoma,sans-serif; backdrop-filter:blur(6px); box-shadow:0 4px 18px rgba(0,0,0,0.45);">
+    <!-- Pseudo du resistant -->
+    <div style="font-size:10px; color:#7ed6df; letter-spacing:1.6px; text-transform:uppercase; font-weight:700;">Résistant·e</div>
+    <div id="player-pseudo-display" style="color:#eaeaf2; font-size:16px; font-weight:700; font-family:'Segoe UI',Tahoma,sans-serif; margin-bottom:10px; letter-spacing:0.5px;">???</div>
+
+    <!-- Jauge bidirectionnelle Lucidite/Emprise — palette carnet -->
+    <div id="lucidite-hud" style="position:relative;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px; font-size:10px; letter-spacing:1.4px; text-transform:uppercase; font-weight:700;">
+            <span style="color:#c77272;">Emprise</span>
+            <span id="lucidite-val" style="color:#c8d0dc; font-family:'Segoe UI',sans-serif; font-size:12px; font-weight:600;">0</span>
+            <span style="color:#7ed6df;">Lucidité</span>
+        </div>
+        <div id="lucidite-track" style="position:relative; width:100%; height:8px; border-radius:6px; background:linear-gradient(90deg, #c25c5c 0%, #c78b6b 28%, #c8bd7a 52%, #7fb890 76%, #7ed6df 100%); box-shadow:inset 0 1px 3px rgba(0,0,0,0.55), 0 0 0 1px rgba(126,214,223,0.15);">
+            <div style="position:absolute; left:50%; top:-3px; width:1px; height:14px; background:rgba(126,214,223,0.35); transform:translateX(-50%);"></div>
+            <div id="lucidite-cursor" style="position:absolute; top:50%; left:0%; width:14px; height:14px; border-radius:50%; background:#eaeaf2; border:2px solid #12121a; box-shadow:0 0 8px rgba(126,214,223,0.55); transform:translate(-50%,-50%); transition:left 0.5s cubic-bezier(.4,1.3,.5,1), background 0.4s, box-shadow 0.4s;"></div>
+        </div>
+        <div id="lucidite-fill" style="display:none;"></div>
+    </div>
+</div>
+
+<!-- ========== RIGHT DOCK (carnet + minimap groupes en bas-droite) ========== -->
+<div id="right-dock" style="position:fixed; bottom:16px; right:16px; z-index:100; display:flex; gap:10px; align-items:flex-end;">
+    <!-- NotebookManager et MinimapManager s'attachent ici dynamiquement -->
+</div>
+
+<!-- ========== BOUTON PARAMETRES (sous icône volume) ========== -->
+<div id="settings-icon" title="Paramètres des contrôles" onclick="window.location.href='game/controls-screen.html'" style="position:fixed; top:100px; left:20px; width:36px; height:36px; background:transparent; border-radius:6px; display:flex; justify-content:center; align-items:center; cursor:pointer; pointer-events:auto; transition:all 0.2s; z-index:60; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
+    <img src="icones/settings.svg" width="28" height="28" alt="Paramètres" style="filter: invert(1);">
+</div>
+
+<!-- ========== VISEUR MODE JEU + LABEL INTERACTION ========== -->
+<div id="game-crosshair" style="position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:500; pointer-events:none; transition: opacity 0.2s;">
+    <svg id="crosshair-svg" width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="14" cy="14" r="3" stroke="rgba(255,255,255,0.7)" stroke-width="1.5" fill="none"/>
+        <line x1="14" y1="3" x2="14" y2="9" stroke="rgba(255,255,255,0.5)" stroke-width="1"/>
+        <line x1="14" y1="19" x2="14" y2="25" stroke="rgba(255,255,255,0.5)" stroke-width="1"/>
+        <line x1="3" y1="14" x2="9" y2="14" stroke="rgba(255,255,255,0.5)" stroke-width="1"/>
+        <line x1="19" y1="14" x2="25" y2="14" stroke="rgba(255,255,255,0.5)" stroke-width="1"/>
+    </svg>
+</div>
+<div id="interaction-label" style="position:fixed; top:calc(50% + 28px); left:50%; transform:translateX(-50%); z-index:500; pointer-events:none; opacity:0; transition:opacity 0.2s; text-align:center; white-space:nowrap;">
+    <span id="interaction-label-text" style="background:rgba(0,0,0,0.7); color:#FFD700; font-size:13px; font-family:sans-serif; padding:4px 12px; border-radius:4px; display:inline-block;"></span>
+    <div id="interaction-label-hint" style="color:rgba(255,255,255,0.5); font-size:10px; margin-top:2px; font-family:sans-serif;"></div>
+</div>
+
+<!-- ========== OVERLAY SYSTEM ========== -->
+<div id="video-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:9999; cursor:none;">
+    <div id="video-player-container" style="position:absolute; top:0; left:0; width:100%; height:100%; display:flex; align-items:center; justify-content:center;">
+        <video id="overlay-video-player" preload="auto" style="width:100%; height:100%; object-fit:contain; background:#000;"></video>
+        <iframe id="video-iframe" style="display:none; width:100%; height:100%; border:none;" allowfullscreen></iframe>
+        <!-- Indicateur "Appuyez sur Echap pour quitter" - apparaît brièvement -->
+        <div id="video-skip-hint" style="position:absolute; bottom:40px; left:50%; transform:translateX(-50%); color:rgba(255,255,255,0.5); font-size:13px; font-family:sans-serif; pointer-events:none; transition:opacity 1s ease; opacity:0;">Appuyez sur Echap ou cliquez pour passer</div>
+        <!-- Contrôles masqués (conservés pour compatibilité mais invisibles) -->
+        <div id="video-controls" style="display:none;">
+            <span id="video-time-current">0:00</span>
+            <input type="range" id="video-progress" min="0" max="100" value="0" step="0.1">
+            <span id="video-time-total">0:00</span>
+            <button id="video-btn-back5"></button>
+            <button id="video-btn-play">▶</button>
+            <button id="video-btn-fwd5"></button>
+            <button id="video-btn-mute">🔊</button>
+            <input type="range" id="video-volume" min="0" max="1" step="0.05" value="1">
+            <button id="video-btn-fullscreen"></button>
+            <button id="video-close-btn"></button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="lightbox-image-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.92); z-index:9999;">
+    <img id="lightbox-image" style="max-width:90%; max-height:85%; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); border-radius:8px; object-fit:contain;">
+    <button id="lightbox-image-close" style="position:absolute; top:20px; right:30px; background:rgba(255,255,255,0.15); border:none; color:#fff; font-size:28px; cursor:pointer; width:48px; height:48px; border-radius:50%; display:flex; align-items:center; justify-content:center;">&#10005;</button>
+</div>
+
+<div id="lightbox-text-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.92); z-index:9999;">
+    <div id="lightbox-text-content" style="max-width:700px; max-height:80%; overflow-y:auto; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:#1a1a1a; color:#e0e0e0; padding:32px 40px; border-radius:12px; font-size:16px; line-height:1.7;"></div>
+    <button id="lightbox-text-close" style="position:absolute; top:20px; right:30px; background:rgba(255,255,255,0.15); border:none; color:#fff; font-size:28px; cursor:pointer; width:48px; height:48px; border-radius:50%; display:flex; align-items:center; justify-content:center;">&#10005;</button>
+</div>
+
+<script src="game/debug-logger.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/loaders/DRACOLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/utils/BufferGeometryUtils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/polygon-clipping@0.15.7/dist/polygon-clipping.umd.min.js"></script>
+
+<!-- Scene Loader (reconstruction scène sans éditeur) -->
+<script src="scene-loader.js"></script>
+
+<!-- Score Manager (cross-rooms) -->
+<script src="game/score-manager.js"></script>
+<!-- Relationship + Lucidity + Dialogue + Minimap + Notebook (TFE progression system) -->
+<script src="game/relationship-manager.js"></script>
+<script src="game/lucidity-manager.js"></script>
+<script src="game/dialogue-manager.js"></script>
+<script src="game/dialogues/naby.js"></script>
+<script src="game/minimap-manager.js"></script>
+<script src="game/notebook-manager.js"></script>
+<!-- Input Config + Gamepad (contrôles configurables) -->
+<script src="game/input-config.js"></script>
+<script src="game/gamepad-manager.js"></script>
+
+<script>
+/**
+ * GLTFLoader global avec support Draco (décompression des modèles 3D compressés)
+ * Tous les chargements GLB doivent utiliser ce loader partagé.
+ */
+const dracoLoader = new THREE.DRACOLoader();
+dracoLoader.setDecoderPath('https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/libs/draco/');
+const sharedGLTFLoader = new THREE.GLTFLoader();
+sharedGLTFLoader.setDRACOLoader(dracoLoader);
+
+/**
+ * CONFIGURATION ET ÉTAT DU JEU
+ */
+
+// Variables éditeur minimales pour le mode jeu (l'éditeur complet est chargé via Ctrl+Shift+C)
+var interactionMode = 'game';
+var editorMode = false;
+let spawnNearArcade = false; // sera mis à true dans init() si ?spawn=arcade
+// Variables éditeur référencées dans les listeners (absentes en mode jeu pur)
+let isSpacePressed = false;
+let isSpacePanning = false;
+let spacePanCameraStart = null;
+let spacePanTargetStart = null;
+var currentEditorMode = 'objects';
+var selectableObjects = [];
+var importedObjects = [];
+var importedCharacters = [];
+var customLights = [];
+var audioTracks = { musique: [], ambiance: [], bruitage: [], mouvement: [] };
+var AUDIO_CATEGORIES = ['musique', 'ambiance', 'bruitage', 'mouvement'];
+var activeAudioElements = [];
+var activeMovementAudio = {};
+var MOVEMENT_ACTION_KEYS = { 'forward':['z','w'],'backward':['s'],'left':['q','a'],'right':['d'],'jump':[' '],'crouch':['control'],'run':['shift'],'grab':['e'],'door':['f'] };
+var floorPlanWalls = [];
+var selectedWalls = [];
+var selectedEditorObject = null;
+var loadingScreenDismissed = false;
+var isPanelCollapsed = false;
+var wallHeight = 2.5;
+var PLAYER_EYE_HEIGHT = 1.50;
+var spawnPosition = null;
+var spawnRotationY = 0;
+var currentRoomName = 'sas_securite';
+var interactionZones = [];
+var hoveredZones = new Set();
+var proximityTriggeredZones = new Set();
+var heldZone = null;
+var holdStartTime = 0;
+var lastClickTime = 0;
+var lastClickZone = null;
+var _cinematicPlaying = false;
+var _currentCinematicZone = null;
+var initialCameraSettings = { position: new THREE.Vector3(), fov: 75 };
+let scene, camera, renderer, world, controls;
+let rug, babyModel, babyBody, groundMesh;
+let savedNabyTransform = null; // Transform sauvegardé pour Naby (restauré au chargement du projet)
+let nabyRawHeight = null; // Hauteur brute du modèle GLB (avant mise à l'échelle)
+let characterCollisionProxies = []; // [{character, proxy}] - Cylindres invisibles pour collision
+
+let walls = [];
+let raycaster = new THREE.Raycaster();
+let mouse = new THREE.Vector2();
+
+// Variables pour l'animation et le temps
+let mixer; 
+const clock = new THREE.Clock();
+
+// Limites de la pièce pour le blocage caméra
+const ROOM_LIMIT = 98;
+
+// --- Vecteurs pré-alloués (réutilisés à chaque frame, zéro allocation GC) ---
+const _tmpVec3A = new THREE.Vector3();
+const _tmpVec3B = new THREE.Vector3();
+const _tmpVec3C = new THREE.Vector3();
+const _tmpVec2A = new THREE.Vector2();
+const _tmpVec2B = new THREE.Vector2();
+const _moveForward = new THREE.Vector3();
+const _moveRight = new THREE.Vector3();
+const _moveInput = new THREE.Vector3();
+const _devDirection = new THREE.Vector3();
+const _devSide = new THREE.Vector3();
+const _slideX = new THREE.Vector3();
+const _slideZ = new THREE.Vector3();
+const _slideResult = new THREE.Vector3();
+const _gpCamDir = new THREE.Vector3();
+const _gpCamNewDir = new THREE.Vector3();
+
+// Variables pour le saut et le mouvement
+let verticalVelocity = 0;
+const gravityConst = 0.015;
+const jumpStrength = 0.45;
+const baseEyeHeight = 1.60; // Hauteur des yeux (personne de ~1.70m → yeux à ~1.60m)
+
+// Vitesses de déplacement — valeurs fixes (sliders supprimés)
+let walkSpeed = 0.8;   // unités/s
+let runSpeed = 3;      // unités/s
+
+// --- Système de mouvement immersif ---
+let currentSpeed = 0;                    // Vitesse interpolée actuelle
+const ACCELERATION = 50.0;              // unités/s² — accélération vive
+const DECELERATION = 40.0;             // unités/s² — décélération rapide
+
+// Head bob (balancement de tête)
+let headBobTime = 0;
+const HEAD_BOB_WALK_FREQ = 8.0;        // oscillations/sec en marchant
+const HEAD_BOB_RUN_FREQ  = 12.0;       // oscillations/sec en courant
+const HEAD_BOB_WALK_AMP  = 0.008;      // amplitude verticale (m) en marchant (réduit)
+const HEAD_BOB_RUN_AMP   = 0.014;      // amplitude verticale (m) en courant (réduit)
+let headBobOffset = 0;                  // offset Y courant appliqué à la caméra
+
+// Audio de pas — lecture en boucle continue pendant le déplacement
+let isMoving = false;
+let wasMoving = false;
+const FOOTSTEP_WALK_SRC = 'audios/Mouvement/Pas rapides sur beton cut.mp3';
+const FOOTSTEP_RUN_SRC  = 'audios/Mouvement/courir sur beton cut.mp3';
+let _footstepWalkAudio = null;  // Audio pré-chargé pour la marche
+let _footstepRunAudio = null;   // Audio pré-chargé pour la course
+let _footstepWasSprinting = false;
+
+// Matériaux physiques
+const shapePhysMaterial = new CANNON.Material("shapeMaterial");
+const obstaclePhysMaterial = new CANNON.Material("obstacleMaterial");
+
+const keysPressed = {};
+
+/**
+ * UTILITAIRE POUR LES URLS
+ */
+function resolveURL(path) {
+    if (window.location.protocol === 'blob:') {
+        return window.location.origin + '/' + path.replace(/^\.\//, '');
+    }
+    return path;
+}
+
+/**
+ * INITIALISATION
+ */
+function init() {
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xb3e5fc);
+
+    // Récupérer le paramètre d'entrée depuis l'URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const entryWall = urlParams.get('wall');
+    spawnNearArcade = urlParams.get('spawn') === 'arcade';
+
+    camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 2000);
+
+    // Permettre à la caméra de voir les layers 0 (objets normaux) ET 1 (gizmos)
+    camera.layers.enable(0);
+    camera.layers.enable(1);
+
+    // Configurer la position et orientation de la caméra selon le mur d'entrée
+    if (entryWall === '3') {
+        // Arrivée depuis la_villa mur 3 → Face au mur 3 de sas_securite (mur sud)
+        camera.position.set(0, baseEyeHeight, -25);
+        camera.lookAt(0, baseEyeHeight, 100);
+    } else if (spawnNearArcade) {
+        // Retour depuis AI Mythology → position provisoire au centre, sera ajustée dès que la borne est chargée
+        camera.position.set(0, baseEyeHeight, 0);
+        camera.lookAt(0, baseEyeHeight, -10);
+    } else {
+        // Position par défaut (face au mur 1 - nord)
+        camera.position.set(0, baseEyeHeight, 25);
+        camera.lookAt(0, baseEyeHeight, 0);
+    }
+
+    renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFShadowMap;
+    renderer.physicallyCorrectLights = true;
+    document.body.appendChild(renderer.domElement);
+
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.screenSpacePanning = false;
+    controls.minDistance = 2;
+    controls.maxDistance = 150;
+    controls.maxPolarAngle = Math.PI / 2.1; 
+    
+    controls.mouseButtons = {
+        LEFT: null,
+        MIDDLE: THREE.MOUSE.DOLLY,
+        RIGHT: THREE.MOUSE.ROTATE
+    };
+
+    // MODE JEU: Bloquer complètement la molette (pas de zoom en FPS)
+    renderer.domElement.addEventListener('wheel', function(event) {
+        if (interactionMode === 'game') {
+            event.preventDefault();
+            event.stopPropagation();
+            return;
+        }
+    }, { capture: true, passive: false });
+
+    // Si on démarre en mode jeu, pré-configurer la hauteur des yeux à 1.60m
+    if (interactionMode === 'game') {
+        gamePlayerY = PLAYER_EYE_HEIGHT; // 1.60m (sera mis à jour par applySpawnToCamera si spawn défini)
+        camera.position.y = gamePlayerY;
+        updateControlsForMode();
+    }
+
+    world = new CANNON.World();
+    world.gravity.set(0, -20, 0);
+
+    const contactMaterial = new CANNON.ContactMaterial(
+        shapePhysMaterial, 
+        obstaclePhysMaterial, 
+        { friction: 0.4, restitution: 0.2 } 
+    );
+    world.addContactMaterial(contactMaterial);
+
+    // SEULE LUMIÈRE PAR DÉFAUT : Lumière Ambiante
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+    ambientLight.userData.id = 'default-ambient';
+    ambientLight.userData.type = 'ambient';
+    ambientLight.userData.isDefault = true; // Marquer comme lumière par défaut (non supprimable)
+    ambientLight.userData.name = 'Lumière Ambiante';
+    ambientLight.userData.positionLocked = true; // Position verrouillée par défaut
+    ambientLight.userData.isOn = true; // Lumière allumée par défaut
+    ambientLight.userData.savedIntensity = 0.7; // Intensité sauvegardée pour rallumer
+
+    // Position par défaut : centre du plafond (hauteur = 120)
+    ambientLight.position.set(0, 120, 0);
+    ambientLight.userData.defaultPosition = new THREE.Vector3(0, 120, 0);
+
+    scene.add(ambientLight);
+
+    // Stocker la référence globale pour l'éditeur
+    window.defaultAmbientLight = ambientLight;
+
+    // Ajouter une lumière directionnelle douce pour mieux éclairer les objets importés
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.2);
+    directionalLight.position.set(50, 100, 50);
+    directionalLight.castShadow = true;
+    directionalLight.shadow.camera.near = 0.1;
+    directionalLight.shadow.camera.far = 500;
+    directionalLight.shadow.camera.left = -100;
+    directionalLight.shadow.camera.right = 100;
+    directionalLight.shadow.camera.top = 100;
+    directionalLight.shadow.camera.bottom = -100;
+    directionalLight.shadow.mapSize.width = 512;
+    directionalLight.shadow.mapSize.height = 512;
+    directionalLight.shadow.bias = -0.002;
+    directionalLight.shadow.normalBias = 0.02;
+    scene.add(directionalLight);
+
+    createFloor();
+    createRoomWalls();
+    createRug();
+
+    // Initialiser la grille du plan (invisible au départ)
+    // Note: createFloorPlanGrid est définie dans editor-floorplan.js, chargé dynamiquement après init()
+    if (typeof createFloorPlanGrid === 'function') {
+        createFloorPlanGrid();
+        if (floorPlanGrid) {
+            floorPlanGrid.visible = false;
+        }
+    }
+
+    _initCrosshairRefs();
+    animate();
+    if (typeof initFootstepAudio === 'function') initFootstepAudio();
+
+    // Note: loadAnimatedCharacter() est maintenant appelé APRÈS loadProjectOnStartup()
+    // pour que savedNabyTransform soit déjà chargé quand le GLB finit de se charger
+
+    // Note: Les objets permanents (fauteuil et lampe) sont maintenant chargés via loadProjectOnStartup()
+    // soit depuis le projet sauvegardé, soit par défaut si aucun projet n'existe
+
+    window.addEventListener('resize', onWindowResize);
+    window.addEventListener('pointerdown', onPointerDown);
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+
+    // Audio mouvement : détection mouvement souris (caméra)
+    window.addEventListener('pointermove', () => { checkMovementAudioMouse(); });
+
+    window.addEventListener('keydown', (e) => {
+        // Si un dialogue OU le carnet est ouvert, les controles jeu sont bloques.
+        // DialogueManager / NotebookManager gerent Echap pour fermer via leurs propres listeners.
+        var dialogOn = typeof DialogueManager !== 'undefined' && DialogueManager.isActive();
+        var notebookOn = typeof NotebookManager !== 'undefined' && NotebookManager.isOpen();
+        if (dialogOn || notebookOn) {
+            // Permet de fermer le carnet avec J meme quand il est ouvert
+            if (notebookOn && e.key.toLowerCase() === 'j') {
+                NotebookManager.close();
+                e.preventDefault();
+            }
+            return;
+        }
+        keysPressed[e.key.toLowerCase()] = true;
+        // Empêcher le scroll de la page quand l'espace est pressé en mode développeur
+        if (e.code === 'Space' && interactionMode === 'developer' && editorMode) {
+            e.preventDefault();
+        }
+        // TEST TFE - Touche T : ouvre le dialogue Naby (placeholder avant integration 3D)
+        if (e.key.toLowerCase() === 't' && typeof DialogueManager !== 'undefined') {
+            DialogueManager.start('naby');
+            e.preventDefault();
+            return;
+        }
+        // TFE - Touche J : ouvre le carnet (met le jeu en pause)
+        if (e.key.toLowerCase() === 'j' && typeof NotebookManager !== 'undefined') {
+            NotebookManager.open();
+            e.preventDefault();
+            return;
+        }
+        // TFE - Touche M : toggle minimap (replie/deplie)
+        if (e.key.toLowerCase() === 'm' && typeof MinimapManager !== 'undefined') {
+            MinimapManager.toggle();
+            e.preventDefault();
+            return;
+        }
+        onKeyDown(e);
+        checkMovementAudioKeyDown(e.key);
+    });
+    window.addEventListener('keyup', (e) => {
+        keysPressed[e.key.toLowerCase()] = false;
+        checkMovementAudioKeyUp(e.key);
+    });
+
+    // Réinitialiser l'état du panning espace si la fenêtre perd le focus
+    window.addEventListener('blur', () => {
+        // Reset mouvement FPS si la fenêtre perd le focus
+        currentSpeed = 0;
+        isMoving = false;
+        wasMoving = false;
+        stopAllFootstepAudio();
+
+        if (isSpacePressed || isSpacePanning) {
+            isSpacePressed = false;
+            isSpacePanning = false;
+            spacePanCameraStart = null;
+            spacePanTargetStart = null;
+            const canvas = renderer.domElement;
+            canvas.classList.remove('space-pan-hand', 'space-pan-grabbing');
+            controls.enabled = true;
+            if (currentEditorMode === 'floor-plan') {
+                updateFloorPlanCursor();
+            }
+        }
+    });
+    
+}
+
+function createFloor() {
+    const floorGeo = new THREE.PlaneGeometry(200, 200);
+    const floorMat = new THREE.MeshStandardMaterial({ color: 0xcccccc });
+    groundMesh = new THREE.Mesh(floorGeo, floorMat);
+    groundMesh.rotation.x = -Math.PI / 2;
+    groundMesh.receiveShadow = true;
+    groundMesh.name = 'ground';
+    scene.add(groundMesh);
+
+    const groundBody = new CANNON.Body({ 
+        mass: 0, 
+        shape: new CANNON.Plane(),
+        material: obstaclePhysMaterial 
+    });
+    groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
+    world.addBody(groundBody);
+}
+
+function createRoomWalls() {
+    // Supprimé : les murs de limite de scène ne sont plus créés
+    // Les murs du plan au sol définissent maintenant les limites de la pièce
+}
+
+function createWallNumbers() {
+    // Supprimé : les numéros de murs ne sont plus créés
+}
+
+/**
+ * CHARGEMENT DU PERSONNAGE ANIMÉ (nabydance.glb) - VERSION OPTIMISÉE
+ */
+function loadAnimatedCharacter() {
+    return new Promise((resolveLoad) => {
+    const loader = sharedGLTFLoader;
+    const url = resolveURL('3D/perso/nabydance.glb');
+    console.log("Chargement du modèle 3D avec animation:", url);
+
+    loader.load(url,
+        (gltf) => {
+            babyModel = gltf.scene;
+
+            // Échelle unitaire pour mesurer la vraie taille via les os du squelette
+            babyModel.scale.set(1, 1, 1);
+            babyModel.updateMatrixWorld(true);
+
+            // Mesurer la hauteur RÉELLE par les positions mondiales des os (bones).
+            // C'est la seule méthode fiable car Box3.setFromObject() ne capture PAS
+            // les transformations du squelette/armature appliquées par le skinning GPU.
+            const boneMeasure = measureCharacterByBones(babyModel);
+            let effectiveRawHeight;
+            let rawVisualSize;
+
+            if (boneMeasure) {
+                effectiveRawHeight = boneMeasure.height;
+                rawVisualSize = new THREE.Vector3(boneMeasure.width, boneMeasure.height, boneMeasure.depth);
+                console.log("📏 Naby mesurée par os:", boneMeasure.boneCount, "os → H:", effectiveRawHeight.toFixed(4), "m");
+            } else {
+                // Fallback: Box3 (imprécis pour SkinnedMesh mais mieux que rien)
+                const rawBox = new THREE.Box3().setFromObject(babyModel);
+                effectiveRawHeight = rawBox.max.y - rawBox.min.y;
+                rawVisualSize = rawBox.getSize(new THREE.Vector3());
+                console.warn("⚠️ Naby: pas assez d'os, fallback Box3 → H:", effectiveRawHeight.toFixed(4), "m");
+            }
+
+            nabyRawHeight = effectiveRawHeight;
+
+            // Stocker les dimensions visuelles à l'échelle 1 pour le label de dimensions
+            // referenceHeightAtScale1 = hauteur visuelle quand scale=1, pour calcul stable du label
+            babyModel.userData.referenceHeightAtScale1 = effectiveRawHeight;
+            babyModel.userData.referenceWidthAtScale1 = rawVisualSize.x;
+            babyModel.userData.referenceDepthAtScale1 = rawVisualSize.z;
+            babyModel.userData.isCharacter = true;
+            babyModel.userData.editorName = 'Naby';
+
+            const TARGET_HEIGHT = 1.70; // Hauteur cible par défaut en mètres
+
+            if (savedNabyTransform) {
+                // Restaurer la position/rotation
+                babyModel.position.set(savedNabyTransform.position.x, savedNabyTransform.position.y, savedNabyTransform.position.z);
+                babyModel.rotation.set(savedNabyTransform.rotation.x || 0, savedNabyTransform.rotation.y || 0, savedNabyTransform.rotation.z || 0);
+
+                // Valider : re-mesurer à l'échelle sauvegardée pour vérifier
+                babyModel.scale.set(savedNabyTransform.scale.x, savedNabyTransform.scale.y, savedNabyTransform.scale.z);
+                babyModel.updateMatrixWorld(true);
+                const checkMeasure = measureCharacterByBones(babyModel);
+                const restoredHeight = checkMeasure ? checkMeasure.height : savedNabyTransform.scale.y * effectiveRawHeight;
+
+                if (restoredHeight >= 0.1 && restoredHeight <= 5.0) {
+                    console.log("Naby restaurée, échelle:", savedNabyTransform.scale.y.toFixed(4), "→ hauteur mesurée:", restoredHeight.toFixed(2) + "m");
+                } else {
+                    // Échelle invalide → recalculer
+                    const nabyScale = TARGET_HEIGHT / effectiveRawHeight;
+                    babyModel.scale.set(nabyScale, nabyScale, nabyScale);
+                    console.warn("⚠️ Échelle sauvegardée invalide (hauteur:", restoredHeight.toFixed(2) + "m) → réinitialisée à", TARGET_HEIGHT + "m");
+                }
+            } else {
+                // Première fois : ajuster l'échelle pour que Naby fasse 1.70m de haut
+                const nabyScale = TARGET_HEIGHT / effectiveRawHeight;
+                babyModel.scale.set(nabyScale, nabyScale, nabyScale);
+                console.log("Naby première apparition, hauteur mesurée:", effectiveRawHeight.toFixed(4), "→ échelle:", nabyScale.toFixed(4));
+            }
+
+            // Debug
+            console.log("Nombre d'animations:", gltf.animations ? gltf.animations.length : 0);
+
+            // Mesurer la taille finale après mise à l'échelle (par les os)
+            babyModel.updateMatrixWorld(true);
+            const finalMeasure = measureCharacterByBones(babyModel);
+            const size = finalMeasure
+                ? new THREE.Vector3(finalMeasure.width, finalMeasure.height, finalMeasure.depth)
+                : new THREE.Box3().setFromObject(babyModel).getSize(new THREE.Vector3());
+
+            if (!savedNabyTransform) {
+                // Position par défaut seulement si pas de sauvegarde - pieds au sol
+                babyModel.updateMatrixWorld(true);
+                const posBox = new THREE.Box3().setFromObject(babyModel);
+                const defaultHeightOffset = -posBox.min.y;
+                const defaultPos = new THREE.Vector3(26, 0.08 + defaultHeightOffset, -30);
+                babyModel.position.copy(defaultPos);
+            }
+
+            console.log("Position finale:", babyModel.position, "Taille:", size.y.toFixed(2) + "m");
+
+            // Configuration des ombres et matériaux pour le rendu de l'animation
+            babyModel.traverse((child) => {
+                if (child.isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                    child.userData.isCharacter = true; // Marquer tous les meshes enfants
+                    // Désactiver le frustum culling pour les SkinnedMesh animés
+                    // car Three.js calcule le bounding sphere au repos, pas à la pose animée,
+                    // ce qui fait disparaître le personnage quand la caméra s'approche
+                    child.frustumCulled = false;
+                    if(child.material) {
+                        child.material.needsUpdate = true;
+                    }
+                }
+            });
+
+            scene.add(babyModel);
+            babyModel.updateMatrixWorld(true);
+
+            // Appliquer les réglages visuels sauvegardés (luminosité, exposition, etc.)
+            if (savedNabyTransform) {
+                if (savedNabyTransform.customRoughness !== undefined) babyModel.userData.customRoughness = savedNabyTransform.customRoughness;
+                if (savedNabyTransform.customBrightness !== undefined) babyModel.userData.customBrightness = savedNabyTransform.customBrightness;
+                if (savedNabyTransform.customExposure !== undefined) babyModel.userData.customExposure = savedNabyTransform.customExposure;
+                if (savedNabyTransform.customContrast !== undefined) babyModel.userData.customContrast = savedNabyTransform.customContrast;
+                if (savedNabyTransform.customOffset !== undefined) babyModel.userData.customOffset = savedNabyTransform.customOffset;
+                if (savedNabyTransform.customGamma !== undefined) babyModel.userData.customGamma = savedNabyTransform.customGamma;
+                // Roughness
+                if (savedNabyTransform.customRoughness !== undefined) {
+                    babyModel.traverse(function(child) {
+                        if (child.isMesh && child.material && child.material.roughness !== undefined) {
+                            child.material.roughness = savedNabyTransform.customRoughness;
+                            child.material.needsUpdate = true;
+                        }
+                    });
+                }
+                // Réglages visuels via _applyVisualSettings
+                if (typeof _applyVisualSettings === 'function') {
+                    _applyVisualSettings(babyModel);
+                }
+            }
+
+            // INITIALISATION DU MIXER SUR LA SCÈNE COMPLÈTE
+            mixer = new THREE.AnimationMixer(babyModel);
+
+            // On cherche l'animation de danse et on la joue en boucle
+            if (gltf.animations && gltf.animations.length > 0) {
+                console.log("Animation trouvée:", gltf.animations[0].name);
+                console.log("Durée:", gltf.animations[0].duration, "secondes");
+
+                // On joue la première animation disponible en boucle
+                const action = mixer.clipAction(gltf.animations[0]);
+                action.setLoop(THREE.LoopRepeat, Infinity); // Boucle infinie
+                action.setEffectiveWeight(1.0);
+                action.clampWhenFinished = false;
+                action.play();
+
+                console.log("Animation lancée avec succès");
+            } else {
+                console.warn("Aucune animation trouvée dans nabydance.glb");
+            }
+
+            // Physique simplifiée
+            babyBody = new CANNON.Body({
+                mass: 0,
+                material: obstaclePhysMaterial,
+                position: new CANNON.Vec3(babyModel.position.x, babyModel.position.y, babyModel.position.z)
+            }); 
+            
+            const baseShape = new CANNON.Box(new CANNON.Vec3(size.x * 0.35, size.y * 0.1, size.z * 0.4));
+            babyBody.addShape(baseShape, new CANNON.Vec3(0, size.y * 0.1, 0.3));
+            
+            const torsoShape = new CANNON.Box(new CANNON.Vec3(size.x * 0.22, size.y * 0.2, size.z * 0.22));
+            babyBody.addShape(torsoShape, new CANNON.Vec3(0, size.y * 0.4, 0));
+            
+            const headShape = new CANNON.Sphere(size.x * 0.28);
+            babyBody.addShape(headShape, new CANNON.Vec3(0, size.y * 0.78, 0.1));
+            
+            babyBody.updateBoundingRadius();
+            world.addBody(babyBody);
+
+            // Ajouter Naby aux objets sélectionnables (si l'éditeur est chargé)
+            if (typeof makeObjectsSelectable === 'function') makeObjectsSelectable();
+            if (editorMode && typeof updateObjectsList === 'function') {
+                updateObjectsList();
+            }
+            // Créer le proxy de collision pour bloquer le joueur
+            createCharacterCollisionProxy(babyModel);
+            console.log('✅ BabyModel chargé - ajouté aux objets sélectionnables');
+            resolveLoad(true);
+        },
+        undefined,
+        (error) => {
+            console.warn("nabydance.glb introuvable ou corrompu.");
+            resolveLoad(false);
+        }
+    );
+    }); // fin Promise
+}
+
+/**
+ * CHARGEMENT DES OBJETS PERMANENTS (Fauteuil rouge et Lampe sur pied)
+ * Ces objets sont chargés uniquement s'il n'y a pas de projet sauvegardé
+ */
+function loadPermanentObjects() {
+    console.log('📦 Chargement des objets permanents par défaut...');
+
+    const loader = sharedGLTFLoader;
+
+    // Fonction helper pour charger un objet permanent avec son fileData
+    function loadPermanentObject(url, name, defaultPos, defaultRot, defaultScale) {
+        // D'abord récupérer le fileData via fetch
+        fetch(url)
+            .then(response => response.arrayBuffer())
+            .then(buffer => {
+                // Convertir en base64 pour la sauvegarde
+                const bytes = new Uint8Array(buffer);
+                let binary = '';
+                for (let i = 0; i < bytes.byteLength; i++) {
+                    binary += String.fromCharCode(bytes[i]);
+                }
+                const fileDataBase64 = 'data:model/gltf-binary;base64,' + btoa(binary);
+
+                // Maintenant charger le modèle
+                loader.load(
+                    url,
+                    function(gltf) {
+                        const model = gltf.scene;
+
+                        // Appliquer les coordonnées par défaut
+                        model.position.set(defaultPos.x, defaultPos.y, defaultPos.z);
+                        model.rotation.set(defaultRot.x, defaultRot.y, defaultRot.z);
+                        model.scale.set(defaultScale.x, defaultScale.y, defaultScale.z);
+
+                        // Configurer les ombres et matériaux
+                        model.traverse((child) => {
+                            if (child.isMesh) {
+                                child.castShadow = true;
+                                child.receiveShadow = true;
+                                if (child.material) {
+                                    if (child.material.type === 'MeshBasicMaterial') {
+                                        const oldMaterial = child.material;
+                                        child.material = new THREE.MeshStandardMaterial({
+                                            color: oldMaterial.color,
+                                            map: oldMaterial.map,
+                                            roughness: 0.7,
+                                            metalness: 0.1
+                                        });
+                                    }
+                                    child.material.needsUpdate = true;
+                                }
+                            }
+                        });
+
+                        // Marquer le modèle - IMPORTANT: ajouter fileData et isImported
+                        model.userData.editorName = name;
+                        model.userData.isImported = true;
+                        model.userData.isPermanent = true;
+                        model.userData.fileName = url.split('/').pop();
+                        model.userData.fileData = fileDataBase64; // Pour la sauvegarde
+
+                        scene.add(model);
+
+                        // Ajouter à importedObjects pour la sauvegarde
+                        importedObjects.push(model);
+
+                        // Ajouter aux objets sélectionnables
+                        selectableObjects.push(model);
+                        model.traverse((child) => {
+                            if (child.isMesh) {
+                                child.userData.editorName = name;
+                                selectableObjects.push(child);
+                            }
+                        });
+
+                        // Sauvegarder l'état initial
+                        initialTransforms.set(model, {
+                            position: model.position.clone(),
+                            rotation: model.rotation.clone(),
+                            scale: model.scale.clone()
+                        });
+
+                        console.log(`✅ ${name} chargé et positionné`);
+
+                        if (editorMode) {
+                            updateObjectsList();
+                        }
+                    },
+                    undefined,
+                    function(error) {
+                        console.log(`ℹ️ ${url.split('/').pop()} non trouvé (normal si non importé)`);
+                    }
+                );
+            })
+            .catch(err => {
+                console.log(`ℹ️ Impossible de charger ${url}: ${err.message}`);
+            });
+    }
+
+    // Charger le fauteuil rouge
+    const armchairURL = resolveURL('3D/Objet_Importé_1.glb');
+    loadPermanentObject(
+        armchairURL,
+        'Fauteuil Rouge',
+        { x: 28.55, y: 3.74, z: -32.64 },
+        { x: 0, y: THREE.MathUtils.degToRad(-34), z: 0 },
+        { x: 16.84, y: 16.84, z: 16.84 }
+    );
+
+    // Charger la lampe sur pied
+    const lampURL = resolveURL('3D/Objet_Importé_2.glb');
+    loadPermanentObject(
+        lampURL,
+        'Lampe sur Pied',
+        { x: 37.93, y: 5.60, z: -26.27 },
+        { x: 0, y: 0, z: 0 },
+        { x: 20.94, y: 20.94, z: 20.94 }
+    );
+}
+
+function createRug() {
+    const rugSize = 2.5; // ~2.5m de côté (proportion réaliste)
+    const rugGeo = new THREE.PlaneGeometry(rugSize, rugSize);
+    const rugMat = new THREE.MeshStandardMaterial({ color: 0xddc4a2, roughness: 1.0 });
+
+    new THREE.TextureLoader().load(resolveURL('images/tapis.jpg'), (tex) => {
+        rugMat.color.set(0xffffff);
+        rugMat.map = tex;
+        rugMat.needsUpdate = true;
+    });
+
+    rug = new THREE.Mesh(rugGeo, rugMat);
+    rug.rotation.x = -Math.PI / 2;
+    rug.position.set(0, 0.08, 0);
+    rug.receiveShadow = true;
+    rug.name = 'rug';
+    scene.add(rug);
+}
+
+/**
+ * INTERACTIONS
+ */
+// Cache des meshes audio (invalidé quand importedObjects change)
+let _cachedAudioMeshes = [];
+let _audioMeshesDirty = true;
+function _rebuildAudioMeshes() {
+    _cachedAudioMeshes = [];
+    importedObjects.forEach(obj => { obj.traverse(child => { if (child.isMesh) _cachedAudioMeshes.push(child); }); });
+    _audioMeshesDirty = false;
+}
+function invalidateAudioMeshCache() { _audioMeshesDirty = true; }
+
+function onPointerDown(event) {
+    if (event.button !== 0) return;
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    raycaster.setFromCamera(mouse, camera);
+
+    // Vérifier les zones d'interaction en mode Jeu
+    if (interactionMode === 'game') {
+        // Utiliser le système de crosshair : interagir avec la cible visée
+        if (_crosshairTargetZone) {
+            executeZoneAction(_crosshairTargetZone);
+        }
+        // Hold: commencer le tracking
+        const now = performance.now();
+        heldZone = null;
+        holdStartTime = now;
+        for (const zone of interactionZones) {
+            if ((zone.triggerType || 'click') !== 'hold') continue;
+            const isMechanical = ['turn-button', 'lever', 'fader'].includes(zone.actionType);
+            if (!zone.actionValue && !isMechanical) continue;
+            const distance = getZoneDistance(zone, camera.position);
+            const interactRange = (zone.surfaceMode === 'wall' || zone.surfaceMode === 'object' || zone.surfaceMode === 'character') ? 2.5 : 1.5;
+            if (distance < interactRange) {
+                heldZone = zone;
+                break;
+            }
+        }
+        // Vérifier les déclencheurs audio au clic
+        if (_audioMeshesDirty) { _rebuildAudioMeshes(); }
+        const audioHits = raycaster.intersectObjects(_cachedAudioMeshes, false);
+        if (audioHits.length > 0) {
+            let hit = audioHits[0].object;
+            while (hit) {
+                if (hit.userData.isImported && importedObjects.includes(hit)) {
+                    checkAudioClickTriggers(hit.userData.editorName || hit.name || '');
+                    break;
+                }
+                hit = hit.parent;
+            }
+        }
+    }
+}
+
+function onPointerMove(event) {}
+function onPointerUp() {}
+function onKeyDown(event) {}
+
+/**
+ * SYSTÈME DE DÉPLACEMENT & COLLISION CAMÉRA
+ * Mode jeu : vue FPS (1ère personne), hauteur fixe, collisions solides, wall-sliding
+ * Mode développeur : libre, pas de collision
+ */
+const CAMERA_COLLISION_MARGIN = 0.35;  // Marge de sécurité (rayon joueur)
+const CAMERA_COLLISION_RAYCASTER = new THREE.Raycaster();
+let gamePlayerY = null;    // Hauteur Y verrouillée du joueur en mode jeu
+let cachedCollisionMeshes = null;
+let _collisionCacheDirty = true;
+
+// Invalider le cache de collision quand la scène change (appeler depuis editor-save, etc.)
+function invalidateCollisionCache() { _collisionCacheDirty = true; }
+
+// Cache les meshes de collision — recalculé uniquement quand la scène change
+function getCollisionMeshes() {
+    if (!_collisionCacheDirty && cachedCollisionMeshes) return cachedCollisionMeshes;
+
+    const collisionMeshes = [];
+    scene.traverse(child => {
+        if (!child.isMesh || !child.visible) return;
+        if (child.userData.isGizmo && !child.userData.isCollisionProxy) return;
+        if (child.userData.isFloorPlanPoint || child.userData.isFloorPlanLine || child.userData.isPreview) return;
+        if (typeof floorPlanGrid !== 'undefined' && child === floorPlanGrid) return;
+        if (child.userData.isCharacter) return;
+        // Exclure les enfants de personnages via layers (fallback: parent walk)
+        if (child.layers && child.layers.test(_charLayer)) return;
+        let p = child.parent;
+        while (p) {
+            if (p.userData.isCharacter) return;
+            p = p.parent;
+        }
+        collisionMeshes.push(child);
+    });
+    cachedCollisionMeshes = collisionMeshes;
+    _collisionCacheDirty = false;
+    return collisionMeshes;
+}
+// Layer réservé aux personnages (pour filtrage rapide)
+const _charLayer = new THREE.Layers();
+_charLayer.set(1);
+
+// Lance un rayon et retourne la distance au premier obstacle (Infinity si rien)
+function raycastDistance(origin, direction, maxDist) {
+    CAMERA_COLLISION_RAYCASTER.set(origin, direction);
+    CAMERA_COLLISION_RAYCASTER.far = maxDist;
+    CAMERA_COLLISION_RAYCASTER.near = 0;
+    const meshes = getCollisionMeshes();
+    const hits = CAMERA_COLLISION_RAYCASTER.intersectObjects(meshes, false);
+    return hits.length > 0 ? hits[0].distance : Infinity;
+}
+
+// Vérifie si on peut se déplacer dans une direction, avec wall-sliding
+// Retourne le vecteur de déplacement autorisé (possiblement modifié pour glisser le long des murs)
+function computeAllowedMovement(origin, moveVec) {
+    const moveDist = moveVec.length();
+    if (moveDist < 0.0001) return moveVec;
+
+    _tmpVec3A.copy(moveVec).normalize();
+    const moveDir = _tmpVec3A;
+    const checkDist = moveDist + CAMERA_COLLISION_MARGIN;
+
+    // Test principal : direction complète du mouvement
+    const dist = raycastDistance(origin, moveDir, checkDist);
+    const allowed = dist - CAMERA_COLLISION_MARGIN;
+
+    if (allowed >= moveDist) {
+        return moveVec; // Pas d'obstacle
+    }
+
+    if (allowed > 0.01) {
+        // Collision partielle : avancer jusqu'au mur
+        return moveDir.multiplyScalar(allowed);
+    }
+
+    // Bloqué en direct → essayer le wall-sliding (glissement)
+    _slideX.set(moveVec.x, 0, 0);
+    _slideZ.set(0, 0, moveVec.z);
+    _slideResult.set(0, 0, 0);
+
+    // Essayer de glisser en X
+    if (Math.abs(_slideX.x) > 0.0001) {
+        _tmpVec3B.copy(_slideX).normalize();
+        const distX = raycastDistance(origin, _tmpVec3B, Math.abs(_slideX.x) + CAMERA_COLLISION_MARGIN);
+        const allowedX = distX - CAMERA_COLLISION_MARGIN;
+        if (allowedX > 0.01) {
+            _slideResult.x = _tmpVec3B.x * Math.min(allowedX, Math.abs(_slideX.x));
+        }
+    }
+
+    // Essayer de glisser en Z
+    if (Math.abs(_slideZ.z) > 0.0001) {
+        _tmpVec3B.copy(_slideZ).normalize();
+        const distZ = raycastDistance(origin, _tmpVec3B, Math.abs(_slideZ.z) + CAMERA_COLLISION_MARGIN);
+        const allowedZ = distZ - CAMERA_COLLISION_MARGIN;
+        if (allowedZ > 0.01) {
+            _slideResult.z = _tmpVec3B.z * Math.min(allowedZ, Math.abs(_slideZ.z));
+        }
+    }
+
+    return _slideResult;
+}
+
+// Directions de collision pré-allouées (4 cardinales XZ uniquement — pas besoin de Y en FPS)
+const _collisionDirs = [
+    new THREE.Vector3(1, 0, 0), new THREE.Vector3(-1, 0, 0),
+    new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, -1)
+];
+
+// Repousse la caméra hors des murs si elle est trop proche (4 directions)
+function enforceCameraCollisions() {
+    if (interactionMode !== 'game') return;
+
+    const pos = camera.position;
+    const margin = CAMERA_COLLISION_MARGIN;
+    const meshes = getCollisionMeshes();
+
+    for (let i = 0; i < 4; i++) {
+        const dir = _collisionDirs[i];
+        CAMERA_COLLISION_RAYCASTER.set(pos, dir);
+        CAMERA_COLLISION_RAYCASTER.far = margin;
+        CAMERA_COLLISION_RAYCASTER.near = 0;
+
+        const hits = CAMERA_COLLISION_RAYCASTER.intersectObjects(meshes, false);
+        if (hits.length > 0) {
+            const pushBack = margin - hits[0].distance;
+            if (pushBack > 0.001) {
+                pos.x -= dir.x * pushBack;
+                pos.z -= dir.z * pushBack;
+                controls.target.x -= dir.x * pushBack;
+                controls.target.z -= dir.z * pushBack;
+            }
+        }
+    }
+}
+
+// --- Collision proxies pour personnages (cylindres invisibles) ---
+
+function createCharacterCollisionProxy(character) {
+    if (!character) return;
+    // Vérifier qu'un proxy n'existe pas déjà
+    if (characterCollisionProxies.some(e => e.character === character)) return;
+
+    // Mesurer via les os (fiable pour SkinnedMesh) ou via referenceHeight
+    let height, radius;
+    const boneMeasure = measureCharacterByBones(character);
+    if (boneMeasure) {
+        height = boneMeasure.height;
+        // Utiliser la moitié de la plus grande dimension horizontale
+        radius = Math.max(boneMeasure.width, boneMeasure.depth) * 0.5;
+    } else if (character.userData.referenceHeightAtScale1) {
+        const s = character.scale.y;
+        height = character.userData.referenceHeightAtScale1 * s;
+        radius = height * 0.2;
+    } else {
+        // Fallback Box3
+        const box = new THREE.Box3().setFromObject(character);
+        const size = new THREE.Vector3();
+        box.getSize(size);
+        height = size.y || 1.7;
+        radius = Math.max(size.x, size.z) * 0.5 || 0.3;
+    }
+
+    // Rayon minimum pour être réaliste (au moins 35cm = épaisseur d'un corps humain)
+    radius = Math.max(radius, 0.35);
+    height = Math.max(height, 0.5);
+
+    // UTILISER BoxGeometry au lieu de CylinderGeometry pour un raycasting fiable
+    // Les BoxGeometry sont prouvés fonctionnels (même système que les murs)
+    const side = radius * 2;
+    const geometry = new THREE.BoxGeometry(side, height, side);
+    const material = new THREE.MeshBasicMaterial({
+        color: 0xff0000,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false
+    });
+    const proxy = new THREE.Mesh(geometry, material);
+
+    // Positionner au pied du personnage + moitié hauteur
+    proxy.position.set(
+        character.position.x,
+        character.position.y + height / 2,
+        character.position.z
+    );
+    proxy.userData.isGizmo = true;
+    proxy.userData.isCollisionProxy = true;
+
+    scene.add(proxy);
+
+    // CRITIQUE: Forcer la mise à jour immédiate de la matrixWorld
+    // pour que le Raycaster puisse détecter le proxy dès le premier frame
+    proxy.updateMatrixWorld(true);
+
+    characterCollisionProxies.push({ character, proxy, radius, height });
+    invalidateCollisionCache();
+    console.log(`🛡️ Proxy collision créé pour "${character.userData.editorName || character.name || 'personnage'}" - h:${height.toFixed(2)}m box:${side.toFixed(2)}x${side.toFixed(2)}m pos:(${proxy.position.x.toFixed(2)}, ${proxy.position.y.toFixed(2)}, ${proxy.position.z.toFixed(2)})`);
+}
+
+function removeCharacterCollisionProxy(character) {
+    const idx = characterCollisionProxies.findIndex(e => e.character === character);
+    if (idx === -1) return;
+    const entry = characterCollisionProxies[idx];
+    scene.remove(entry.proxy);
+    entry.proxy.geometry.dispose();
+    entry.proxy.material.dispose();
+    characterCollisionProxies.splice(idx, 1);
+    invalidateCollisionCache();
+}
+
+function updateCharacterCollisionProxy(entry) {
+    if (!entry.character || !entry.proxy) return;
+    // Utiliser la position directe du personnage (plus fiable que Box3 pour SkinnedMesh)
+    entry.proxy.position.set(
+        entry.character.position.x,
+        entry.character.position.y + entry.height / 2,
+        entry.character.position.z
+    );
+    // CRITIQUE: Forcer la mise à jour de matrixWorld pour que le Raycaster
+    // utilise la bonne position lors des tests de collision
+    entry.proxy.updateMatrixWorld(true);
+}
+
+function updateAllCharacterCollisionProxies() {
+    characterCollisionProxies.forEach(entry => updateCharacterCollisionProxy(entry));
+}
+
+// Configure OrbitControls selon le mode de jeu
+function updateControlsForMode() {
+    if (interactionMode === 'game') {
+        // Mode FPS : clic droit maintenu pour orienter le regard
+        controls.enableZoom = false;
+        controls.enableRotate = true;
+        controls.minDistance = 0.01;
+        controls.maxDistance = 0.01;
+        controls.minPolarAngle = Math.PI * 0.15;
+        controls.maxPolarAngle = Math.PI * 0.85;
+        controls.enablePan = false;
+        controls.rotateSpeed = 0.4;
+        controls.enableDamping = false;
+        controls.mouseButtons = {
+            LEFT: null,
+            MIDDLE: null,
+            RIGHT: THREE.MOUSE.ROTATE
+        };
+    } else {
+        // Mode développeur : comportement orbital libre
+        controls.enableZoom = true;
+        controls.enableRotate = true;  // Restaurer la rotation orbit
+        controls.minDistance = 2;
+        controls.maxDistance = 150;
+        controls.minPolarAngle = 0;
+        controls.maxPolarAngle = Math.PI / 2.1;
+        controls.enablePan = false;
+        controls.rotateSpeed = 1.0;
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.mouseButtons = {
+            LEFT: null,
+            MIDDLE: THREE.MOUSE.DOLLY,       // Zoom molette
+            RIGHT: THREE.MOUSE.ROTATE        // Orbite avec clic droit
+        };
+    }
+    controls.update();
+}
+
+// Initialise la position FPS en mode jeu (target devant la caméra, très proche)
+function setupFPSCamera() {
+    if (interactionMode !== 'game') return;
+
+    // Fixer la hauteur des yeux à 1.60m (personne debout ~1.70m → yeux à 1.60m)
+    // Si un spawn est défini, utiliser spawn.y + 1.60, sinon forcer la hauteur à 1.60m
+    if (spawnPosition && spawnSaved) {
+        gamePlayerY = spawnPosition.y + PLAYER_EYE_HEIGHT;
+    } else {
+        gamePlayerY = PLAYER_EYE_HEIGHT; // 1.60m au-dessus du sol (y=0)
+    }
+    camera.position.y = gamePlayerY;
+
+    // Placer le target juste devant la caméra (très proche → rotation = regard)
+    const dir = new THREE.Vector3();
+    camera.getWorldDirection(dir);
+    controls.target.set(
+        camera.position.x + dir.x * 0.01,
+        camera.position.y + dir.y * 0.01,
+        camera.position.z + dir.z * 0.01
+    );
+
+    updateControlsForMode();
+    console.log(`🎮 Mode FPS activé - Hauteur verrouillée à Y=${gamePlayerY.toFixed(2)}`);
+}
+
+// --- Head Bob (balancement de tête) ---
+function updateHeadBob(delta) {
+    if (interactionMode !== 'game') return;
+
+    if (isMoving && currentSpeed > 0.5) {
+        const gpSprint   = typeof GamepadManager !== 'undefined' && GamepadManager.connected && GamepadManager.getActionValue('run') > 0.5;
+        const isSprinting = keysPressed['shift'] || gpSprint;
+        const freq = isSprinting ? HEAD_BOB_RUN_FREQ : HEAD_BOB_WALK_FREQ;
+        const ampY = isSprinting ? HEAD_BOB_RUN_AMP : HEAD_BOB_WALK_AMP;
+
+        headBobTime += delta * freq * Math.PI * 2;
+        headBobOffset = Math.sin(headBobTime) * ampY;
+    } else {
+        // Retour progressif à la position neutre
+        headBobOffset *= 0.85;
+        if (Math.abs(headBobOffset) < 0.0005) headBobOffset = 0;
+        headBobTime = 0;
+    }
+}
+
+/**
+ * LOGIQUE DE DÉPLACEMENT CLAVIER DANS LA SCÈNE (ZSQD)
+ */
+function handleSceneMovement(delta) {
+    // En mode jeu : déplacement FPS avec collisions et hauteur verrouillée
+    if (interactionMode === 'game') {
+        handleGameMovement(delta);
+        return;
+    }
+
+    // Mode développeur : déplacement libre (vitesse augmentée)
+    const moveSpeed = 0.4;
+    camera.getWorldDirection(_devDirection);
+    _devDirection.y = 0;
+    _devDirection.normalize();
+    _devSide.crossVectors(_devDirection, camera.up).normalize();
+
+    let moveX = 0, moveZ = 0;
+
+    if (InputConfig.isActionPressed('forward', keysPressed))  { moveX += _devDirection.x * moveSpeed; moveZ += _devDirection.z * moveSpeed; }
+    if (InputConfig.isActionPressed('backward', keysPressed)) { moveX -= _devDirection.x * moveSpeed; moveZ -= _devDirection.z * moveSpeed; }
+    if (InputConfig.isActionPressed('left', keysPressed))     { moveX -= _devSide.x * moveSpeed; moveZ -= _devSide.z * moveSpeed; }
+    if (InputConfig.isActionPressed('right', keysPressed))    { moveX += _devSide.x * moveSpeed; moveZ += _devSide.z * moveSpeed; }
+
+    // Manette — stick gauche (aussi en mode développeur)
+    if (GamepadManager.connected) {
+        const gpFwd = GamepadManager.getActionValue('forward');
+        const gpBack = GamepadManager.getActionValue('backward');
+        const gpLeft = GamepadManager.getActionValue('left');
+        const gpRight = GamepadManager.getActionValue('right');
+        if (gpFwd > 0)   { moveX += _devDirection.x * moveSpeed * gpFwd;  moveZ += _devDirection.z * moveSpeed * gpFwd; }
+        if (gpBack > 0)  { moveX -= _devDirection.x * moveSpeed * gpBack; moveZ -= _devDirection.z * moveSpeed * gpBack; }
+        if (gpLeft > 0)  { moveX -= _devSide.x * moveSpeed * gpLeft;      moveZ -= _devSide.z * moveSpeed * gpLeft; }
+        if (gpRight > 0) { moveX += _devSide.x * moveSpeed * gpRight;     moveZ += _devSide.z * moveSpeed * gpRight; }
+    }
+
+    if (moveX === 0 && moveZ === 0) return;
+
+    const nextX = camera.position.x + moveX;
+    const nextZ = camera.position.z + moveZ;
+
+    if (Math.abs(nextX) < ROOM_LIMIT) { camera.position.x = nextX; controls.target.x += moveX; }
+    if (Math.abs(nextZ) < ROOM_LIMIT) { camera.position.z = nextZ; controls.target.z += moveZ; }
+}
+
+// Mouvement FPS en mode jeu — delta-time, accélération/décélération, collisions
+// Supporte clavier (via InputConfig) ET manette (via GamepadManager)
+function handleGameMovement(delta) {
+    // 1. Direction souhaitée depuis les touches OU le stick gauche manette
+    camera.getWorldDirection(_moveForward);
+    _moveForward.y = 0;
+    _moveForward.normalize();
+    _moveRight.set(0, 1, 0);
+    _moveRight.crossVectors(_moveForward, _moveRight).normalize();
+
+    _moveInput.set(0, 0, 0);
+
+    // Clavier (utilise les bindings configurables)
+    if (InputConfig.isActionPressed('forward', keysPressed))  _moveInput.add(_moveForward);
+    if (InputConfig.isActionPressed('backward', keysPressed)) _moveInput.sub(_moveForward);
+    if (InputConfig.isActionPressed('left', keysPressed))     _moveInput.sub(_moveRight);
+    if (InputConfig.isActionPressed('right', keysPressed))    _moveInput.add(_moveRight);
+
+    // Manette — stick gauche (valeurs analogiques)
+    if (GamepadManager.connected) {
+        const gpFwd = GamepadManager.getActionValue('forward');
+        const gpBack = GamepadManager.getActionValue('backward');
+        const gpLeft = GamepadManager.getActionValue('left');
+        const gpRight = GamepadManager.getActionValue('right');
+        if (gpFwd > 0)   _moveInput.addScaledVector(_moveForward, gpFwd);
+        if (gpBack > 0)  _moveInput.addScaledVector(_moveForward, -gpBack);
+        if (gpLeft > 0)  _moveInput.addScaledVector(_moveRight, -gpLeft);
+        if (gpRight > 0) _moveInput.addScaledVector(_moveRight, gpRight);
+    }
+
+    const hasInput = _moveInput.lengthSq() > 0.001;
+    if (hasInput) _moveInput.normalize();
+
+    // 2. Vitesse cible
+    const kbSprint = InputConfig.isActionPressed('run', keysPressed);
+    const gpSprint = GamepadManager.connected && GamepadManager.getActionValue('run') > 0.5;
+    const isSprinting = (kbSprint || gpSprint) && hasInput;
+    const targetSpeed = hasInput ? (isSprinting ? runSpeed : walkSpeed) : 0;
+
+    // 3. Accélération / décélération progressive
+    if (targetSpeed > currentSpeed) {
+        currentSpeed = Math.min(targetSpeed, currentSpeed + ACCELERATION * delta);
+    } else {
+        currentSpeed = Math.max(targetSpeed, currentSpeed - DECELERATION * delta);
+    }
+
+    isMoving = currentSpeed > 0.5;
+
+    if (currentSpeed < 0.01) {
+        currentSpeed = 0;
+        return;
+    }
+
+    // 4. Vecteur de déplacement (réutilise _moveInput, pas de nouvelle allocation)
+    _moveInput.multiplyScalar(currentSpeed * delta);
+
+    // 5. Collision avec wall-sliding
+    const allowed = computeAllowedMovement(camera.position, _moveInput);
+    if (allowed.lengthSq() < 0.00001) return;
+
+    // 6. Appliquer le déplacement
+    camera.position.x += allowed.x;
+    camera.position.z += allowed.z;
+    controls.target.x += allowed.x;
+    controls.target.z += allowed.z;
+
+    // 7. Limites de la pièce
+    camera.position.x = Math.max(-ROOM_LIMIT, Math.min(ROOM_LIMIT, camera.position.x));
+    camera.position.z = Math.max(-ROOM_LIMIT, Math.min(ROOM_LIMIT, camera.position.z));
+}
+
+// Vecteur pré-alloué pour enforceGameHeight (évite 1 allocation par frame)
+const _lookDir = new THREE.Vector3();
+
+// Force la hauteur Y de la caméra et du target en mode jeu
+function enforceGameHeight() {
+    if (interactionMode !== 'game' || gamePlayerY === null) return;
+
+    // Capturer la direction du regard AVANT de corriger la hauteur
+    camera.getWorldDirection(_lookDir);
+
+    // Verrouiller la hauteur Y du joueur (pieds au sol) + head bob
+    camera.position.y = gamePlayerY + headBobOffset;
+
+    // Repositionner le target à 0.01 devant la caméra en préservant la direction du regard
+    controls.target.set(
+        camera.position.x + _lookDir.x * 0.01,
+        camera.position.y + _lookDir.y * 0.01,
+        camera.position.z + _lookDir.z * 0.01
+    );
+}
+
+function onWindowResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+function animate() {
+    requestAnimationFrame(animate);
+
+    // Suspendre tout le rendu/physique pendant une cinématique vidéo
+    // pour libérer le GPU et éviter les saccades
+    if (_cinematicPlaying) return;
+
+    const delta = clock.getDelta();
+    // Physique cannon.js uniquement si des corps dynamiques existent (pas en mode jeu FPS)
+    if (interactionMode !== 'game') world.step(1 / 60);
+
+    // Proxies de collision: personnages immobiles → mise à jour toutes les 8 frames suffit
+    if (interactionMode === 'game') {
+        _proxyUpdateFrame++;
+        if (_proxyUpdateFrame >= 8) {
+            _proxyUpdateFrame = 0;
+            updateAllCharacterCollisionProxies();
+        }
+    }
+
+    handleSceneMovement(delta);
+
+    controls.update();
+
+    // GAMEPAD: Rotation caméra via stick droit (tous modes)
+    // Appliqué APRÈS controls.update() pour ne pas être écrasé par OrbitControls
+    if (GamepadManager.connected) {
+        const rs = GamepadManager.getRightStick();
+        if (rs.x !== 0 || rs.y !== 0) {
+            const sens = InputConfig.gamepadCameraSensitivity;
+            const rotateX = -rs.x * sens * 0.03;  // Horizontal (yaw)
+            const rotateY = rs.y * sens * 0.015;  // Vertical (pitch) — non inversé
+
+            _gpCamDir.subVectors(controls.target, camera.position);
+            const distance = Math.max(_gpCamDir.length(), 0.001);
+
+            const theta = Math.atan2(_gpCamDir.x, _gpCamDir.z);
+            const phi = Math.acos(Math.max(-1, Math.min(1, _gpCamDir.y / distance)));
+
+            const newTheta = theta + rotateX;
+            const newPhi = Math.max(0.3, Math.min(2.8, phi + rotateY));
+
+            _gpCamNewDir.set(
+                distance * Math.sin(newPhi) * Math.sin(newTheta),
+                distance * Math.cos(newPhi),
+                distance * Math.sin(newPhi) * Math.cos(newTheta)
+            );
+            controls.target.copy(camera.position).add(_gpCamNewDir);
+            camera.lookAt(controls.target);
+        }
+    }
+
+    // SPAWN NEAR ARCADE : repositionner le joueur devant la borne au retour du mini-jeu
+    // Uniquement déclenché par ?spawn=arcade (bouton maison dans AI Mythology)
+    // N'affecte ni le spawn initial, ni la position de sauvegarde du joueur.
+    if (spawnNearArcade && typeof interactionZones !== 'undefined' && interactionZones.length > 0) {
+        // Chercher la zone dont l'actionValue pointe vers le mini-jeu AI Mythology
+        const arcadeZone = interactionZones.find(z => {
+            const av = (z.actionValue || '').toLowerCase();
+            return av.includes('mythology') || av.includes('mini jeu') || av.includes('mini%20jeu');
+        });
+        if (arcadeZone && arcadeZone.bounds) {
+            // Centre de la zone d'interaction (= devant la borne d'arcade)
+            const cx = (arcadeZone.bounds.minX + arcadeZone.bounds.maxX) / 2;
+            const cz = (arcadeZone.bounds.minZ + arcadeZone.bounds.maxZ) / 2;
+            const eyeH = gamePlayerY || PLAYER_EYE_HEIGHT;
+            camera.position.set(cx, eyeH, cz);
+            controls.target.set(cx, eyeH, cz - 1); // regarder vers la borne
+            controls.update();
+            console.log('🕹️ Retour mini-jeu → spawn devant borne arcade:', cx.toFixed(2), cz.toFixed(2));
+            spawnNearArcade = false; // consommé une seule fois
+        }
+        // Si la zone n'est pas encore chargée, on réessaiera la frame suivante
+    }
+
+    // MODE JEU: Head bob, hauteur, collisions, zones, audio de pas
+    if (interactionMode === 'game') {
+        updateHeadBob(delta);
+        enforceGameHeight();
+        enforceCameraCollisions();
+        if (typeof updateFootstepAudio === 'function') updateFootstepAudio(delta);
+        // Throttle zone checks (1 frame sur 4)
+        _zoneCheckFrame++;
+        if (_zoneCheckFrame >= 4) {
+            _zoneCheckFrame = 0;
+            if (typeof checkZoneProximity === 'function') checkZoneProximity();
+            if (typeof checkHoverAndProximityTriggers === 'function') checkHoverAndProximityTriggers();
+        }
+        if (typeof checkHoldTrigger === 'function') checkHoldTrigger();
+    }
+
+    // MISE À JOUR DE L'ANIMATION AVEC LE DELTA
+    if (mixer) mixer.update(delta);
+
+    // Mettre à jour les animations des personnages importés
+    importedCharacters.forEach(char => {
+        if (char.userData.mixer) char.userData.mixer.update(delta);
+    });
+
+    camera.position.x = Math.max(-ROOM_LIMIT, Math.min(ROOM_LIMIT, camera.position.x));
+    camera.position.z = Math.max(-ROOM_LIMIT, Math.min(ROOM_LIMIT, camera.position.z));
+    
+    if (scene.cameraLight) {
+        scene.cameraLight.position.copy(camera.position);
+    }
+
+    // Mettre à jour les helpers de lumières en temps réel
+    if (editorMode && currentEditorMode === 'lights') {
+        lightHelpers.forEach(helper => {
+            if (helper.update) {
+                helper.update();
+            }
+        });
+
+        // Mettre à jour la ligne reliant la lumière à sa cible
+        if (targetLine && targetLine.visible) {
+            updateTargetLine();
+        }
+    }
+
+    // Mettre à jour l'étiquette de dimensions
+    if (editorMode && (selectedEditorObject || (selectedWalls && selectedWalls.length > 0))) {
+        updateDimensionsLabelPosition();
+    } else if (_dimLabelEl && _dimLabelEl.style.display !== 'none' && typeof hideDimensionsLabel === 'function') {
+        hideDimensionsLabel();
+    }
+
+    // CROSSHAIR HOVER: Détecter si le viseur pointe sur un interactable
+    if (interactionMode === 'game') {
+        updateCrosshairHover();
+    }
+
+    // GAMEPAD: Actions boutons (fronts montants uniquement)
+    if (GamepadManager.connected && interactionMode === 'game') {
+        if (GamepadManager.isActionJustPressed('grab')) {
+            // Interagir avec la cible visée par le crosshair
+            if (_crosshairTargetZone) {
+                executeZoneAction(_crosshairTargetZone);
+            }
+        }
+        // Touchpad → toggle carnet
+        if (GamepadManager.isActionJustPressed('notebook') && typeof NotebookManager !== 'undefined') {
+            NotebookManager.toggle();
+        }
+        // R3 → toggle carte
+        if (GamepadManager.isActionJustPressed('map') && typeof MinimapManager !== 'undefined') {
+            MinimapManager.toggle();
+        }
+        // Mettre à jour les états précédents pour la détection des fronts
+        GamepadManager.updatePrevStates();
+    }
+
+    // ===== MINIMAP : suivi live de la camera (position + orientation) =====
+    if (typeof MinimapManager !== 'undefined') {
+        _mmLookDx = controls.target.x - camera.position.x;
+        _mmLookDz = controls.target.z - camera.position.z;
+        // yaw Three.js : angle du regard projete sur le plan XZ (+Z = 0)
+        _mmYaw = Math.atan2(_mmLookDx, _mmLookDz);
+        MinimapManager.updatePlayer(camera.position.x, camera.position.z, _mmYaw);
+    }
+
+    renderer.render(scene, camera);
+}
+
+// Variables temporaires pour la minimap (evite 3 allocations par frame)
+var _mmLookDx = 0, _mmLookDz = 0, _mmYaw = 0;
+
+/**
+ * SYSTÈME DE VISÉE CROSSHAIR — détecte ce que le joueur vise au centre de l'écran
+ */
+var _crosshairTargetZone = null;
+var _crosshairLastZone = null;  // Dirty flag pour label DOM
+var _crosshairRaycaster = new THREE.Raycaster();
+var _crosshairCenter = new THREE.Vector2(0, 0); // Pré-alloué
+var _crosshairLabelEl = null;
+var _crosshairLabelText = null;
+var _crosshairLabelHint = null;
+var _crosshairCircles = null;  // Cache SVG elements
+var _crosshairLines = null;
+var _crosshairActive = false;  // Dirty flag — évite de re-modifier le DOM si pas changé
+var _zoneCheckFrame = 0;       // Throttle : zone proximity toutes les 4 frames
+var _proxyUpdateFrame = 0;     // Throttle : collision proxy update toutes les 8 frames
+var _crosshairFrameSkip = 0;   // Throttle : raycast toutes les 3 frames
+// Cache de meshes par objet/personnage UUID (évite traverse() à chaque frame)
+var _meshCacheByUUID = new Map();
+var _dimLabelEl = null;  // Cache DOM ref
+
+function _initCrosshairRefs() {
+    if (_crosshairCircles) return; // Déjà initialisé
+    _dimLabelEl = document.getElementById('object-dimensions-label');
+    _crosshairLabelEl = document.getElementById('interaction-label');
+    _crosshairLabelText = document.getElementById('interaction-label-text');
+    _crosshairLabelHint = document.getElementById('interaction-label-hint');
+    const svg = document.getElementById('crosshair-svg');
+    if (svg) {
+        _crosshairCircles = svg.querySelectorAll('circle');
+        _crosshairLines = svg.querySelectorAll('line');
+    }
+}
+
+function _getCachedMeshes(obj) {
+    if (!obj) return [];
+    let cached = _meshCacheByUUID.get(obj.uuid);
+    if (cached) return cached;
+    cached = [];
+    obj.traverse(c => { if (c.isMesh) cached.push(c); });
+    _meshCacheByUUID.set(obj.uuid, cached);
+    return cached;
+}
+
+function updateCrosshairHover() {
+    // Throttle : raycast toutes les 3 frames (20fps de détection suffit largement)
+    _crosshairFrameSkip++;
+    if (_crosshairFrameSkip < 3) return;
+    _crosshairFrameSkip = 0;
+
+    _crosshairRaycaster.setFromCamera(_crosshairCenter, camera);
+    _crosshairRaycaster.far = 3;  // Max interaction range = 2.5, pas besoin de tester plus loin
+
+    let bestZone = null;
+    let bestLabel = '';
+    let bestDist = Infinity;
+
+    for (const zone of interactionZones) {
+        if (!zone.actionValue && !['turn-button', 'lever', 'fader'].includes(zone.actionType)) continue;
+
+        const distance = getZoneDistance(zone, camera.position);
+        const interactRange = (zone.surfaceMode === 'wall' || zone.surfaceMode === 'object' || zone.surfaceMode === 'character') ? 2.5 : 1.5;
+        if (distance >= interactRange) continue;
+
+        let hit = false;
+        let label = zone.customName || '';
+
+        if (zone.surfaceMode === 'character' && zone.characterRef) {
+            const char = findCharacterByRef(zone.characterRef);
+            if (char) {
+                const hlData = highlightedInteractionObjects.get(char.uuid);
+                if (hlData && hlData.hotspot) {
+                    const hits = _crosshairRaycaster.intersectObject(hlData.hotspot, false);
+                    if (hits.length > 0) { hit = true; bestDist = hits[0].distance; }
+                }
+                if (!hit) {
+                    const meshes = _getCachedMeshes(char);
+                    const hits = _crosshairRaycaster.intersectObjects(meshes, false);
+                    if (hits.length > 0 && hits[0].distance < interactRange) { hit = true; bestDist = hits[0].distance; }
+                }
+                if (!label) label = char.userData.editorName || char.name || 'Personnage';
+            }
+        } else if (zone.surfaceMode === 'object' && zone.objectRef) {
+            const obj = findObjectByRef(zone.objectRef);
+            if (obj) {
+                const meshes = _getCachedMeshes(obj);
+                const hits = _crosshairRaycaster.intersectObjects(meshes, false);
+                if (hits.length > 0 && hits[0].distance < interactRange) { hit = true; bestDist = hits[0].distance; }
+                if (!label) label = obj.userData.editorName || obj.name || 'Objet';
+            }
+        } else if (zone.surfaceMode === 'floor' || zone.surfaceMode === 'ceiling' || zone.surfaceMode === 'wall') {
+            hit = true;
+            bestDist = distance;
+            if (!label) label = zone.actionType === 'video' ? 'Vidéo' : zone.actionType === 'link' ? 'Aller' : 'Interagir';
+        }
+
+        if (hit && distance < bestDist + 0.5) {
+            bestZone = zone;
+            bestLabel = label;
+        }
+    }
+
+    _crosshairTargetZone = bestZone;
+
+    // Dirty flag : ne modifier le DOM que si l'état change
+    const nowActive = !!bestZone;
+    if (nowActive !== _crosshairActive) {
+        _crosshairActive = nowActive;
+        if (_crosshairCircles) {
+            if (nowActive) {
+                _crosshairCircles.forEach(c => { c.setAttribute('stroke', '#FFD700'); c.setAttribute('stroke-width', '2'); });
+                _crosshairLines.forEach(l => l.setAttribute('stroke', 'rgba(255,215,0,0.7)'));
+            } else {
+                _crosshairCircles.forEach(c => { c.setAttribute('stroke', 'rgba(255,255,255,0.7)'); c.setAttribute('stroke-width', '1.5'); });
+                _crosshairLines.forEach(l => l.setAttribute('stroke', 'rgba(255,255,255,0.5)'));
+            }
+        }
+    }
+    // Dirty flag label : ne modifier le DOM que si la zone ciblée change
+    if (_crosshairLabelEl && bestZone !== _crosshairLastZone) {
+        _crosshairLastZone = bestZone;
+        if (bestZone) {
+            const actionIcon = bestZone.actionType === 'video' ? '▶ ' : bestZone.actionType === 'message' ? '💬 ' : bestZone.actionType === 'link' ? '➜ ' : '⬡ ';
+            if (_crosshairLabelText) _crosshairLabelText.textContent = actionIcon + bestLabel;
+            const isGamepad = GamepadManager && GamepadManager.connected;
+            if (_crosshairLabelHint) _crosshairLabelHint.textContent = isGamepad ? 'R2 pour interagir' : 'Clic pour interagir';
+            _crosshairLabelEl.style.opacity = '1';
+        } else {
+            _crosshairLabelEl.style.opacity = '0';
+        }
+    }
+}
+
+/**
+ * Simule une interaction (grab) au centre de l'écran — souris ou manette
+ */
+function simulateInteraction() {
+    if (_crosshairTargetZone) {
+        executeZoneAction(_crosshairTargetZone);
+    }
+}
+
+window.onload = init;
+
+// ==================== GESTION DES PANNEAUX UI ====================
+
+// Toggle du panneau d'informations
+document.getElementById('info-icon').addEventListener('click', function(e) {
+    e.stopPropagation(); // Empêcher la propagation pour ne pas déclencher le clic document
+    const infoPanel = document.getElementById('controls-info');
+    infoPanel.classList.toggle('visible');
+});
+
+// Fermer le panneau info si on clique ailleurs sur la page
+document.addEventListener('click', function(e) {
+    const infoPanel = document.getElementById('controls-info');
+    const infoIcon = document.getElementById('info-icon');
+
+    // Si le panneau est visible et qu'on clique en dehors du panneau et de l'icône
+    if (infoPanel.classList.contains('visible') &&
+        !infoPanel.contains(e.target) &&
+        e.target !== infoIcon) {
+        infoPanel.classList.remove('visible');
+    }
+});
+
+// Toggle du popup de volume
+document.getElementById('volume-icon').addEventListener('click', function(e) {
+    e.stopPropagation();
+    const popup = document.getElementById('volume-popup');
+    popup.style.display = popup.style.display === 'block' ? 'none' : 'block';
+});
+
+// Fermer le popup volume si on clique ailleurs
+document.addEventListener('click', function(e) {
+    const popup = document.getElementById('volume-popup');
+    const icon = document.getElementById('volume-icon');
+    if (popup.style.display === 'block' && !popup.contains(e.target) && !icon.contains(e.target)) {
+        popup.style.display = 'none';
+    }
+});
+
+// Mettre à jour les volumes du jeu en temps réel
+function updateGameVolume() {
+    const volDialogues = parseInt(document.getElementById('vol-dialogues').value);
+    const volMusique = parseInt(document.getElementById('vol-musique').value);
+    const volBruitages = parseInt(document.getElementById('vol-bruitages').value);
+
+    document.getElementById('vol-dialogues-val').textContent = volDialogues;
+    document.getElementById('vol-musique-val').textContent = volMusique;
+    document.getElementById('vol-bruitages-val').textContent = volBruitages;
+
+    // Appliquer le volume maître sur les pistes audio en cours
+    const masterDialogues = volDialogues / 100;
+    const masterMusique = volMusique / 100;
+    const masterBruitages = volBruitages / 100;
+
+    // Appliquer aux pistes en cours de lecture
+    for (const cat of AUDIO_CATEGORIES) {
+        for (const track of audioTracks[cat]) {
+            if (track.audioElement && !track.audioElement.paused) {
+                const trackVol = track.volume / 100;
+                let masterVol = 1;
+                if (cat === 'musique') masterVol = masterMusique;
+                else if (cat === 'ambiance') masterVol = masterDialogues;
+                else if (cat === 'bruitage' || cat === 'mouvement') masterVol = masterBruitages;
+                track.audioElement.volume = trackVol * masterVol;
+            }
+        }
+    }
+
+    // Appliquer aux éléments audio actifs (autoplay)
+    activeAudioElements.forEach(audio => {
+        // Déterminer la catégorie via les propriétés stockées
+        if (audio._trackCategory === 'musique') audio.volume = (audio._trackVolume / 100) * masterMusique;
+        else if (audio._trackCategory === 'ambiance') audio.volume = (audio._trackVolume / 100) * masterDialogues;
+        else audio.volume = (audio._trackVolume / 100) * masterBruitages;
+    });
+
+    // Appliquer aux sons de mouvement actifs
+    for (const key in activeMovementAudio) {
+        if (activeMovementAudio[key]) {
+            activeMovementAudio[key].volume = (activeMovementAudio[key]._trackVolume / 100) * masterBruitages;
+        }
+    }
+}
+
+// Obtenir le volume maître pour une catégorie (utilisé lors de la création d'éléments audio)
+function getMasterVolume(category) {
+    if (category === 'musique') return parseInt(document.getElementById('vol-musique').value) / 100;
+    if (category === 'ambiance') return parseInt(document.getElementById('vol-dialogues').value) / 100;
+    return parseInt(document.getElementById('vol-bruitages').value) / 100;
+}
+
+// Initialiser le ScoreManager
+ScoreManager.init('sas_securite');
+
+// Initialiser la jauge de Lucidite (TFE)
+if (typeof LucidityManager !== 'undefined') {
+    LucidityManager.init('sas_securite');
+}
+
+// Initialiser la minimap (TFE) + carnet
+if (typeof MinimapManager !== 'undefined') {
+    MinimapManager.init();
+    // Chargement du plan de la piece (SVG viewBox 601.67 x 1050 d'apres le fichier source)
+    MinimapManager.setMapImage('assets/maps/sas_securite.svg', 601.67, 1050);
+
+    // --- Calibration finale (avril 2026) ---
+    // Obtenue via MinimapManager.startClickCalibration() : croix rouge de visee au centre
+    // du viewport, pan/zoom libre, 2 captures (spawn + devant Naby).
+    // Resultat : bounds monde <-> carte SVG qui alignent la fleche verte live sur le joueur.
+    MinimapManager.setWorldBounds(-24.2, 9.0, -42.6, 13.4);
+
+    // Overlay debug : affiche world X/Z, yaw, map% et bounds en direct dans la minimap.
+    // Utile pour verifier la calibration ou recalibrer apres modification de la scene.
+    // A desactiver en prod : MinimapManager.setDebug(false);
+    MinimapManager.setDebug(true);
+
+    // POI Naby — position deduite de la capture "joueur face a Naby" :
+    //   world (-2.25, -8.00) avec les bounds ci-dessus => map (66.1%, 61.8%).
+    MinimapManager.addPOI('naby', 66.1, 61.8, 'todo');
+    // La position live (camera + yaw) est mise a jour chaque frame dans animate().
+}
+if (typeof NotebookManager !== 'undefined') {
+    NotebookManager.init();
+    NotebookManager.setCurrentRoom('sas_securite', 'Sas de sécurité');
+    NotebookManager.setCharacterChip('naby', 'Naby', null);
+    // Pas de texte synthese tant qu'aucun concept n'a ete debloque
+}
+
+/**
+ * ============================================
+ * CHARGEMENT DU JEU (via scene-loader.js)
+ * ============================================
+ * Reconstruit la scène (murs, objets, lumières, zones)
+ * sans charger l'éditeur. Fonctions fournies par scene-loader.js.
+ */
+setTimeout(async () => {
+    // Timeout de sécurité : masquer le loading screen au bout de 15s max
+    const safetyTimeout = setTimeout(() => {
+        console.warn('⏱️ Timeout de sécurité — masquage du loading screen');
+        hideLoadingScreen();
+    }, 15000);
+
+    try {
+        currentRoomName = 'sas_securite';
+
+        // Bootstrap: charger les données de scène depuis fichiers/IndexedDB
+        await bootstrapFromFiles();
+        // Reconstruire la scène (murs, objets, lumières, zones)
+        await loadProjectOnStartup();
+
+        // Charger Naby
+        try {
+            await loadAnimatedCharacter();
+        } catch (e) {
+            console.warn("Échec chargement nabydance.glb:", e);
+        }
+
+        // Invalider le cache de collision après chargement complet de la scène
+        invalidateCollisionCache();
+
+        // Positionner la caméra au spawn sauvegardé
+        if (typeof applySpawnToCamera === 'function') applySpawnToCamera();
+
+        // Initialiser l'audio de pas si disponible
+        if (typeof initFootstepAudio === 'function') initFootstepAudio();
+    } catch (e) {
+        console.warn("⚠️ Erreur lors du chargement de la scène:", e);
+    } finally {
+        clearTimeout(safetyTimeout);
+        // Masquer l'écran de chargement DANS TOUS LES CAS
+        hideLoadingScreen();
+    }
+}, 500);
+
+
+</script>
+
+</body>
+</html>

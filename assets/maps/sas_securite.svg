@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="sas_securite_map" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 601.67 1050">
+  <!-- Plan de la piece sas_securite - adapte du fichier source de Marie-Ange -->
+  <!-- Couleurs adaptees au theme Resistance (cyan #7ed6df) -->
+  <defs>
+    <style>
+      .room-fill { fill: rgba(126, 214, 223, 0.08); }
+      .room-stroke { fill: none; stroke: #7ed6df; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+      .room-accent { fill: #7ed6df; opacity: 0.15; }
+    </style>
+    <filter id="glow-cyan">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Remplissage de la piece (couleur cyan tres transparente pour reperer l'interieur) -->
+  <path class="room-fill" d="M524,58.41h-95.54v268.92H70v101.85h178.77v53.54h91.46v6.05h-19.26v83.18h18.51v113.74h-90.72v281.23h281.23V58.41h-6ZM524,333.33v86.69h-232.1v6h232.1v534.9H254.77v-86.95h218.18v-74.85h-6v68.85h-121.33v-140.33h-6.1v140.33h-84.74v-176.28h90.72v-125.74h-18.51v-71.18h19.26v-18.05h-91.46v-53.54H76v-89.85h358.46V64.41h89.54v268.92Z"/>
+
+  <!-- Murs : contours principaux en cyan -->
+  <g class="room-stroke" filter="url(#glow-cyan)">
+    <!-- Contour exterieur complet -->
+    <path d="M524,58.41h-95.54v268.92H70v101.85h178.77v53.54h91.46v6.05h-19.26v83.18h18.51v113.74h-90.72v281.23h281.23V58.41h-6ZM524,333.33v86.69h-232.1v6h232.1v534.9H254.77v-86.95h218.18v-74.85h-6v68.85h-121.33v-140.33h-6.1v140.33h-84.74v-176.28h90.72v-125.74h-18.51v-71.18h19.26v-18.05h-91.46v-53.54H76v-89.85h358.46V64.41h89.54v268.92Z"/>
+  </g>
+
+  <!-- Petite marque centrale (point de reperage Naby zone) -->
+  <!-- Retiree car les POI sont ajoutes dynamiquement par MinimapManager -->
+</svg>

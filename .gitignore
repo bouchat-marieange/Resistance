@@ -1,0 +1,65 @@
+# Claude Code
+.claude/
+
+# VS Code
+.vscode/
+
+# Fichier Windows erroné
+nul
+
+# Copie de sauvegarde manuelle
+room_1 - Copie.html
+
+# Export brut (trop gros pour GitHub, découpé dans scene_data/)
+room_1_scene_data.json
+export_scene.js
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Node
+node_modules/
+package-lock.json
+
+# Fichiers sources originaux (avant optimisation Draco)
+3D/perso/nabydance-original.glb
+3D/perso/nabydance_old.glb
+3D/perso/
+3D_optimized/perso/nabydance-original.glb
+
+# Assets de recherche/référence — non déployés sur GitHub Pages
+Gemini_Generated_Image_*.png
+theintellisphere_*.png
+theintellisphere_*.mp4
+theintellisphere_*.gif
+social_theintellisphere_*.mp4
+
+# Dossiers de travail non déployés
+AI Mythology - mini jeu/start screen/Nouveau dossier/
+AI Mythology - mini jeu/start screen/ok pour gen vidéo/
+AI Mythology - mini jeu/start screen/video start/
+AI Mythology - mini jeu/Cartes/Nouveau dossier/
+images/Images jeu Nexus/
+videos/dos.mp4
+audios/Mouvement/Pas rapides sur beton.wav
+
+# Bibliothèque de référence externe (PDF/DOCX/TXT) — non versionnée
+*.pdf
+*.docx
+20240529_CHILLPLAY-INT-Web.pdf
+chillplay.txt
+gene2024_conso.txt
+gene2024_pratiques.txt
+regard_ia_2026.txt
+regard_ia_guide.txt
+ritpu_decamps_zanichelli_2025.txt
+Voici la correspondance de tous les.txt
+lancer serveur local.txt
+
+# Raccourci local pour lancer le serveur de test (Windows)
+lancer-serveur.bat
+
+# Annexes TFE — documents confidentiels, jamais versionnés
+TFE Annexes/
