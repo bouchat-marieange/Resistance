@@ -1794,25 +1794,20 @@ function animate() {
 
     // SPAWN NEAR ARCADE : repositionner le joueur devant la borne au retour du mini-jeu
     // Uniquement déclenché par ?spawn=arcade (bouton maison dans AI Mythology)
-    // N'affecte ni le spawn initial, ni la position de sauvegarde du joueur.
-    if (spawnNearArcade && typeof interactionZones !== 'undefined' && interactionZones.length > 0) {
-        // Chercher la zone dont l'actionValue pointe vers le mini-jeu AI Mythology
-        const arcadeZone = interactionZones.find(z => {
-            const av = (z.actionValue || '').toLowerCase();
-            return av.includes('mythology') || av.includes('mini jeu') || av.includes('mini%20jeu');
-        });
-        if (arcadeZone && arcadeZone.bounds) {
-            // Centre de la zone d'interaction (= devant la borne d'arcade)
-            const cx = (arcadeZone.bounds.minX + arcadeZone.bounds.maxX) / 2;
-            const cz = (arcadeZone.bounds.minZ + arcadeZone.bounds.maxZ) / 2;
-            const eyeH = gamePlayerY || PLAYER_EYE_HEIGHT;
-            camera.position.set(cx, eyeH, cz);
-            controls.target.set(cx, eyeH, cz - 1); // regarder vers la borne
-            controls.update();
-            console.log('🕹️ Retour mini-jeu → spawn devant borne arcade:', cx.toFixed(2), cz.toFixed(2));
-            spawnNearArcade = false; // consommé une seule fois
-        }
-        // Si la zone n'est pas encore chargée, on réessaiera la frame suivante
+    // Position exacte relevée en jeu : X=2.86, Z=-7.16, yaw=-98°
+    if (spawnNearArcade) {
+        const ARCADE_X   =  2.86;
+        const ARCADE_Z   = -7.16;
+        // yaw=-98° → direction regard (sin/cos en rad)
+        // dx = sin(-98° en rad) ≈ -0.990 | dz = cos(-98° en rad) ≈ -0.139
+        const ARCADE_TX  = ARCADE_X - 0.990;  // target.x = pos.x + dx*1
+        const ARCADE_TZ  = ARCADE_Z - 0.139;  // target.z = pos.z + dz*1
+        const eyeH = gamePlayerY || PLAYER_EYE_HEIGHT;
+        camera.position.set(ARCADE_X, eyeH, ARCADE_Z);
+        controls.target.set(ARCADE_TX, eyeH, ARCADE_TZ);
+        controls.update();
+        console.log('🕹️ Retour mini-jeu → spawn arcade fixe:', ARCADE_X, ARCADE_Z);
+        spawnNearArcade = false; // consommé une seule fois
     }
 
     // MODE JEU: Head bob, hauteur, collisions, zones, audio de pas
