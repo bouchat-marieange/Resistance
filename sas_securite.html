@@ -813,8 +813,8 @@ function init() {
             e.preventDefault();
             return;
         }
-        // Escape → Pause générale du jeu
-        if (e.key === 'Escape') {
+        // Escape → Pause générale du jeu (uniquement une fois le loading terminé)
+        if (e.key === 'Escape' && loadingScreenDismissed) {
             togglePause3D();
             e.preventDefault();
             return;
@@ -1792,23 +1792,7 @@ function animate() {
         }
     }
 
-    // SPAWN NEAR ARCADE : repositionner le joueur devant la borne au retour du mini-jeu
-    // Uniquement déclenché par ?spawn=arcade (bouton maison dans AI Mythology)
-    // Position exacte relevée en jeu : X=2.86, Z=-7.16, yaw=-98°
-    if (spawnNearArcade) {
-        const ARCADE_X   =  2.86;
-        const ARCADE_Z   = -7.16;
-        // yaw=-98° → direction regard (sin/cos en rad)
-        // dx = sin(-98° en rad) ≈ -0.990 | dz = cos(-98° en rad) ≈ -0.139
-        const ARCADE_TX  = ARCADE_X - 0.990;  // target.x = pos.x + dx*1
-        const ARCADE_TZ  = ARCADE_Z - 0.139;  // target.z = pos.z + dz*1
-        const eyeH = gamePlayerY || PLAYER_EYE_HEIGHT;
-        camera.position.set(ARCADE_X, eyeH, ARCADE_Z);
-        controls.target.set(ARCADE_TX, eyeH, ARCADE_TZ);
-        controls.update();
-        console.log('🕹️ Retour mini-jeu → spawn arcade fixe:', ARCADE_X, ARCADE_Z);
-        spawnNearArcade = false; // consommé une seule fois
-    }
+    // (spawn arcade géré dans le bloc de chargement, après applySpawnToCamera)
 
     // MODE JEU: Head bob, hauteur, collisions, zones, audio de pas
     if (interactionMode === 'game') {
@@ -2250,6 +2234,20 @@ setTimeout(async () => {
 
         // Positionner la caméra au spawn sauvegardé
         if (typeof applySpawnToCamera === 'function') applySpawnToCamera();
+
+        // Retour depuis AI Mythology (?spawn=arcade) → écraser le spawn sauvegardé
+        // par la position exacte devant la borne d'arcade (relevée en jeu : X=2.86, Z=-7.16, yaw=-98°)
+        // Ce bloc DOIT être après applySpawnToCamera() pour avoir le dernier mot.
+        if (new URLSearchParams(window.location.search).get('spawn') === 'arcade') {
+            const ARCADE_X  =  2.86;
+            const ARCADE_Z  = -7.16;
+            // yaw = -98° → dx = sin(-98°×π/180) ≈ -0.990 | dz = cos(-98°×π/180) ≈ -0.139
+            const eyeH = (typeof gamePlayerY !== 'undefined' && gamePlayerY) || PLAYER_EYE_HEIGHT;
+            camera.position.set(ARCADE_X, eyeH, ARCADE_Z);
+            controls.target.set(ARCADE_X - 0.990, eyeH, ARCADE_Z - 0.139);
+            controls.update();
+            console.log('🕹️ Retour arcade → spawn fixe X:', ARCADE_X, 'Z:', ARCADE_Z);
+        }
 
         // Initialiser l'audio de pas si disponible
         if (typeof initFootstepAudio === 'function') initFootstepAudio();
