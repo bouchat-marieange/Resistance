@@ -23,11 +23,10 @@ Desktop.ini
 node_modules/
 package-lock.json
 
-# Fichiers sources originaux (avant optimisation Draco)
+# Fichiers sources originaux trop lourds (non déployés)
 3D/perso/nabydance-original.glb
 3D/perso/nabydance_old.glb
-3D/perso/
-3D_optimized/perso/nabydance-original.glb
+3D_optimized/
 
 # Assets de recherche/référence — non déployés sur GitHub Pages
 Gemini_Generated_Image_*.png

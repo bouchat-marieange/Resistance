@@ -1186,24 +1186,92 @@ function loadPermanentObjects() {
             });
     }
 
-    // Charger le fauteuil rouge
-    const armchairURL = resolveURL('3D/Objet_Importé_1.glb');
+    // Charger Naby (personnage IA - déshumanisation des liens sociaux)
     loadPermanentObject(
-        armchairURL,
-        'Fauteuil Rouge',
-        { x: 28.55, y: 3.74, z: -32.64 },
-        { x: 0, y: THREE.MathUtils.degToRad(-34), z: 0 },
-        { x: 16.84, y: 16.84, z: 16.84 }
+        resolveURL('3D/perso/nabydance.glb'),
+        'Naby',
+        { x: -2.455, y: 0.073, z: -6.809 },
+        { x: 0, y: 0.004, z: 0 },
+        { x: 0.831, y: 0.831, z: 0.831 }
     );
 
     // Charger la lampe sur pied
-    const lampURL = resolveURL('3D/Objet_Importé_2.glb');
     loadPermanentObject(
-        lampURL,
+        resolveURL('3D/objet/lampe-sur-pied.glb'),
         'Lampe sur Pied',
-        { x: 37.93, y: 5.60, z: -26.27 },
-        { x: 0, y: 0, z: 0 },
-        { x: 20.94, y: 20.94, z: 20.94 }
+        { x: -4.665, y: 0, z: -7.297 },
+        { x: Math.PI, y: -0.2087, z: Math.PI },
+        { x: 1.798, y: 1.798, z: 1.798 }
+    );
+
+    // Charger le fauteuil rouge expo
+    loadPermanentObject(
+        resolveURL('3D/objet/fauteuil-rouge-expo.glb'),
+        'Fauteuil Rouge Expo',
+        { x: -4.404, y: 0, z: -6.478 },
+        { x: 0, y: 1.5693, z: 0 },
+        { x: 1.311, y: 1.311, z: 1.311 }
+    );
+
+    // Charger le cadre dessin
+    loadPermanentObject(
+        resolveURL('3D/objet/cadre-dessin.glb'),
+        'Cadre Dessin',
+        { x: -4.894, y: 1.656, z: -6.476 },
+        { x: -Math.PI, y: 1.5143, z: -Math.PI },
+        { x: 1.0, y: 1.0, z: 1.0 }
+    );
+
+    // Charger la guitare classique
+    loadPermanentObject(
+        resolveURL('3D/objet/guitare-classique.glb'),
+        'Guitare Classique',
+        { x: -4.527, y: 0.491, z: -5.691 },
+        { x: -0.7499, y: 0.7965, z: 0.5777 },
+        { x: 1.182, y: 1.182, z: 1.182 }
+    );
+
+    // Charger le générateur
+    loadPermanentObject(
+        resolveURL('3D/objet/generateur.glb'),
+        'Générateur',
+        { x: -18.795, y: 1.349, z: -22.631 },
+        { x: -Math.PI, y: 1.540, z: -Math.PI },
+        { x: 2.095, y: 2.095, z: 2.095 }
+    );
+
+    // Charger la porte industrielle
+    loadPermanentObject(
+        resolveURL('3D/objet/porte-industrielle.glb'),
+        'Porte Industrielle',
+        { x: 2.309, y: 0, z: -39.948 },
+        { x: 0, y: -0.0255, z: 0 },
+        { x: 0.0087, y: 0.0087, z: 0.0087 }
+    );
+
+    // Charger les bergers allemands (gardes du bunker)
+    loadPermanentObject(
+        resolveURL('3D/perso/berger-allemand-couche.glb'),
+        'Berger Allemand Couché',
+        { x: -4.244, y: 0, z: -7.893 },
+        { x: -Math.PI, y: 0.758, z: -Math.PI },
+        { x: 0.547, y: 0.547, z: 0.547 }
+    );
+
+    loadPermanentObject(
+        resolveURL('3D/perso/berger-allemand-debout.glb'),
+        'Berger Allemand Debout',
+        { x: -2.158, y: 0.487, z: -6.462 },
+        { x: -Math.PI, y: 0.1494, z: -Math.PI },
+        { x: 0.705, y: 0.705, z: 0.705 }
+    );
+
+    loadPermanentObject(
+        resolveURL('3D/perso/berger-allemand-assis.glb'),
+        'Berger Allemand Assis',
+        { x: -2.861, y: 0.561, z: -6.683 },
+        { x: -Math.PI, y: 0.2463, z: -Math.PI },
+        { x: 0.527, y: 0.527, z: 0.527 }
     );
 
     // Charger la borne d'arcade AI Mythology
