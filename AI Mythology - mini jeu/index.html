@@ -5207,6 +5207,13 @@ function showScoreScreen() {
   const btnMute = document.getElementById('btn-unmute');
   if (!vid) return;
 
+  /* En mode debug score (?score=…) : couper la vidéo immédiatement */
+  if (new URLSearchParams(window.location.search).has('score')) {
+    vid.pause(); vid.muted = true; vid.src = '';
+    if (btnMute) btnMute.style.display = 'none';
+    return;
+  }
+
   function hideMuteBtn() {
     if (btnMute) { btnMute.style.display = 'none'; }
   }
