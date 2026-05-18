@@ -5063,18 +5063,42 @@ function showScoreScreen() {
   _addBubbles('score-liquid-ia',      9);
   _addBubbles('score-liquid-human',   9);
 
-  /* ── Son de remplissage des tubes (loopé, coupé quand le niveau est atteint) ── */
+  /* ── Sons de remplissage des tubes ── */
+  /* Gargouillis (loopé) — joue pendant toutes les phases de remplissage */
   const _fillSound = new Audio('sounds/remplissage%20cuve.mp3');
   _fillSound.loop   = true;
   _fillSound.volume = 0.65;
-  const _playFill = () => {
+
+  /* Roulement de tambour (loopé) — uniquement pendant le tube central (Phase 1) */
+  const _drumSound = new Audio('sounds/Sound%20Effect%20by%20freesound_community%20from%20Pixabay%20-tadaa-47995.mp3');
+  _drumSound.loop   = true;
+  _drumSound.volume = 0.70;
+
+  /* Sons de résultat final (≥ 70% humain → victoire, sinon → défaite) */
+  const _winSound  = new Audio('sounds/Sound%20Effect%20by%20freesound_community%20from%20Pixabay-goodresult-82807.mp3');
+  const _loseSound = new Audio('sounds/Sound%20Effect%20by%20Universfield%20from%20Pixabay-marimba-lose-250960.mp3');
+  _winSound.volume  = 0.80;
+  _loseSound.volume = 0.80;
+
+  /* _playFill(withDrum) : démarre gargouillis + tambour optionnel */
+  const _playFill = (withDrum) => {
     if (_globalMuted) return;
     _fillSound.currentTime = 0;
     _fillSound.play().catch(() => {});
+    if (withDrum) {
+      _drumSound.currentTime = 0;
+      _drumSound.play().catch(() => {});
+    }
   };
+  /* _stopFill : coupe gargouillis ET tambour */
   const _stopFill = () => {
-    _fillSound.pause();
-    _fillSound.currentTime = 0;
+    _fillSound.pause();  _fillSound.currentTime = 0;
+    _drumSound.pause();  _drumSound.currentTime = 0;
+  };
+  /* _playResult : joue le son de résultat selon le score */
+  const _playResult = () => {
+    if (_globalMuted) return;
+    (humanPct >= 70 ? _winSound : _loseSound).play().catch(() => {});
   };
 
   /* PHASE 1+2 simultanées : compteur ET tube central démarrent ensemble */
@@ -5083,8 +5107,8 @@ function showScoreScreen() {
     liquidCenter.style.transition = 'height 3.4s cubic-bezier(0.4,0,0.2,1)';
     liquidCenter.style.height = Math.min(95, fillPct) + '%';
     _animateCount('score-pts-display', total, 3400, ' PTS');
-    _playFill();                              /* son démarre avec le remplissage */
-    setTimeout(_stopFill, 3400);             /* son s'arrête quand le niveau est atteint */
+    _playFill(true);                          /* gargouillis + tambour suspense */
+    setTimeout(_stopFill, 3400);             /* les deux sons s'arrêtent au niveau atteint */
   }, 80);
 
   /* PHASE 3 : bouton ? (après 4.5 s — la transition dure 3.4 s) */
@@ -5127,7 +5151,7 @@ function showScoreScreen() {
       liquidHuman.style.height = Math.min(95, humanPct) + '%';
       _animateCount('score-pct-ia-val',    aiPct,    3200, '%');
       _animateCount('score-pct-human-val', humanPct, 3200, '%');
-      _playFill();                           /* son redémarre pour les tubes latéraux */
+      _playFill(false);                      /* gargouillis seul pour les tubes latéraux */
       setTimeout(_stopFill, 3200);           /* s'arrête quand les % sont atteints */
     }, 600);
 
@@ -5155,6 +5179,7 @@ function showScoreScreen() {
       resultPanel.style.display = 'flex';
       resultPanel.classList.add('visible');
       requestAnimationFrame(() => requestAnimationFrame(() => resultFrame.classList.add('in')));
+      _playResult(); /* son victoire ou défaite selon humanPct ≥ 70 % */
     }, 4400);
   };
 
