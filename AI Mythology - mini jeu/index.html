@@ -4788,6 +4788,7 @@ function qSelectSide(side) {
 /* ── Confirmer le choix sélectionné ── */
 function qConfirm() {
   if (_qSelectedSide === null) return;
+  vocalStop(); /* coupe Q / RA / RB en cours avant de lancer le feedback */
   _qKbActive = false;
   hideHoloBeam();
   _sendBtnDeactivate();         /* éteindre + stop animation */
