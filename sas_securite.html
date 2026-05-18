@@ -1095,7 +1095,7 @@ function loadPermanentObjects() {
     const loader = sharedGLTFLoader;
 
     // Fonction helper pour charger un objet permanent avec son fileData
-    function loadPermanentObject(url, name, defaultPos, defaultRot, defaultScale) {
+    function loadPermanentObject(url, name, defaultPos, defaultRot, defaultScale, onLoaded) {
         // D'abord récupérer le fileData via fetch
         fetch(url)
             .then(response => response.arrayBuffer())
@@ -1169,6 +1169,8 @@ function loadPermanentObjects() {
 
                         console.log(`✅ ${name} chargé et positionné`);
 
+                        if (typeof onLoaded === 'function') onLoaded(model);
+
                         if (editorMode) {
                             updateObjectsList();
                         }
@@ -1202,6 +1204,32 @@ function loadPermanentObjects() {
         { x: 37.93, y: 5.60, z: -26.27 },
         { x: 0, y: 0, z: 0 },
         { x: 20.94, y: 20.94, z: 20.94 }
+    );
+
+    // Charger la borne d'arcade AI Mythology
+    // Placée face au joueur (spawn retour : X=2.86, Z=-7.16, regard vers X=1.87, Z=-7.30)
+    const arcadeURL = resolveURL('3D/arcade-ai-mythology.glb');
+    loadPermanentObject(
+        arcadeURL,
+        'Borne Arcade AI Mythology',
+        { x: 0.5, y: 0, z: -7.5 },
+        { x: 0, y: THREE.MathUtils.degToRad(90), z: 0 },
+        { x: 15, y: 15, z: 15 },
+        function(model) {
+            // Zone d'interaction liée à l'objet — ouvre le mini-jeu AI Mythology
+            interactionZones.push({
+                id: 'arcade-ai-mythology',
+                surfaceMode: 'object',
+                objectRef: { editorName: 'Borne Arcade AI Mythology' },
+                actionType: 'link',
+                actionValue: './AI Mythology - mini jeu/index.html',
+                customName: 'Jouer — AI Mythology',
+                triggerType: 'click',
+                bounds: { minX: -1.5, maxX: 2.5, minZ: -9.0, maxZ: -6.0 },
+                y: 1.5
+            });
+            console.log('🕹️ Zone arcade AI Mythology enregistrée');
+        }
     );
 }
 
