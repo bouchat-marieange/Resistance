@@ -3824,13 +3824,17 @@ function initBattle(cfg) {
       const q  = BATTLE_QUESTIONS[battleKey];
       const fb = q ? (_selectedIsGoodLocal ? q.feedbackGood : q.feedbackBad) : null;
       if (fb) {
-        /* Applique le changement visuel du personnage */
+        /* Applique le changement visuel du personnage immédiatement
+           → le joueur voit la version transformée pendant 2 secondes
+           avant que le panneau feedback n'apparaisse */
         if (cfg.charStateSwitch) cfg.charStateSwitch(newState);
         /* Audio feedback : passé à showExplPanel qui gère le lock du bouton suivant */
         const _fbType = _vocalChosenSide === 'A' ? 'FBA' : 'FBB';
         const _fbSrc  = (VOCAL_MAP[battleKey] && VOCAL_MAP[battleKey][_fbType])
                         ? VOCAL_MAP[battleKey][_fbType] : null;
-        showExplPanel(fb, _selectedIsGoodLocal, _doNextRound, cfg.isLastRound || false, _fbSrc);
+        setTimeout(() => {
+          showExplPanel(fb, _selectedIsGoodLocal, _doNextRound, cfg.isLastRound || false, _fbSrc);
+        }, 2000); /* 2s pour laisser le joueur voir la version transformée */
       } else {
         applyState(newState);  /* applyState appelle charStateSwitch lui-même */
       }
@@ -4099,7 +4103,7 @@ const CARD_VOCAL = {
     human: 'Vocal/Carte%20humaine%20LOLbot%20-%20Autonoe%20-%20Vocal%20Smile%20-%20Natural%20-%20Neutral.wav',
   },
   medbot: {
-    ai:    'Vocal/Carte%20Medbot-X%20-%20Schedar%20-%20Newscaster%20-%20Staccato%20-%20Neutral.wav',
+    ai:    'Vocal/Carte%20Medbot-X%20-%20Schedar%20-%20Newscaster%20-%20Natural%20-%20Neutral.wav',
     human: 'Vocal/Carte%20humaine%20-%20Medbot-X%20-%20Vindemiatrix%20-%20Emathetic%20-%20Natural%20-%20Neutral.wav',
   },
   neutral: {
