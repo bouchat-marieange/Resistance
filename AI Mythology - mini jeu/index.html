@@ -5207,11 +5207,15 @@ function showScoreScreen() {
   const btnMute = document.getElementById('btn-unmute');
   if (!vid) return;
 
-  /* En mode debug score (?score=…) : couper la vidéo immédiatement */
+  /* En mode debug score (?score=…) : couper la vidéo proprement et ne pas lancer le son */
   if (new URLSearchParams(window.location.search).has('score')) {
-    vid.pause(); vid.muted = true; vid.src = '';
+    vid.removeAttribute('autoplay');
+    vid.pause();
+    vid.muted = true;
+    vid.src = '';
+    vid.load(); /* load() est indispensable pour forcer le navigateur à arrêter le buffer */
     if (btnMute) btnMute.style.display = 'none';
-    return;
+    return; /* ne pas arriver au bloc vid.muted=false / vid.play() */
   }
 
   function hideMuteBtn() {
@@ -5464,6 +5468,15 @@ function returnToSas() {
 
   GAME_SCORE.human = human;
   GAME_SCORE.ai    = ai;
+
+  /* Sécurité double : couper la vidéo start une seconde fois au moment
+     où on bascule vers le score, au cas où une Promise vid.play() asynchrone
+     l'aurait remise en route après l'arrêt dans initStartVideo */
+  const _vid = document.getElementById('lp-video');
+  if (_vid) { _vid.pause(); _vid.muted = true; _vid.src = ''; _vid.load(); }
+  const _btnUnmute = document.getElementById('btn-unmute');
+  if (_btnUnmute) _btnUnmute.style.display = 'none';
+
   showScoreScreen();
 })();
 
