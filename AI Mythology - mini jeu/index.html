@@ -3728,7 +3728,8 @@ function initBattle(cfg) {
     };
 
     /* Bouton Human Power → toggle carte humaine */
-    _hPowerBtn.onclick = () => {
+    _hPowerBtn.onclick = (e) => {
+      e.stopPropagation(); /* empêche la remontée vers document → vocalStop / csbReset */
       if (_hcardVisible) {
         hcardAbsorb(hcardRevEl, hcardInEl);
         setTimeout(_onHcardDismissed, CARD_DURATION + 60);
@@ -5319,7 +5320,8 @@ document.addEventListener('keydown', (e) => {
 
   function gpToggleHumanCard() {
     const hpBtn = document.getElementById('hp-btn-wrap');
-    if (hpBtn) hpBtn.click();
+    /* bubbles:false → ne remonte pas jusqu'à document → vocalStop ne se déclenche pas */
+    if (hpBtn) hpBtn.dispatchEvent(new MouseEvent('click', { bubbles: false, cancelable: true }));
   }
 
   function gpSkipFeedbackAudio() {
