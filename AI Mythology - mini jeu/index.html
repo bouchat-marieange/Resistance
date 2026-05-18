@@ -1840,7 +1840,7 @@
       background: linear-gradient(to top,
         rgba(0,140,35,0.72) 0%, rgba(25,185,60,0.66) 40%,
         rgba(65,215,95,0.58) 80%, rgba(120,240,135,0.48) 100%);
-      transition: height 2.6s cubic-bezier(0.4,0,0.2,1);
+      transition: height 3.4s cubic-bezier(0.4,0,0.2,1);
       overflow: hidden;
     }
     #score-liquid-center-surface {
@@ -1874,7 +1874,7 @@
       background: linear-gradient(to top,
         rgba(0,140,35,0.72) 0%, rgba(25,185,60,0.66) 40%,
         rgba(65,215,95,0.58) 80%, rgba(120,240,135,0.48) 100%);
-      transition: height 2.4s cubic-bezier(0.4,0,0.2,1);
+      transition: height 3.2s cubic-bezier(0.4,0,0.2,1);
       overflow: hidden;
     }
     .score-liquid-surface {
@@ -5063,15 +5063,31 @@ function showScoreScreen() {
   _addBubbles('score-liquid-ia',      9);
   _addBubbles('score-liquid-human',   9);
 
+  /* ── Son de remplissage des tubes (loopé, coupé quand le niveau est atteint) ── */
+  const _fillSound = new Audio('sounds/remplissage%20cuve.mp3');
+  _fillSound.loop   = true;
+  _fillSound.volume = 0.65;
+  const _playFill = () => {
+    if (_globalMuted) return;
+    _fillSound.currentTime = 0;
+    _fillSound.play().catch(() => {});
+  };
+  const _stopFill = () => {
+    _fillSound.pause();
+    _fillSound.currentTime = 0;
+  };
+
   /* PHASE 1+2 simultanées : compteur ET tube central démarrent ensemble */
   setTimeout(() => {
     void liquidCenter.offsetWidth;
-    liquidCenter.style.transition = 'height 2.6s cubic-bezier(0.4,0,0.2,1)';
+    liquidCenter.style.transition = 'height 3.4s cubic-bezier(0.4,0,0.2,1)';
     liquidCenter.style.height = Math.min(95, fillPct) + '%';
-    _animateCount('score-pts-display', total, 2600, ' PTS');
+    _animateCount('score-pts-display', total, 3400, ' PTS');
+    _playFill();                              /* son démarre avec le remplissage */
+    setTimeout(_stopFill, 3400);             /* son s'arrête quand le niveau est atteint */
   }, 80);
 
-  /* PHASE 3 : bouton ? (après 3.5 s — la transition dure 2.6 s) */
+  /* PHASE 3 : bouton ? (après 4.5 s — la transition dure 3.4 s) */
   const _btnImgSrcs = [
     'Interrogation%20button/bouton%20interrogation%20-%20allume%201.png',
     'Interrogation%20button/bouton%20interrogation%20-%20allume%202.png',
@@ -5088,7 +5104,7 @@ function showScoreScreen() {
       _btnImgIdx = (_btnImgIdx + 1) % _btnImgSrcs.length;
       if (_btnImg) _btnImg.src = _btnImgSrcs[_btnImgIdx];
     }, 325);
-  }, 3500);
+  }, 4500);
 
   /* RÉVÉLATION au clic ? */
   revealBtn.onclick = () => {
@@ -5105,15 +5121,17 @@ function showScoreScreen() {
     setTimeout(() => {
       [zoneIa, zoneHuman, pctZoneIa, pctZoneHuman].forEach(el => el.classList.add('visible'));
       void liquidIa.offsetWidth;
-      liquidIa.style.transition    = 'height 2.4s cubic-bezier(0.4,0,0.2,1)';
-      liquidHuman.style.transition = 'height 2.4s cubic-bezier(0.4,0,0.2,1)';
+      liquidIa.style.transition    = 'height 3.2s cubic-bezier(0.4,0,0.2,1)';
+      liquidHuman.style.transition = 'height 3.2s cubic-bezier(0.4,0,0.2,1)';
       liquidIa.style.height    = Math.min(95, aiPct)    + '%';
       liquidHuman.style.height = Math.min(95, humanPct) + '%';
-      _animateCount('score-pct-ia-val',    aiPct,    2200, '%');
-      _animateCount('score-pct-human-val', humanPct, 2200, '%');
+      _animateCount('score-pct-ia-val',    aiPct,    3200, '%');
+      _animateCount('score-pct-human-val', humanPct, 3200, '%');
+      _playFill();                           /* son redémarre pour les tubes latéraux */
+      setTimeout(_stopFill, 3200);           /* s'arrête quand les % sont atteints */
     }, 600);
 
-    /* Résultat final (après 3.8 s) */
+    /* Résultat final (après 4.4 s — 600ms + 3200ms transition + 600ms buffer) */
     setTimeout(() => {
       const msg    = SCORE_MESSAGES.find(m => humanPct >= m.min) || SCORE_MESSAGES[SCORE_MESSAGES.length - 1];
       const msgIdx = SCORE_MESSAGES.indexOf(msg);
@@ -5137,7 +5155,7 @@ function showScoreScreen() {
       resultPanel.style.display = 'flex';
       resultPanel.classList.add('visible');
       requestAnimationFrame(() => requestAnimationFrame(() => resultFrame.classList.add('in')));
-    }, 3800);
+    }, 4400);
   };
 
   /* Boutons fin */
