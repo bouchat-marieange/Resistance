@@ -3124,8 +3124,10 @@ function cardEmerge(cardEl, innerEl, charEl) {
 }
 
 function cardAbsorb(cardEl, innerEl, charEl, callback) {
-  // Stopper l'audio de la carte si en cours
-  csbReset();
+  // Stopper l'audio UNIQUEMENT si c'est cette carte-ci qui joue
+  // (évite d'interrompre l'audio de la carte humaine si elle est active)
+  const ownSoundBtn = cardEl.querySelector('.card-sound-btn');
+  if (ownSoundBtn && _csbBtn === ownSoundBtn) csbReset();
   // Cacher le bouton flip immédiatement + reset état
   _flipBtn.style.display = 'none';
   _shineEl.style.display = 'none';
@@ -3222,8 +3224,9 @@ function hcardEmerge(hcardEl, hinnerEl) {
 }
 
 function hcardAbsorb(hcardEl, hinnerEl) {
-  /* Stopper l'audio de la carte humaine si en cours */
-  csbReset();
+  /* Stopper l'audio UNIQUEMENT si c'est cette carte humaine qui joue */
+  const ownSoundBtn = hcardEl.querySelector('.card-sound-btn');
+  if (ownSoundBtn && _csbBtn === ownSoundBtn) csbReset();
   /* La carte repart — ne pas ré-afficher hp-hint (séquence linéaire gérée par initBattle) */
   _hcardFlipBtn.style.display = 'none';
   _hcardShineEl.style.display = 'none';
@@ -4135,7 +4138,9 @@ let _csbAudio = null;
 let _csbBtn   = null;
 
 function csbReset() {
-  if (_csbAudio) { _csbAudio.pause(); _csbAudio = null; }
+  if (_csbAudio) {
+    _csbAudio.pause(); _csbAudio = null;
+  }
   if (_csbBtn)   {
     _csbBtn.querySelector('img').src = _CSB_ICON_ON;
     _csbBtn.classList.remove('playing');
@@ -4191,7 +4196,9 @@ let _feedbackOnEnd   = null;
 const _explSkipBtn   = document.getElementById('expl-audio-skip-btn');
 
 function stopFeedbackAudio(forceUnlock) {
-  if (_feedbackAudio) { _feedbackAudio.pause(); _feedbackAudio = null; }
+  if (_feedbackAudio) {
+    _feedbackAudio.pause(); _feedbackAudio = null;
+  }
   _feedbackOnEnd = null;
   _explSkipBtn.classList.remove('active');
   if (forceUnlock) _feedbackUnlockNext();
@@ -4793,8 +4800,8 @@ function _qKbHandler(e) {
   if (e.key === 'Enter' || e.key === ' ')                        { e.preventDefault(); qConfirm(); }
 }
 document.addEventListener('keydown', _qKbHandler);
-_confirmBtn.addEventListener('click', qConfirm);
-_hudSendBtn.addEventListener('click', qConfirm);
+_confirmBtn.addEventListener('click', (e) => { e.stopPropagation(); qConfirm(); });
+_hudSendBtn.addEventListener('click',  (e) => { e.stopPropagation(); qConfirm(); });
 
 /* ── Setup des écrans HUD pour la phase question ── */
 function setupHudQuestion(q, goodLeft, onConfirm) {
