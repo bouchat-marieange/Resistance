@@ -3686,12 +3686,12 @@ function initBattle(cfg) {
   }
 
   function _checkAndShowQuestion() {
-    if (_launchShown) return;                            // déjà affiché via la séquence HP
-    if (!_aiCardSeenOnce || !_hcardSeenOnce) return;
+    if (_launchShown) return;                            // déjà affiché
+    if (!_aiCardSeenOnce || !_hcardSeenOnce) return;   // les deux cartes doivent avoir été ouvertes
     const q = BATTLE_QUESTIONS[battleKey];
     if (!q) return;
     _launchShown = true;
-    setTimeout(() => showQuestionBtn(charEl), 300);
+    setTimeout(() => showQuestionBtn(charEl), CARD_DURATION + 80); // attendre fin animation carte
   }
 
   function _onHcardDismissed() {
@@ -3737,14 +3737,13 @@ function initBattle(cfg) {
         hcardAbsorb(hcardRevEl, hcardInEl);
         setTimeout(_onHcardDismissed, CARD_DURATION + 60);
       } else {
-        /* Ouverture carte humaine : masquer hp-hint, afficher "LANCER LE DÉFI" */
+        /* Ouverture carte humaine : masquer hp-hint */
         document.getElementById('hud-hp-hint').style.display = 'none';
         hcardEmerge(hcardRevEl, hcardInEl);
-        /* "LANCER LE DÉFI" uniquement si la carte IA a déjà été vue au moins une fois */
-        if (!_launchShown && _aiCardSeenOnce) {
-          _launchShown = true;
-          /* Attendre que la carte soit sortie pour afficher le texte */
-          setTimeout(() => showQuestionBtn(charEl), CARD_DURATION + 80);
+        /* Marquer la carte humaine comme vue dès son ouverture */
+        if (!_hcardSeenOnce) {
+          _hcardSeenOnce = true;
+          _checkAndShowQuestion();
         }
       }
     };
@@ -3848,6 +3847,11 @@ function initBattle(cfg) {
     if (cardEl.classList.contains('card-hidden')) {
       hintEl.style.display = 'none';
       cardEmerge(cardEl, innerEl, charEl);
+      /* Marquer la carte IA comme vue dès son ouverture */
+      if (!_aiCardSeenOnce) {
+        _aiCardSeenOnce = true;
+        _checkAndShowQuestion();
+      }
       /* Séquence des hints — seulement à la première ouverture de ce round */
       if (!_charCardOpenedOnce) {
         _charCardOpenedOnce = true;
@@ -3959,72 +3963,72 @@ function _vs(s) { return 'Vocal/' + s.replace(/ /g, '%20'); }
 
 const VOCAL_MAP = {
   oracle7: {
-    Q:   _vs('Q - Oracle 7 - Charon -  promo - natural.mp3'),
-    RA:  _vs('RA - Oracle 7 -Charon -  promo - natural.mp3'),
-    RB:  _vs('RB - Oracle 7 -Charon -  promo - natural.mp3'),
+    Q:   _vs('Q - Oracle 7 - Charon -  promo - natural.wav'),
+    RA:  _vs('RA - Oracle 7 -Charon -  promo - natural.wav'),
+    RB:  _vs('RB - Oracle 7 -Charon -  promo - natural.wav'),
     FBA: _vs('FBA - Oracle 7 -Charon -  promo - natural.wav'),
     FBB: _vs('FBB - Oracle 7 -Charon -  promo - natural.wav'),
   },
   genx: {
-    Q:   _vs('Q - Gen-X - Charon -  promo - natural.mp3'),
-    RA:  _vs('RA - Gen-X -Charon -  promo - natural.mp3'),
-    RB:  _vs('RB - Gen-X -Charon -  promo - natural.mp3'),
+    Q:   _vs('Q - Gen-X - Charon -  promo - natural.wav'),
+    RA:  _vs('RA - Gen-X -Charon -  promo - natural.wav'),
+    RB:  _vs('RB - Gen-X -Charon -  promo - natural.wav'),
     FBA: _vs('FBB - Gen-X -Charon -  promo - natural.wav'), /* swap : FBA joue le fichier FBB */
     FBB: _vs('FBA - Gen-X -Charon -  promo - natura.wav'),  /* swap : FBB joue le fichier FBA */
   },
   compile: {
-    Q:   _vs('Q - Compile - Charon -  promo - natural.mp3'),
-    RA:  _vs('RA - Compile -Charon -  promo - natural.mp3'),
-    RB:  _vs('RB - Compile -Charon -  promo - natural.mp3'),
+    Q:   _vs('Q - Compile - Charon -  promo - natural.wav'),
+    RA:  _vs('RA - Compile -Charon -  promo - natural.wav'),
+    RB:  _vs('RB - Compile -Charon -  promo - natural.wav'),
     FBA: _vs('FBA - Compile -Charon -  promo - natural.wav'),
     FBB: _vs('FBB - Compile -Charon -  promo - natural.wav'),
   },
   empath: {
-    Q:   _vs('Q - Empath-IA - Charon -  promo - natural.mp3'),
-    RA:  _vs('RA - Empath-IA -Charon -  promo - natural.mp3'),
-    RB:  _vs('RB - Empath-IA -Charon -  promo - natural.mp3'),
+    Q:   _vs('Q - Empath-IA - Charon -  promo - natural.wav'),
+    RA:  _vs('RA - Empath-IA -Charon -  promo - natural.wav'),
+    RB:  _vs('RB - Empath-IA -Charon -  promo - natural.wav'),
     FBA: _vs('FBA - Empath-IA -Charon -  promo - natural.wav'),
     FBB: _vs('FBB - Empath-IA -Charon -  promo - natural.wav'),
   },
   ghost: {
-    Q:   _vs('Q - Ghost-Lover - Charon -  promo - natural.mp3'),
-    RA:  _vs('RA - Ghost-Lover -Charon -  promo - natural.mp3'),
-    RB:  _vs('RB - Ghost-Lover -Charon -  promo - natural.mp3'),
+    Q:   _vs('Q - Ghost-Lover - Charon -  promo - natural.wav'),
+    RA:  _vs('RA - Ghost-Lover -Charon -  promo - natural.wav'),
+    RB:  _vs('RB - Ghost-Lover -Charon -  promo - natural.wav'),
     FBA: _vs('FBA - Ghost-Lover -Charon -  promo - natural.wav'),
     FBB: _vs('FBB - Ghost-Lover -Charon -  promo - natural.wav'),
   },
   lolbot: {
-    Q:   _vs('Q - LOL bot - Charon -  promo - natural.mp3'),
-    RA:  _vs('RA - LOL bot -Charon -  promo - natural.mp3'),
-    RB:  _vs('RB - LOL bot -Charon -  promo - natural.mp3'),
+    Q:   _vs('Q - LOL bot - Charon -  promo - natural.wav'),
+    RA:  _vs('RA - LOL bot -Charon -  promo - natural.wav'),
+    RB:  _vs('RB - LOL bot -Charon -  promo - natural.wav'),
     FBA: _vs('FBA - LOL bot -Charon -  promo - natural.wav'),
     FBB: _vs('FBB - LOL bot -Charon -  promo - natural.wav'),
   },
   medbot: {
-    Q:   _vs('Q - Medbot-X - Charon -  promo - natural.mp3'),
-    RA:  _vs('RA - Medbot-X  -Charon -  promo - natural.mp3'),
-    RB:  _vs('RB - Medbot-X  -Charon -  promo - natural.mp3'),
+    Q:   _vs('Q - Medbot-X - Charon -  promo - natural.wav'),
+    RA:  _vs('RA - Medbot-X  -Charon -  promo - natural.wav'),
+    RB:  _vs('RB - Medbot-X  -Charon -  promo - natural.wav'),
     FBA: _vs('FBA - LMedbot-X  -Charon -  promo - natural.wav'),
     FBB: _vs('FBB - Medbot-X  -Charon -  promo - natural.wav'),
   },
   neutral: {
-    Q:   _vs('Q - Neutral-Net - Charon -  promo - natural.mp3'),
-    RA:  _vs('RA - Neutral-Net  -Charon -  promo - natural.mp3'),
-    RB:  _vs('RB - Neutral-Net  -Charon -  promo - natural.mp3'),
+    Q:   _vs('Q - Neutral-Net - Charon -  promo - natural.wav'),
+    RA:  _vs('RA - Neutral-Net  -Charon -  promo - natural.wav'),
+    RB:  _vs('RB - Neutral-Net  -Charon -  promo - natural.wav'),
     FBA: _vs('FBA - Neutral-Net  -Charon -  promo - natural.wav'),
     FBB: _vs('FBB - Neutral-Net  -Charon -  promo - natural.wav'),
   },
   phantom: {
-    Q:   _vs('Q - Phantom Feed - Charon -  promo - natural.mp3'),
-    RA:  _vs('RA - Phantom Feed  -Charon -  promo - natural.mp3'),
-    RB:  _vs('RB - Phantom Feed  -Charon -  promo - natural.mp3'),
+    Q:   _vs('Q - Phantom Feed - Charon -  promo - natural.wav'),
+    RA:  _vs('RA - Phantom Feed  -Charon -  promo - natural.wav'),
+    RB:  _vs('RB - Phantom Feed  -Charon -  promo - natural.wav'),
     FBA: _vs('FBA - Phantom Feed  -Charon -  promo - natural.wav'),
     FBB: _vs('FBB - Phantom Feed  -Charon -  promo - natural.wav'),
   },
   tutoria: {
-    Q:   _vs('Q - Tutor AI - Charon -  promo - natural.mp3'),
-    RA:  _vs('RA - Tutor AI  -Charon -  promo - natural.mp3'),
-    RB:  _vs('RB - Tutor AI  -Charon -  promo - natural.mp3'),
+    Q:   _vs('Q - Tutor AI - Charon -  promo - natural.wav'),
+    RA:  _vs('RA - Tutor AI  -Charon -  promo - natural.wav'),
+    RB:  _vs('RB - Tutor AI  -Charon -  promo - natural.wav'),
     FBA: _vs('FBA - Tutor AI  -Charon -  promo - natural.wav'),
     FBB: _vs('FBB - Tutor AI  -Charon -  promo - natural.wav'),
   },
@@ -4071,7 +4075,7 @@ document.addEventListener('click', vocalStop, { capture: false });
 ════════════════════════════════════════════════════ */
 const CARD_VOCAL = {
   oracle7: {
-    ai:    'Vocal/Carte%20Oracle%207%20-%20Algieba%20-%20Deadpan%20-%20Natural%20-%20Neutral.wav',
+    ai:    'Vocal/Carte%20Oracle%207%20-%20Algieba%20-%20Deadpan%20-%20Natural%20-%20Neutral.mp3',
     human: 'Vocal/Carte%20humaine%20Oracle%207%20-%20Kore%20-%20Empathetic%20-%20Natural%20-%20Neutral.wav',
   },
   genx: {
