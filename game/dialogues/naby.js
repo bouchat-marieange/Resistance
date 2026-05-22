@@ -29,8 +29,12 @@
     var tree = {
         characterId: 'naby',
         characterName: 'Naby',
-        portrait: null, // TODO: assets/portraits/naby.png
+        portrait: 'images/Portraits/Portrait Naby.jpg',
         startNode: 'intro',
+        onStart: function () {
+            /* Mémorise que le joueur a rencontré et parlé à Naby */
+            try { localStorage.setItem('resistance_naby_met', '1'); } catch (e) {}
+        },
         nodes: {
             // ===========================================================
             // NOEUD D'ENTREE

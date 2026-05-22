@@ -638,43 +638,10 @@ function updateSpawnInfoDisplay() {
     }
 }
 
-// Appliquer la position de spawn à la caméra (au chargement en mode jeu)
+// Appliquer la position de spawn à la caméra (affichage du marqueur en mode développeur)
 function applySpawnToCamera() {
-    if (interactionMode === 'game') {
-        if (spawnPosition && spawnSaved) {
-            // Positionner la caméra à la hauteur des yeux
-            const eyeY = spawnPosition.y + PLAYER_EYE_HEIGHT;
-            camera.position.set(spawnPosition.x, eyeY, spawnPosition.z);
-
-            // Calculer le point de regard basé sur la rotation du spawn
-            const lookDir = new THREE.Vector3(
-                -Math.sin(spawnRotationY),
-                0,
-                -Math.cos(spawnRotationY)
-            );
-            controls.target.set(
-                camera.position.x + lookDir.x * 0.01,
-                eyeY,
-                camera.position.z + lookDir.z * 0.01
-            );
-            camera.lookAt(
-                camera.position.x + lookDir.x * 10,
-                eyeY,
-                camera.position.z + lookDir.z * 10
-            );
-
-            console.log(`🎯 Caméra positionnée au spawn: (${spawnPosition.x.toFixed(2)}, ${eyeY.toFixed(2)}, ${spawnPosition.z.toFixed(2)})`);
-        }
-
-        // Activer le mode FPS dans tous les cas
-        setupFPSCamera();
-    }
-
-    // En mode dev, on ne positionne pas la caméra mais on affiche le marqueur
-    if (interactionMode === 'developer') {
-        updateSpawnMarker();
-        updateControlsForMode();
-    }
+    updateSpawnMarker();
+    updateControlsForMode();
 }
 
 // ==================== ZONES D'INTERACTION ====================
@@ -3075,6 +3042,13 @@ function executeZoneAction(zone) {
             break;
         case 'lightbox-text':
             showTextLightbox(zone.actionValue);
+            break;
+        case 'dialogue':
+            if (zone.actionValue && typeof DialogueManager !== 'undefined') {
+                DialogueManager.start(zone.actionValue);
+            } else {
+                console.warn('DialogueManager non disponible ou actionValue manquant.');
+            }
             break;
         default:
             break;

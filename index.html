@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Résistance - Connexion</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -47,7 +50,9 @@
 
         /* Titre */
         .game-title {
-            font-size: 42px; font-weight: 800; letter-spacing: 4px;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: clamp(48px, 8vw, 88px);
+            letter-spacing: .04em;
             color: #00E5FF;
             text-shadow: 0 0 20px rgba(0,229,255,0.4), 0 0 40px rgba(0,229,255,0.2);
             margin-bottom: 4px;
@@ -173,7 +178,7 @@
 
         /* Responsive */
         @media (max-width: 480px) {
-            .game-title { font-size: 30px; }
+            /* .game-title gérée par clamp() */
             .login-card { padding: 20px; }
         }
     </style>
