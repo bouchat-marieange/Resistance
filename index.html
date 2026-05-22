@@ -487,6 +487,13 @@ function startGame() {
 }
 
 function launchGame() {
+    // Plein écran automatique (doit être appelé dans un gestionnaire de clic)
+    var el = document.documentElement;
+    if      (el.requestFullscreen)       el.requestFullscreen();
+    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen(); // Safari
+    else if (el.mozRequestFullScreen)    el.mozRequestFullScreen();    // Firefox ancien
+    else if (el.msRequestFullscreen)     el.msRequestFullscreen();     // IE/Edge ancien
+
     // Animation de transition
     document.body.style.transition = 'opacity 0.5s ease';
     document.body.style.opacity = '0';
