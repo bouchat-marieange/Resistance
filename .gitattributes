@@ -1,1 +1,4 @@
 *.glb filter=lfs diff=lfs merge=lfs -text
+# Exception : nabydance.glb doit être un fichier binaire normal (pas LFS)
+# car GitHub Pages ne sert pas les fichiers LFS — le jeu chargerait un pointer 132 octets
+3D/perso/nabydance.glb -filter -diff -merge
