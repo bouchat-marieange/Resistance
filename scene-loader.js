@@ -2083,6 +2083,12 @@ function executeZoneAction(zone) {
         case 'lightbox-text':
             showTextLightbox(zone.actionValue);
             break;
+        case 'dialogue':
+            // Ouvrir le panneau de dialogue avec le personnage (actionValue = nom du personnage)
+            if (typeof DialogueManager !== 'undefined' && zone.actionValue) {
+                DialogueManager.start(zone.actionValue);
+            }
+            break;
         default:
             break;
     }

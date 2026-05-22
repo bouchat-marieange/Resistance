@@ -1311,7 +1311,13 @@ function onPointerDown(event) {
     // Vérifier les zones d'interaction en mode Jeu
     if (interactionMode === 'game') {
 
-        // ── Clic direct sur Naby (tout le corps est réactif) ──────────────
+        // ── Clic sur Naby : si la zone dialogue Naby est ciblée par le crosshair → ouvrir dialogue
+        // (méthode fiable vs raycast SkinnedMesh qui rate en pose animée)
+        if (_crosshairTargetZone && _crosshairTargetZone.actionType === 'dialogue' && _crosshairTargetZone.actionValue === 'naby') {
+            if (typeof DialogueManager !== 'undefined') DialogueManager.start('naby');
+            return;
+        }
+        // Fallback : clic direct sur les meshes Naby (bind pose ou si crosshair non disponible)
         if (babyModel) {
             const nabyMeshes = [];
             babyModel.traverse(child => { if (child.isMesh) nabyMeshes.push(child); });
@@ -2274,10 +2280,12 @@ function updateCrosshairHover() {
     _crosshairTargetZone = bestZone;
 
     // Dirty flag : ne modifier le DOM que si l'état change
-    // Sur Naby (zone de type 'dialogue') : n'afficher le surlignage doré que si une manette est connectée
-    // (avec la souris, le clic direct sur le personnage suffit — cf. onPointerDown)
-    const isNabyZone = bestZone && bestZone.actionType === 'dialogue' && bestZone.actionValue === 'naby';
-    const showHighlight = !!bestZone && (!isNabyZone || (typeof GamepadManager !== 'undefined' && GamepadManager.connected));
+    // Sur les personnages (surfaceMode 'character' ou actionType 'dialogue') :
+    // PAS de cercle doré à la souris — le clic suffit via executeZoneAction.
+    // Le cercle ne s'affiche qu'avec une manette connectée (bouton R2 visible).
+    const isCharacterZone = bestZone && (bestZone.surfaceMode === 'character' || bestZone.actionType === 'dialogue');
+    const isGamepadConnected = typeof GamepadManager !== 'undefined' && GamepadManager.connected;
+    const showHighlight = !!bestZone && (!isCharacterZone || isGamepadConnected);
     const nowActive = showHighlight;
     if (nowActive !== _crosshairActive) {
         _crosshairActive = nowActive;
