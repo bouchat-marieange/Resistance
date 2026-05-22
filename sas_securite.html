@@ -1311,25 +1311,27 @@ function onPointerDown(event) {
     // Vérifier les zones d'interaction en mode Jeu
     if (interactionMode === 'game') {
 
-        // ── Clic sur Naby : si la zone dialogue Naby est ciblée par le crosshair → ouvrir dialogue
-        // (méthode fiable vs raycast SkinnedMesh qui rate en pose animée)
-        if (_crosshairTargetZone && _crosshairTargetZone.actionType === 'dialogue' && _crosshairTargetZone.actionValue === 'naby') {
-            if (typeof DialogueManager !== 'undefined') DialogueManager.start('naby');
-            return;
-        }
-        // Fallback : clic direct sur les meshes Naby (bind pose ou si crosshair non disponible)
+        // ── Clic sur Naby : intersection ray-sphère sur la position réelle du modèle ──
+        // (fiable quelle que soit la pose animée — évite le problème de bounding sphere T-pose)
         if (babyModel) {
-            const nabyMeshes = [];
-            babyModel.traverse(child => { if (child.isMesh) nabyMeshes.push(child); });
-            const nabyHits = raycaster.intersectObjects(nabyMeshes, false);
-            if (nabyHits.length > 0) {
+            const nabyCenter = babyModel.position.clone();
+            nabyCenter.y += 0.9;           // Viser le torse, pas les pieds
+            const ray = raycaster.ray;
+            const closestPt = new THREE.Vector3();
+            ray.closestPointToPoint(nabyCenter, closestPt);
+            const distRay    = closestPt.distanceTo(nabyCenter);   // Dist ray–centre Naby
+            const distCamera = closestPt.distanceTo(camera.position); // Profondeur
+            // 0.65 m de rayon de clic + devant la caméra + portée 7 m
+            if (distRay < 0.65 && distCamera > 0 && distCamera < 7) {
                 if (typeof DialogueManager !== 'undefined') DialogueManager.start('naby');
                 return;
             }
         }
 
         // ── Clic sur le générateur → lumière + son ────────────────────────
-        if (!_genActivated) {
+        // Guard : seulement si le joueur est proche du générateur (≤ 6 m)
+        // évite que le raycast attrape le générateur depuis l'autre bout de la pièce
+        if (!_genActivated && camera.position.distanceTo(GEN_POS) <= 6) {
             const genObj = importedObjects.find(o => o.userData.editorName === 'Générateur');
             if (genObj) {
                 const genMeshes = [];
