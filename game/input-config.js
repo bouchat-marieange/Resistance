@@ -7,7 +7,7 @@
 
 const InputConfig = (function() {
     const STORAGE_KEY_BASE = 'resistance-input-config';
-    const CONFIG_VERSION = 4; // Incrementer pour forcer le reset des bindings par defaut
+    const CONFIG_VERSION = 5; // Incrementer pour forcer le reset des bindings par defaut
 
     // Cle de stockage liee au pseudo actif
     function getStorageKey() {
@@ -52,7 +52,7 @@ const InputConfig = (function() {
         map:       ['m'],
         hints:     ['?'],
         inventory: ['i'],
-        pause:     ['escape']
+        pause:     [' ']
     };
 
     // ═══════════════════════════════════════════

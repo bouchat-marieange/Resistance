@@ -152,10 +152,8 @@
         <button class="ui-panel-close" onclick="document.getElementById('controls-info').style.display='none'">&#10005;</button>
     </div>
     <div class="ui-panel-body">
-        <div class="info-line">
-            <span class="info-key">Échap</span>
-            <span>Quitter le mode plein écran</span>
-        </div>
+        <div class="info-line"><span class="info-key">Espace</span><span>Mettre la vidéo en pause</span></div>
+        <div class="info-line"><span class="info-key">Échap</span><span>Quitter le plein écran</span></div>
     </div>
 </div>
 
@@ -294,19 +292,27 @@ function updateMasterVolume(val) {
     // Appliquer à tous les médias de la page si besoin
     document.querySelectorAll('audio, video').forEach(function(m) { m.volume = val / 100; });
 }
+var _SVG_VOL2_C = '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>';
+var _SVG_VOLX_C = '<path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"/><line x1="22" x2="16" y1="9" y2="15"/><line x1="16" x2="22" y1="9" y2="15"/>';
 function toggleMute() {
     _cocoonMuted = !_cocoonMuted;
     const btn = document.getElementById('mute-btn');
+    const muteIcon = document.getElementById('mute-icon');
+    const volIconSvg = document.querySelector('#volume-icon svg');
     const slider = document.getElementById('vol-master');
     if (_cocoonMuted) {
         btn.classList.add('muted');
         _cocoonVolumeBeforeMute = parseInt(slider.value);
         slider.value = 0;
         document.querySelectorAll('audio, video').forEach(function(m) { m.volume = 0; });
+        if (muteIcon) muteIcon.innerHTML = _SVG_VOLX_C;
+        if (volIconSvg) volIconSvg.innerHTML = _SVG_VOLX_C;
     } else {
         btn.classList.remove('muted');
         slider.value = _cocoonVolumeBeforeMute;
         document.querySelectorAll('audio, video').forEach(function(m) { m.volume = _cocoonVolumeBeforeMute / 100; });
+        if (muteIcon) muteIcon.innerHTML = _SVG_VOL2_C;
+        if (volIconSvg) volIconSvg.innerHTML = _SVG_VOL2_C;
     }
     document.getElementById('vol-master-val').textContent = slider.value;
 }
