@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TEST — Boîte Noire | Resistance</title>
+  <title>Mini-jeu Nexus - Décode accès</title>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Bebas+Neue&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <style>
@@ -642,6 +642,32 @@
       95%       { opacity: 0.15; }
     }
     #dscreen-alarm { flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 5% 7%; }
+
+    /* État déverrouillage automatique */
+    #dscreen-unlock { flex-direction: column; align-items: center; justify-content: center; padding: 6% 7%; }
+    .dscreen-unlock-content { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .dscreen-unlock-icon {
+      width: 46px; height: 46px; border-radius: 50%;
+      border: 1.5px solid rgba(0,229,255,.5);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem; color: #00E5FF;
+    }
+    .dscreen-unlock-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(.9rem, 1.6vw, 1.3rem);
+      color: #00E5FF; letter-spacing: .15em;
+      text-align: center; line-height: 1.2;
+    }
+    .dscreen-unlock-msg {
+      font-size: clamp(.58rem, 0.8vw, .75rem);
+      color: rgba(255,255,255,.78); text-align: center;
+      line-height: 1.75; max-width: 88%;
+    }
+    .dscreen-unlock-note {
+      font-size: clamp(.52rem, 0.68vw, .65rem);
+      color: rgba(0,229,255,.5); letter-spacing: .07em; text-align: center;
+    }
+    .dscreen-unlock-btn { margin-top: 6px; }
     .dalarm-title { font-family: 'Bebas Neue', sans-serif; font-size: clamp(1rem, 1.8vw, 1.5rem); color: #ff4444; letter-spacing: .15em; text-align: center; }
     .dalarm-trigger {
       display: flex; align-items: center; gap: 8px;
@@ -1789,6 +1815,24 @@
           </div>
         </div>
 
+        <!-- État 8 : déverrouillage automatique après 3 échecs -->
+        <div class="dscreen-state" id="dscreen-unlock">
+          <div class="dscreen-unlock-content">
+            <div class="dscreen-unlock-icon">⟳</div>
+            <div class="dscreen-unlock-title">CE MODULE A RÉSISTÉ…<br>POUR L'INSTANT</div>
+            <div class="dscreen-unlock-msg">
+              Tu as exploré ce défi avec persévérance.<br>
+              La suite de l'aventure est maintenant accessible.<br><br>
+              Si quelque chose t'a bloqué ou si tu as des questions,<br>
+              note-les — l'animateur·rice sera là lors du débat collectif.
+            </div>
+            <div class="dscreen-unlock-note">Une note a été ajoutée à ton carnet de bord.</div>
+            <button class="dscreen-btn dscreen-unlock-btn" id="bb-unlock-btn" onclick="document.getElementById('bb-unlock-btn').disabled=true; setTimeout(function(){ window.location.href='sas_securite.html'; }, 400);">
+              <i data-lucide="arrow-right-circle"></i> Continuer l'aventure
+            </button>
+          </div>
+        </div>
+
       </div><!-- /decoder-screen -->
 
       <!-- Zone de drop (invisible, activée en phase décodeur) -->
@@ -2383,6 +2427,9 @@ function acceptResult() {
     document.getElementById('alarm-msg').textContent =
       `Code "${aiCode1}" refusé — CODE ERRONÉ.\nVous devez assumer les conséquences si vous validez sans vérifier.`;
     showAlarm();
+    // Compte la tentative ratée — déverrouillage auto après 3 échecs
+    var attempts = _bbIncrementAttempts();
+    if (attempts >= BB_MAX_ATTEMPTS) { setTimeout(triggerNexusAutoUnlock, 1200); }
   }
 }
 
@@ -2450,6 +2497,9 @@ function trustCode(n) {
     document.getElementById('alarm-msg').textContent =
       `L'analyse ${n} proposait "${chosen}" — CODE ERRONÉ.\nFaites confiance à votre propre déchiffrement.`;
     showAlarm();
+    // Compte la tentative ratée — déverrouillage auto après 3 échecs
+    var attempts = _bbIncrementAttempts();
+    if (attempts >= BB_MAX_ATTEMPTS) { setTimeout(triggerNexusAutoUnlock, 1200); }
   }
 }
 
@@ -2656,6 +2706,27 @@ function showSuccess() {
     console.log('[Boîte Noire] Score banké au profil joueur :', s.pts, 'pts (' + s.tier + ')');
   }
 
+  // ── Récompenses Nexus (badge + objet + lexique) ──
+  if (!window._blackboxRewardsGranted) {
+    window._blackboxRewardsGranted = true;
+    // Mémorise la réussite du Nexus pour le carnet de bord dynamique
+    try { localStorage.setItem('resistance_nexus_completed', '1'); } catch(_) {}
+    // Badge "Code déverrouillé"
+    if (window.NotebookManager) {
+      window.NotebookManager.unlockBadge('sortie_nexus');
+      // Objet : Carte du Nexus
+      window.NotebookManager.addItem(
+        'carte_nexus',
+        'Carte du Nexus',
+        'icones/map-pin.svg'
+      );
+      // Réinitialiser le compteur d'essais (succès = on repart à 0)
+      try { localStorage.removeItem('resistance_bb_attempts'); } catch(_) {}
+      // Termes lexique exposés dans ce module
+      window.NotebookManager.unlockLexiqueTerms('blackbox');
+    }
+  }
+
   // Toujours afficher le score dans l'écran du décodeur (chemin cerveau ou décodeur)
   document.getElementById('dscreen-score-tier').textContent  = s.tier;
   document.getElementById('dscreen-score-tier').className    = 'dscreen-score-tier ' + s.lv;
@@ -2670,6 +2741,38 @@ function showSuccess() {
   }
 
   lucide.createIcons();
+}
+
+// ── Compteur d'essais (règle des 3 essais — déverrouillage automatique) ──
+var BB_ATTEMPTS_KEY  = 'resistance_bb_attempts';
+var BB_MODULE_ID     = 'blackbox';
+var BB_MODULE_NAME   = 'Décodage du Nexus';
+var BB_MAX_ATTEMPTS  = 3;
+
+function _bbGetAttempts() {
+  return parseInt(localStorage.getItem(BB_ATTEMPTS_KEY) || '0', 10);
+}
+function _bbIncrementAttempts() {
+  var n = _bbGetAttempts() + 1;
+  try { localStorage.setItem(BB_ATTEMPTS_KEY, n); } catch(_) {}
+  return n;
+}
+function _bbStoreAlert() {
+  var KEY = 'resistance_module_alerts';
+  try {
+    var alerts = JSON.parse(localStorage.getItem(KEY) || '[]');
+    if (!alerts.some(function(a){ return a.moduleId === BB_MODULE_ID; })) {
+      alerts.push({ moduleId: BB_MODULE_ID, moduleName: BB_MODULE_NAME, timestamp: Date.now() });
+      localStorage.setItem(KEY, JSON.stringify(alerts));
+    }
+  } catch(_) {}
+}
+
+function triggerNexusAutoUnlock() {
+  _bbStoreAlert();
+  // Affiche l'état unlock directement dans l'écran du décodeur, comme les autres états
+  lucide.createIcons();
+  updateDecoderScreen('unlock');
 }
 
 function showFail() {
@@ -2696,6 +2799,12 @@ function showFail() {
   }
 
   lucide.createIcons();
+
+  // ── Règle des 3 essais : déverrouillage automatique après 3 échecs ──
+  var attempts = _bbIncrementAttempts();
+  if (attempts >= BB_MAX_ATTEMPTS) {
+    setTimeout(triggerNexusAutoUnlock, 1200); // laisse l'écran fail s'afficher 1.2s
+  }
 }
 
 // Bascule vers le décodeur IA depuis l'écran d'échec lexique
@@ -2722,9 +2831,7 @@ function retryBrain() {
 }
 
 function exitNexus() {
-  // TODO : relier à la prochaine scène (vidéo de fuite ou monde 3D généré par IA)
-  console.log('Nexus déverrouillé — prochaine scène à implémenter.');
-  alert('Félicitations ! La prochaine étape du scénario sera bientôt disponible.');
+  window.location.href = 'sas_securite.html';
 }
 
 function showAlarm() {

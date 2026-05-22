@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Mythology — Neural Punk</title>
+  <title>Mini-jeu Arcade - AI Mythology</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Epilogue:wght@400;600;700&family=JetBrains+Mono:wght@300;400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
@@ -3828,11 +3828,15 @@ function initBattle(cfg) {
            → le joueur voit la version transformée pendant 2 secondes
            avant que le panneau feedback n'apparaisse */
         if (cfg.charStateSwitch) cfg.charStateSwitch(newState);
+        /* Bloque les clics sur le personnage pendant la fenêtre d'observation
+           pour éviter l'ouverture accidentelle de sa carte. */
+        charEl.style.pointerEvents = 'none';
         /* Audio feedback : passé à showExplPanel qui gère le lock du bouton suivant */
         const _fbType = _vocalChosenSide === 'A' ? 'FBA' : 'FBB';
         const _fbSrc  = (VOCAL_MAP[battleKey] && VOCAL_MAP[battleKey][_fbType])
                         ? VOCAL_MAP[battleKey][_fbType] : null;
         setTimeout(() => {
+          charEl.style.pointerEvents = ''; /* Restaure les clics dès l'apparition du feedback */
           showExplPanel(fb, _selectedIsGoodLocal, _doNextRound, cfg.isLastRound || false, _fbSrc);
         }, 2000); /* 2s pour laisser le joueur voir la version transformée */
       } else {
@@ -5184,6 +5188,74 @@ function showScoreScreen() {
     }, 4400);
   };
 
+  /* ── Règle des 3 essais — déverrouillage automatique ── */
+  const MYTH_ATTEMPTS_KEY = 'resistance_mythology_attempts';
+  const MYTH_MODULE_ID    = 'mythology';
+  const MYTH_MODULE_NAME  = 'AI Mythology';
+  const MYTH_MAX_ATTEMPTS = 3;
+
+  function _mythStoreAlert() {
+    const KEY = 'resistance_module_alerts';
+    try {
+      const alerts = JSON.parse(localStorage.getItem(KEY) || '[]');
+      if (!alerts.some(a => a.moduleId === MYTH_MODULE_ID)) {
+        alerts.push({ moduleId: MYTH_MODULE_ID, moduleName: MYTH_MODULE_NAME, timestamp: Date.now() });
+        localStorage.setItem(KEY, JSON.stringify(alerts));
+      }
+    } catch(_) {}
+  }
+
+  function _mythShowAutoUnlock() {
+    _mythStoreAlert();
+
+    /* Remplacer le contenu du cadre de résultat existant */
+    document.getElementById('score-result-icon').textContent = '⟳';
+    document.getElementById('score-result-verdict').textContent = 'CES MYTHES ONT RÉSISTÉ… POUR L\'INSTANT';
+    document.getElementById('score-result-body').innerHTML = [
+      '<div style="display:inline-block; background:rgba(0,229,255,.08);',
+      '  border:1px solid rgba(0,229,255,.3); border-radius:8px;',
+      '  padding:14px 40px; margin-bottom:18px; text-align:center;">',
+      '  <div style="font-family:\'JetBrains Mono\',monospace; font-size:.72rem;',
+      '    color:rgba(0,229,255,.6); letter-spacing:.1em; margin-bottom:6px;">TON SCORE HUMAIN</div>',
+      '  <div style="font-family:\'Bebas Neue\',sans-serif; font-size:2.6rem;',
+      '    color:#00E5FF; letter-spacing:4px; line-height:1;">' + humanPct + ' %</div>',
+      '  <div style="font-size:.7rem; color:rgba(255,255,255,.35);',
+      '    margin-top:6px; letter-spacing:.06em;">SEUIL DE RÉUSSITE : 70 %</div>',
+      '</div>',
+      '<p>Tu as affronté ces mythes avec détermination.',
+      '  <strong>La suite de l\'aventure est maintenant accessible.</strong></p>',
+      '<p>Si certaines réponses t\'ont surpris ou si tu as des questions sur les mythes de l\'IA,',
+      '  note-les pour pouvoir en parler lors du débat collectif avec l\'animateur·rice.</p>',
+      '<p style="font-size:.8rem; color:rgba(0,229,255,.5); letter-spacing:.07em; margin-top:8px;">',
+      '  Une note a été ajoutée à ton carnet de bord.</p>'
+    ].join('');
+
+    /* Masquer REJOUER (non pertinent ici), garder seulement RETOUR AU BUNKER */
+    document.getElementById('score-replay-btn').style.display = 'none';
+    const bunkerBtn = document.getElementById('score-bunker-btn');
+    bunkerBtn.textContent = '↩ RETOUR AU BUNKER';
+    bunkerBtn.onclick = () => {
+      const game = document.getElementById('game');
+      if (game) { game.style.transition = 'opacity 0.4s'; game.style.opacity = '0'; }
+      setTimeout(() => { window.location.href = '../sas_securite.html?spawn=arcade'; }, 400);
+    };
+  }
+
+  // Résultat < 70% → incrémenter les essais ; au 3e, déclencher le déverrouillage
+  if (humanPct < 70) {
+    let attempts = parseInt(localStorage.getItem(MYTH_ATTEMPTS_KEY) || '0', 10) + 1;
+    try { localStorage.setItem(MYTH_ATTEMPTS_KEY, attempts); } catch(_) {}
+    if (attempts >= MYTH_MAX_ATTEMPTS) {
+      setTimeout(_mythShowAutoUnlock, 5500); // après la fin de l'animation du score
+    }
+  } else {
+    // Succès : réinitialiser le compteur + déverrouiller lexique
+    try { localStorage.removeItem(MYTH_ATTEMPTS_KEY); } catch(_) {}
+    // Les termes sont débloqués depuis sas_securite.html (NotebookManager chargé là-bas)
+    // On stocke un flag pour que sas_securite.html les déverrouille au retour
+    try { localStorage.setItem('resistance_mythology_completed', '1'); } catch(_) {}
+  }
+
   /* Boutons fin */
   document.getElementById('score-replay-btn').onclick = () => {
     resetGameScore(); showScreen('letsplay');
@@ -5448,6 +5520,8 @@ function returnToSas() {
 (function debugScore() {
   const params = new URLSearchParams(window.location.search);
   if (!params.has('score')) return;
+  /* Ne pas interférer avec le mode démo auto-unlock */
+  if (params.get('demo') === 'autoUnlock') return;
 
   const val = params.get('score') || '';
 
@@ -5481,6 +5555,81 @@ function returnToSas() {
   showScoreScreen();
 })();
 
+/* ════════════════════════════════════════════════════════════
+   MODE DÉMO — ?demo=autoUnlock&score=55
+   Affiche directement le message de déverrouillage automatique
+   (3 essais sous 70%) dans le cadre du jeu, sans jouer.
+   Usage : AI Mythology - mini jeu/index.html?demo=autoUnlock
+════════════════════════════════════════════════════════════ */
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('demo') !== 'autoUnlock') return;
+
+  const demoScore = parseInt(params.get('score') || '55', 10);
+
+  /* Le DOM est déjà chargé (script en bas de page) — on poll jusqu'à ce que
+     showScreen et GAME_SCORE soient disponibles (init async du jeu) */
+  function runDemo() {
+    if (typeof showScreen === 'undefined' || typeof GAME_SCORE === 'undefined') {
+      setTimeout(runDemo, 100);
+      return;
+    }
+
+    /* Configurer le score */
+    GAME_SCORE.human = demoScore;
+    GAME_SCORE.ai    = 100 - demoScore;
+
+    /* Forcer le compteur à 3 pour que _mythShowAutoUnlock se déclenche */
+    try { localStorage.setItem('resistance_mythology_attempts', '3'); } catch(_) {}
+
+    /* Afficher l'écran score (id = 's-score' dans SCREENS['score']) */
+    showScreen('score');
+
+    /* Afficher le panneau résultat */
+    const resultPanel = document.getElementById('score-result-panel');
+    const resultFrame = document.getElementById('score-result-frame');
+    if (resultPanel) {
+      resultPanel.style.display = 'flex';
+      resultPanel.classList.add('visible');
+    }
+    if (resultFrame) {
+      requestAnimationFrame(() => requestAnimationFrame(() => resultFrame.classList.add('in')));
+    }
+
+    /* Injecter le contenu auto-unlock */
+    const iconEl    = document.getElementById('score-result-icon');
+    const verdictEl = document.getElementById('score-result-verdict');
+    const bodyEl    = document.getElementById('score-result-body');
+    const replayBtn = document.getElementById('score-replay-btn');
+    const bunkerBtn = document.getElementById('score-bunker-btn');
+
+    if (iconEl)    iconEl.textContent    = '⟳';
+    if (verdictEl) verdictEl.textContent = 'CES MYTHES ONT RÉSISTÉ… POUR L\'INSTANT';
+    if (bodyEl)    bodyEl.innerHTML = [
+      '<div style="display:inline-block; background:rgba(0,229,255,.08);',
+      ' border:1px solid rgba(0,229,255,.3); border-radius:8px;',
+      ' padding:14px 40px; margin-bottom:18px; text-align:center;">',
+      ' <div style="font-family:\'JetBrains Mono\',monospace; font-size:.72rem;',
+      '   color:rgba(0,229,255,.6); letter-spacing:.1em; margin-bottom:6px;">TON SCORE HUMAIN</div>',
+      ' <div style="font-family:\'Bebas Neue\',sans-serif; font-size:2.6rem;',
+      '   color:#00E5FF; letter-spacing:4px; line-height:1;">' + demoScore + ' %</div>',
+      ' <div style="font-size:.7rem; color:rgba(255,255,255,.35);',
+      '   margin-top:6px; letter-spacing:.06em;">SEUIL DE RÉUSSITE : 70 %</div>',
+      '</div>',
+      '<p>Tu as affronté ces mythes avec détermination.',
+      ' <strong>La suite de l\'aventure est maintenant accessible.</strong></p>',
+      '<p>Si certaines réponses t\'ont surpris ou si tu as des questions sur les mythes de l\'IA,',
+      ' note-les pour pouvoir en parler lors du débat collectif avec l\'animateur·rice.</p>',
+      '<p style="font-size:.8rem; color:rgba(0,229,255,.5); letter-spacing:.07em; margin-top:8px;">',
+      ' Une note a été ajoutée à ton carnet de bord.</p>'
+    ].join('');
+
+    if (replayBtn) replayBtn.style.display = 'none';
+    if (bunkerBtn) bunkerBtn.textContent   = '↩ RETOUR AU BUNKER';
+  }
+
+  setTimeout(runDemo, 150);
+})();
 </script>
 </body>
 </html>
