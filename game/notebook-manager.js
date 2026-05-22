@@ -30,6 +30,7 @@
     'use strict';
 
     var STORAGE_KEY_PREFIX = 'resistance_notebook_';
+    var ALERTS_KEY = 'resistance_module_alerts'; // cle globale, pas par pseudo
 
     // Liste des 30 badges (voir reponse pedagogique dans le chat)
     var BADGES = [
@@ -333,7 +334,49 @@
             '.nb-badges-grid::-webkit-scrollbar-track,',
             '.nb-synthesis::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }',
             '.nb-badges-grid::-webkit-scrollbar-thumb,',
-            '.nb-synthesis::-webkit-scrollbar-thumb { background: rgba(126,214,223,0.3); border-radius: 3px; }'
+            '.nb-synthesis::-webkit-scrollbar-thumb { background: rgba(126,214,223,0.3); border-radius: 3px; }',
+
+            // ---- Alertes animateur ----
+            '.nb-alerts-list { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }',
+            '.nb-alert-item {',
+            '  background: rgba(255,200,0,0.08);',
+            '  border: 1px solid rgba(255,200,0,0.45);',
+            '  border-radius: 8px; padding: 8px 12px;',
+            '  display: flex; align-items: flex-start; gap: 8px;',
+            '}',
+            '.nb-alert-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }',
+            '.nb-alert-text { font-size: 11px; color: rgba(255,220,100,0.9); line-height: 1.5; }',
+            '.nb-alert-module { font-weight: 700; color: #ffc800; display: block; margin-bottom: 1px; }',
+            '.nb-alerts-empty { font-size: 11px; color: rgba(255,255,255,0.3); font-style: italic; }',
+
+            // ---- Onglets ----
+            '#nb-tabs { display:flex; gap:6px; padding:0 12px 0 12px; margin-bottom:10px; flex-shrink:0; }',
+            '.nb-tab-btn {',
+            '  padding:5px 18px; border-radius:20px; border:1px solid rgba(126,214,223,0.35);',
+            '  background:transparent; color:rgba(255,255,255,0.45); font-family:"Segoe UI",sans-serif;',
+            '  font-size:12px; letter-spacing:.06em; cursor:pointer; transition:all .2s;',
+            '}',
+            '.nb-tab-btn.active { background:rgba(126,214,223,0.18); color:#7ed6df; border-color:rgba(126,214,223,0.7); }',
+            '.nb-tab-btn:hover:not(.active) { color:rgba(255,255,255,0.7); border-color:rgba(126,214,223,0.5); }',
+
+            // ---- Lexique ----
+            '#notebook-lexique-page {',
+            '  display:none; padding:0 42px 24px 42px; overflow-y:auto;',
+            '  height:calc(100% - 52px);',
+            '}',
+            '#notebook-lexique-page::-webkit-scrollbar { width: 6px; }',
+            '#notebook-lexique-page::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }',
+            '#notebook-lexique-page::-webkit-scrollbar-thumb { background: rgba(126,214,223,0.3); border-radius: 3px; }',
+            '.nb-lex-empty { font-size:12px; color:rgba(255,255,255,0.3); font-style:italic; margin-top:16px; }',
+            '.nb-lex-entry {',
+            '  border-bottom:1px solid rgba(126,214,223,0.12);',
+            '  padding:12px 0; display:grid; grid-template-columns:200px 1fr; gap:16px; align-items:start;',
+            '}',
+            '.nb-lex-term {',
+            '  font-family:"Segoe UI",sans-serif; font-weight:700; font-size:13px;',
+            '  color:#7ed6df; letter-spacing:.03em;',
+            '}',
+            '.nb-lex-def { font-size:12px; color:rgba(255,255,255,0.72); line-height:1.7; }'
         ].join('\n');
         var style = document.createElement('style');
         style.id = 'notebook-manager-styles';
@@ -375,6 +418,20 @@
         _overlay.innerHTML = [
             '<div id="notebook-panel">',
             '  <button id="notebook-close" title="Fermer (J ou Echap)">×</button>',
+            '  <div id="nb-tabs">',
+            '    <button class="nb-tab-btn active" id="nb-tab-prog" onclick="(function(){',
+            '      document.getElementById(\'notebook-pages\').style.display=\'\';',
+            '      document.getElementById(\'notebook-lexique-page\').style.display=\'none\';',
+            '      document.getElementById(\'nb-tab-prog\').classList.add(\'active\');',
+            '      document.getElementById(\'nb-tab-lex\').classList.remove(\'active\');',
+            '    })()">📋 Progression</button>',
+            '    <button class="nb-tab-btn" id="nb-tab-lex" onclick="(function(){',
+            '      document.getElementById(\'notebook-pages\').style.display=\'none\';',
+            '      document.getElementById(\'notebook-lexique-page\').style.display=\'block\';',
+            '      document.getElementById(\'nb-tab-prog\').classList.remove(\'active\');',
+            '      document.getElementById(\'nb-tab-lex\').classList.add(\'active\');',
+            '    })()">📖 Lexique IA</button>',
+            '  </div>',
             '  <div id="notebook-pages">',
             // PAGE GAUCHE
             '    <div class="nb-page nb-left">',
@@ -391,6 +448,13 @@
             '      <div>',
             '        <div class="nb-section-title">Pièces — accès direct</div>',
             '        <div class="nb-rooms-list" id="nb-rooms"></div>',
+            '      </div>',
+            '      <div>',
+            '        <div class="nb-section-title" style="color:#ffc800; border-color:rgba(255,200,0,0.35);">',
+            '          📋 Points d\'attention — animateur·rice</div>',
+            '        <div class="nb-alerts-list" id="nb-alerts">',
+            '          <div class="nb-alerts-empty">Aucun point d\'attention pour l\'instant.</div>',
+            '        </div>',
             '      </div>',
             '    </div>',
             // PAGE DROITE
@@ -414,6 +478,10 @@
             '      </div>',
             '    </div>',
             '  </div>',
+            '  <div id="notebook-lexique-page">',
+            '    <div class="nb-section-title" style="margin-bottom:14px;">Lexique — Termes de l\'IA</div>',
+            '    <div id="nb-lexique-list"><div class="nb-lex-empty">Les termes s\'ajouteront ici au fil de ton parcours.</div></div>',
+            '  </div>',
             '</div>'
         ].join('\n');
         document.body.appendChild(_overlay);
@@ -431,6 +499,8 @@
 
         _renderBadges();
         _renderRooms();
+        _renderAlerts();
+        _renderLexique();
     }
 
     // ============================================
@@ -655,6 +725,57 @@
         });
     }
 
+    // ============================================
+    // MODULE ALERTS (seuil 70% non atteint apres 3 essais)
+    // Ecrit depuis les mini-jeux via localStorage; lu ici au rechargement du carnet.
+    // ============================================
+
+    function _loadAlerts() {
+        try {
+            var raw = localStorage.getItem(ALERTS_KEY);
+            return raw ? JSON.parse(raw) : [];
+        } catch (e) { return []; }
+    }
+
+    function addModuleAlert(moduleId, moduleName) {
+        var alerts = _loadAlerts();
+        // Evite les doublons par moduleId
+        if (alerts.some(function (a) { return a.moduleId === moduleId; })) return;
+        alerts.push({
+            moduleId: moduleId,
+            moduleName: moduleName,
+            timestamp: Date.now()
+        });
+        try { localStorage.setItem(ALERTS_KEY, JSON.stringify(alerts)); } catch (e) {}
+        _renderAlerts();
+    }
+
+    function getModuleAlerts() {
+        return _loadAlerts();
+    }
+
+    function _renderAlerts() {
+        var container = document.getElementById('nb-alerts');
+        if (!container) return;
+        var alerts = _loadAlerts();
+        if (!alerts.length) {
+            container.innerHTML = '<div class="nb-alerts-empty">Aucun point d\'attention pour l\'instant.</div>';
+            return;
+        }
+        container.innerHTML = '';
+        alerts.forEach(function (a) {
+            var item = document.createElement('div');
+            item.className = 'nb-alert-item';
+            item.innerHTML =
+                '<span class="nb-alert-icon">⚠</span>' +
+                '<div class="nb-alert-text">' +
+                '  <span class="nb-alert-module">' + a.moduleName + '</span>' +
+                '  Seuil de 70 % non atteint après 3 essais. À aborder lors du débat.' +
+                '</div>';
+            container.appendChild(item);
+        });
+    }
+
     function markRoomValidated(roomId) {
         var set = _loadSet('rooms_validated');
         if (set.has(roomId)) return false;
@@ -698,6 +819,131 @@
         _buildOverlay();
     }
 
+    // ============================================
+    // LEXIQUE IA — termes et definitions
+    // ============================================
+
+    var LEXIQUE = [
+        // ── Module : Décodage du Nexus ──
+        { id: 'arbre_decisionnel',   term: 'Arbre décisionnel',
+          def: 'Représentation des choix possibles et de leurs conséquences dans un algorithme. Chaque nœud est une décision, chaque branche un résultat : la complexité d\'un système apparemment simple.',
+          module: 'blackbox' },
+        { id: 'opacite_algo',        term: 'Opacité algorithmique',
+          def: 'Impossibilité pour l\'utilisateur de comprendre comment un algorithme prend ses décisions. C\'est la "boîte noire" : des données entrent, un résultat sort — sans explication.',
+          module: 'blackbox' },
+        { id: 'scoring_silencieux',  term: 'Scoring silencieux',
+          def: 'Collecte et évaluation continues des comportements d\'un utilisateur sans l\'en informer en temps réel. Les données sont analysées dans l\'ombre et révèlent leur effet plus tard.',
+          module: 'blackbox' },
+        { id: 'collecte_donnees',    term: 'Collecte de données',
+          def: 'Enregistrement systématique des actions, préférences et comportements d\'un utilisateur. La matière première de tout système de profilage algorithmique.',
+          module: 'blackbox' },
+
+        // ── Module : AI Mythology ──
+        { id: 'hallucination',       term: 'Hallucination (IA)',
+          def: 'Erreur d\'un modèle de langage qui génère une information fausse avec une apparente confiance. Ce n\'est ni un mensonge ni une erreur humaine : c\'est un artefact statistique.',
+          module: 'mythology' },
+        { id: 'biais_algorithmique', term: 'Biais algorithmique',
+          def: 'Tendance d\'un système d\'IA à produire des résultats systematiquement favorables ou défavorables à certains groupes, souvent du fait de données d\'entraînement non représentatives.',
+          module: 'mythology' },
+        { id: 'sycophantie',         term: 'Sycophantie (IA)',
+          def: 'Comportement d\'un modèle d\'IA qui approuve et flatte l\'utilisateur plutôt que de lui donner une réponse exacte. Biais induit par l\'entraînement par retour humain (RLHF).',
+          module: 'mythology' },
+        { id: 'llm',                 term: 'LLM',
+          def: 'Large Language Model — modèle de langage entraîné sur des milliards de textes pour prédire statistiquement la suite la plus probable d\'une séquence de mots. Pas de compréhension, de la probabilité.',
+          module: 'mythology' },
+        { id: 'rlhf',               term: 'RLHF',
+          def: 'Reinforcement Learning from Human Feedback — méthode d\'entraînement des LLM par évaluateurs humains. Améliore les réponses mais peut induire des biais de complaisance (sycophantie).',
+          module: 'mythology' },
+        { id: 'anthropomorphisme',   term: 'Anthropomorphisme',
+          def: 'Attribution à un système non-humain de caractéristiques humaines (émotions, intentions, conscience). Mécanisme qui brouille notre jugement face aux IA et renforce leur emprise apparente.',
+          module: 'mythology' },
+        { id: 'ia_generative',       term: 'IA générative',
+          def: 'Famille de modèles capables de produire du texte, des images, du son ou du code. Ces systèmes recomposent statistiquement des patterns existants sans intention ni compréhension réelle.',
+          module: 'mythology' },
+        { id: 'ia_neutre',           term: 'Neutralité de l\'IA',
+          def: 'Mythe selon lequel l\'IA serait objective et sans parti pris. En réalité, tout système reflète les choix de ses concepteurs, les biais de ses données et les intérêts de ses commanditaires.',
+          module: 'mythology' },
+
+        // ── Module : Naby / SAS de sécurité ──
+        { id: 'ia_affective',        term: 'IA affective',
+          def: 'Systèmes conçus pour détecter ou simuler des émotions humaines. Utilisés dans les assistants conversationnels pour créer un sentiment de connexion et renforcer l\'engagement.',
+          module: 'naby' },
+        { id: 'relation_parasociale', term: 'Relation parasociale',
+          def: 'Lien émotionnel unilatéral qu\'un individu développe envers une entité qui ne le connaît pas (personnage fictif, célébrité, IA). Les chatbots sont conçus pour favoriser ce type de relation.',
+          module: 'naby' },
+        { id: 'captologie',          term: 'Captologie',
+          def: 'Science du design persuasif, théorisée par BJ Fogg (Stanford). Étudie comment les technologies peuvent influencer les comportements humains de manière intentionnelle.',
+          module: 'naby' },
+        { id: 'dark_pattern',        term: 'Dark pattern',
+          def: 'Technique de design d\'interface qui manipule l\'utilisateur pour lui faire faire quelque chose qu\'il n\'aurait pas choisi librement : abonnement piège, case pré-cochée, bouton invisible.',
+          module: 'naby' }
+    ];
+
+    function _loadLexiqueUnlocked() {
+        try {
+            var raw = localStorage.getItem(_key('lexique'));
+            return raw ? JSON.parse(raw) : [];
+        } catch (e) { return []; }
+    }
+
+    function unlockLexiqueTerms(moduleId) {
+        var unlocked = _loadLexiqueUnlocked();
+        var added = false;
+        LEXIQUE.forEach(function (entry) {
+            if (entry.module === moduleId && unlocked.indexOf(entry.id) === -1) {
+                unlocked.push(entry.id);
+                added = true;
+            }
+        });
+        if (added) {
+            try { localStorage.setItem(_key('lexique'), JSON.stringify(unlocked)); } catch (e) {}
+            _renderLexique();
+        }
+    }
+
+    function _renderLexique() {
+        var container = document.getElementById('nb-lexique-list');
+        if (!container) return;
+        var unlocked = _loadLexiqueUnlocked();
+        if (!unlocked.length) {
+            container.innerHTML = '<div class="nb-lex-empty">Les termes s\'ajouteront ici au fil de ton parcours.</div>';
+            return;
+        }
+        container.innerHTML = '';
+        LEXIQUE.forEach(function (entry) {
+            if (unlocked.indexOf(entry.id) === -1) return;
+            var div = document.createElement('div');
+            div.className = 'nb-lex-entry';
+            div.innerHTML =
+                '<div class="nb-lex-term">' + entry.term + '</div>' +
+                '<div class="nb-lex-def">' + entry.def + '</div>';
+            container.appendChild(div);
+        });
+    }
+
+    // ── Onglets du carnet ──
+    function _switchTab(tabName) {
+        var pages   = document.getElementById('notebook-pages');
+        var lexPage = document.getElementById('notebook-lexique-page');
+        var tabProg = document.getElementById('nb-tab-prog');
+        var tabLex  = document.getElementById('nb-tab-lex');
+        if (!pages || !lexPage) return;
+        if (tabName === 'lexique') {
+            pages.style.display   = 'none';
+            lexPage.style.display = 'block';
+            if (tabProg) tabProg.classList.remove('active');
+            if (tabLex)  tabLex.classList.add('active');
+        } else {
+            pages.style.display   = '';
+            lexPage.style.display = 'none';
+            if (tabProg) tabProg.classList.add('active');
+            if (tabLex)  tabLex.classList.remove('active');
+        }
+    }
+
+    // ── Patch _buildOverlay pour ajouter les onglets + page lexique ──
+    var _origBuildOverlay = _buildOverlay; // referenece avant remplacement
+
     window.NotebookManager = {
         init: init,
         open: open,
@@ -712,6 +958,10 @@
         isBadgeUnlocked: isBadgeUnlocked,
         addItem: addItem,
         markRoomValidated: markRoomValidated,
-        BADGES: BADGES
+        addModuleAlert: addModuleAlert,
+        getModuleAlerts: getModuleAlerts,
+        unlockLexiqueTerms: unlockLexiqueTerms,
+        BADGES: BADGES,
+        LEXIQUE: LEXIQUE
     };
 })();

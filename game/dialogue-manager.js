@@ -447,6 +447,7 @@
         }
         _currentTree = tree;
         _currentNodeId = startNodeId || tree.startNode || Object.keys(tree.nodes)[0];
+        if (typeof tree.onStart === 'function') tree.onStart(); /* hook optionnel par arbre */
         _ensureOverlay();
         _overlay.style.display = 'flex';
         _active = true;

@@ -127,17 +127,17 @@
         var cursor = document.getElementById('lucidite-cursor');
         if (cursor) {
             cursor.style.left = v + '%';
-            // Couleur du curseur selon la position (palette carnet : rouge mat -> ocre -> cyan)
+            // Couleur du curseur selon la position (turquoise côté Emprise/IA → orange côté Lucidité/Résistance)
             var color, glow;
             if (v < 33) {
-                color = '#c25c5c';
-                glow = 'rgba(194,92,92,0.65)';
+                color = '#00E5FF';
+                glow = 'rgba(0,229,255,0.65)';
             } else if (v < 66) {
                 color = '#c8bd7a';
                 glow = 'rgba(200,189,122,0.6)';
             } else {
-                color = '#7ed6df';
-                glow = 'rgba(126,214,223,0.7)';
+                color = '#e8804a';
+                glow = 'rgba(232,128,74,0.7)';
             }
             cursor.style.background = color;
             cursor.style.boxShadow = '0 0 12px ' + glow + ', 0 0 4px rgba(0,0,0,0.6)';
@@ -159,10 +159,10 @@
         var displayVal = Math.abs(delta);
         tip.textContent = '+' + displayVal + ' ' + label;
         tip.style.cssText = 'position:absolute; top:-24px; left:50%; transform:translateX(-50%); color:' +
-            (delta > 0 ? '#7ed6df' : '#c77272') +
+            (delta > 0 ? '#e8804a' : '#00E5FF') +
             '; font-size:13px; font-weight:700; pointer-events:none; opacity:1;' +
             ' transition: all 1.2s ease; text-shadow: 0 0 8px ' +
-            (delta > 0 ? 'rgba(126,214,223,0.65)' : 'rgba(199,114,114,0.65)') +
+            (delta > 0 ? 'rgba(232,128,74,0.65)' : 'rgba(0,229,255,0.65)') +
             '; white-space:nowrap;';
         hud.style.position = 'relative';
         hud.appendChild(tip);

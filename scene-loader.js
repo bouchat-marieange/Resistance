@@ -993,17 +993,29 @@ async function restoreCeilingPolygon(polyData) {
 // ==================== RESTAURATION OBJETS IMPORTÉS ====================
 
 async function restoreImportedObject(objData) {
+    // Les objets procéduraux (tapis) n'ont pas de blob GLB — ils sont recréés par la page
     if (!objData.fileDataBlobId) return;
     try {
         const blobRecord = await RoomEditorDB.get(RoomEditorDB.STORE_BLOBS, objData.fileDataBlobId);
-        if (!blobRecord || !blobRecord.data) return;
+        if (!blobRecord || !blobRecord.data) {
+            // Blob introuvable → libérer les pending sets pour que loadPermanentObject() prenne le relais
+            console.warn(`⚠️ Blob absent pour ${objData.editorName} — libération pending sets`);
+            if (window._idbPendingObjects) window._idbPendingObjects.delete(objData.editorName);
+            if (window._idbPendingFileNames && objData.fileName) window._idbPendingFileNames.delete(objData.fileName);
+            return;
+        }
         const base64Data = blobRecord.data.split(',')[1];
         const byteCharacters = atob(base64Data);
         const byteNumbers = new Array(byteCharacters.length);
         for (let i = 0; i < byteCharacters.length; i++) byteNumbers[i] = byteCharacters.charCodeAt(i);
         const url = URL.createObjectURL(new Blob([new Uint8Array(byteNumbers)], { type: 'model/gltf-binary' }));
         loadObjectFromURL(url, { ...objData, fileData: blobRecord.data });
-    } catch (e) { console.warn(`⚠️ Échec restauration objet ${objData.editorName}:`, e); }
+    } catch (e) {
+        console.warn(`⚠️ Échec restauration objet ${objData.editorName}:`, e);
+        // En cas d'erreur, aussi libérer les pending sets
+        if (window._idbPendingObjects) window._idbPendingObjects.delete(objData.editorName);
+        if (window._idbPendingFileNames && objData.fileName) window._idbPendingFileNames.delete(objData.fileName);
+    }
 }
 
 function loadObjectFromURL(url, data) {
@@ -1099,6 +1111,11 @@ function loadObjectFromURL(url, data) {
 
         scene.add(model);
         importedObjects.push(model);
+        // Retirer des Sets en attente IndexedDB APRÈS l'ajout à importedObjects
+        // (important : l'intervalle dans loadPermanentObject détecte la fin du chargement
+        //  en cherchant l'objet dans importedObjects ET en vérifiant les pending sets)
+        if (window._idbPendingObjects) window._idbPendingObjects.delete(data.editorName);
+        if (window._idbPendingFileNames && data.fileName) window._idbPendingFileNames.delete(data.fileName);
         selectableObjects.push(model);
         model.traverse((child) => {
             if (child.isMesh) {
@@ -1116,6 +1133,10 @@ function loadObjectFromURL(url, data) {
         console.log(`✅ ${data.editorName} restauré${data.isCharacter ? ' (personnage)' : ''}`);
     }, undefined, function(error) {
         console.warn(`⚠️ Impossible de restaurer ${data.editorName}:`, error);
+        // CRITIQUE: libérer les pending sets pour que loadPermanentObject() détecte l'échec
+        // et déclenche le fallback depuis l'URL (sinon l'objet disparaît après le timeout)
+        if (window._idbPendingObjects) window._idbPendingObjects.delete(data.editorName);
+        if (window._idbPendingFileNames && data.fileName) window._idbPendingFileNames.delete(data.fileName);
     });
 }
 
@@ -1235,6 +1256,17 @@ async function migrateTFENarrativeKeysIDB() {
 }
 
 async function bootstrapFromFiles() {
+    // Toujours vérifier si project.json est plus récent que l'IDB
+    // (efface le cache navigateur ne vide PAS IndexedDB — il faut comparer les timestamps)
+    let fileManifest = null;
+    const subtitle = document.querySelector('.loading-subtitle');
+    try {
+        if (subtitle) subtitle.textContent = 'Vérification des données de la scène...';
+        // Fetch avec cache-busting pour contourner le cache HTTP
+        const response = await fetch('scene_data/project.json?_=' + Date.now());
+        if (response.ok) fileManifest = await response.json();
+    } catch (e) { /* project.json inaccessible — on continue avec IDB */ }
+
     try {
         const existing = await RoomEditorDB.get(RoomEditorDB.STORE_PROJECTS, 'project_' + currentRoomName);
         if (existing && existing.version === 2) {
@@ -1242,28 +1274,40 @@ async function bootstrapFromFiles() {
                             (existing.importedObjects && existing.importedObjects.length > 0) ||
                             (existing.lights && existing.lights.length > 0) ||
                             (existing.floorTiles && existing.floorTiles.length > 0);
-            if (hasData) { console.log('✅ IndexedDB contient des données valides'); return; }
+
+            // Si project.json est plus récent que l'IDB → forcer le rechargement
+            const idbTimestamp = existing.timestamp || 0;
+            const fileTimestamp = (fileManifest && fileManifest.project && fileManifest.project.timestamp) || 0;
+            if (hasData && fileTimestamp > idbTimestamp) {
+                console.log(`🔄 project.json plus récent (${new Date(fileTimestamp).toLocaleTimeString()}) que IDB (${new Date(idbTimestamp).toLocaleTimeString()}) — rechargement forcé`);
+                // Ne pas faire return — on continue pour écraser l'IDB
+            } else if (hasData) {
+                console.log('✅ IndexedDB à jour — pas de rechargement');
+                return;
+            }
             try { await RoomEditorDB.delete(RoomEditorDB.STORE_PROJECTS, 'project_' + currentRoomName); } catch (e) {}
         }
     } catch (e) { /* IndexedDB non disponible */ }
+
+    if (!fileManifest) {
+        console.warn('⚠️ Bootstrap impossible : project.json introuvable');
+        if (subtitle) subtitle.textContent = 'Chargement en cours...';
+        return;
+    }
 
     localStorage.removeItem('floorPlan_' + currentRoomName);
     localStorage.removeItem(currentRoomName + '_importedObjects');
     localStorage.removeItem(currentRoomName + '_customLights');
 
     console.log('🔄 Bootstrap depuis scene_data/...');
-    const subtitle = document.querySelector('.loading-subtitle');
     try {
         if (subtitle) subtitle.textContent = 'Chargement des données de la scène...';
-        const response = await fetch('scene_data/project.json');
-        if (!response.ok) throw new Error('project.json introuvable (HTTP ' + response.status + ')');
-        const manifest = await response.json();
-        if (manifest.localStorage) {
-            for (const [key, value] of Object.entries(manifest.localStorage)) localStorage.setItem(key, value);
+        if (fileManifest.localStorage) {
+            for (const [key, value] of Object.entries(fileManifest.localStorage)) localStorage.setItem(key, value);
         }
-        if (manifest.project) {
-            await RoomEditorDB.put(RoomEditorDB.STORE_PROJECTS, manifest.project);
-            console.log('📦 Projet restauré dans IndexedDB');
+        if (fileManifest.project) {
+            await RoomEditorDB.put(RoomEditorDB.STORE_PROJECTS, fileManifest.project);
+            console.log('📦 Projet restauré dans IndexedDB (timestamp: ' + new Date(fileManifest.project.timestamp || 0).toLocaleTimeString() + ')');
         }
         if (subtitle) subtitle.textContent = 'Construction de la scène...';
     } catch (e) {
@@ -1424,6 +1468,24 @@ async function loadProjectFromLocalStorage() {
     }
 
     loadCustomLightsFromStorage();
+
+    // Charger les overrides de position/matériaux des objets importés depuis localStorage
+    // (écrits par saveImportedObjectsToStorage() à chaque modification dans l'éditeur)
+    // Ils seront appliqués par loadPermanentObjects() via window._permanentObjectOverrides
+    window._permanentObjectOverrides = {};
+    try {
+        const objOverridesRaw = localStorage.getItem(currentRoomName + '_importedObjects');
+        if (objOverridesRaw) {
+            const objOverrides = JSON.parse(objOverridesRaw);
+            objOverrides.forEach(function(obj) {
+                if (obj.editorName) window._permanentObjectOverrides[obj.editorName] = obj;
+            });
+            console.log('📦 Overrides objets chargés depuis localStorage :', Object.keys(window._permanentObjectOverrides).length, 'objets');
+        }
+    } catch (e) {
+        console.warn('⚠️ Erreur lecture _importedObjects localStorage :', e);
+    }
+
     if (typeof loadPermanentObjects === 'function') loadPermanentObjects();
 
     // Invalider le cache de collision pour inclure les murs/objets fraîchement chargés
@@ -1528,8 +1590,19 @@ async function loadProjectFromIndexedDB(projectData) {
     if (projectData.floorPolygons) for (const p of projectData.floorPolygons) await restoreFloorPolygon(p);
     if (projectData.ceilingPolygons) for (const p of projectData.ceilingPolygons) await restoreCeilingPolygon(p);
 
-    // Objets importés
-    if (projectData.importedObjects) for (const obj of projectData.importedObjects) await restoreImportedObject(obj);
+    // Objets importés — marquer les editorNames ET fileNames en cours de chargement
+    // pour que loadPermanentObjects() / loadSasSecuriteObjects() ne double-charge pas
+    window._idbPendingObjects = new Set();   // par editorName
+    window._idbPendingFileNames = new Set(); // par fileName
+    if (projectData.importedObjects) {
+        projectData.importedObjects.forEach(function(obj) {
+            if (obj.editorName) window._idbPendingObjects.add(obj.editorName);
+            if (obj.fileName) window._idbPendingFileNames.add(obj.fileName);
+        });
+    }
+    // Charger tous les blobs GLB en parallèle (bien plus rapide que séquentiel)
+    // restoreImportedObject attend le fetch blob mais PAS la fin du chargement GLB
+    if (projectData.importedObjects) await Promise.all(projectData.importedObjects.map(obj => restoreImportedObject(obj)));
 
     // Lumières
     if (projectData.lights && projectData.lights.length > 0) {
@@ -1588,6 +1661,25 @@ async function loadProjectFromIndexedDB(projectData) {
 
     console.log('📂 Projet chargé depuis IndexedDB !');
     console.log(`🎨 Cache textures: ${_textureCacheStats.misses} images chargées, ${_textureCacheStats.hits} réutilisées (${_textureCache.size} uniques)`);
+
+    // Charger les overrides position/matériaux depuis localStorage
+    // (nécessaire pour le fallback URL dans loadPermanentObject quand un blob est manquant)
+    if (!window._permanentObjectOverrides) {
+        window._permanentObjectOverrides = {};
+        try {
+            const objOverridesRaw = localStorage.getItem(currentRoomName + '_importedObjects');
+            if (objOverridesRaw) {
+                const objOverrides = JSON.parse(objOverridesRaw);
+                objOverrides.forEach(function(obj) {
+                    if (obj.editorName) window._permanentObjectOverrides[obj.editorName] = obj;
+                });
+                console.log('📦 Overrides objets (chemin IDB) :', Object.keys(window._permanentObjectOverrides).length, 'objets');
+            }
+        } catch (e) { console.warn('⚠️ Erreur lecture _importedObjects localStorage (IDB path):', e); }
+    }
+
+    // Charger les objets permanents codés en dur (borne arcade, etc.) — manquait dans ce chemin IDB
+    if (typeof loadPermanentObjects === 'function') loadPermanentObjects();
 
     // Invalider le cache de collision pour inclure les murs/objets fraîchement chargés
     if (typeof invalidateCollisionCache === 'function') invalidateCollisionCache();

@@ -367,14 +367,14 @@ body {
     background: rgba(255,255,255,0.04);
 }
 .key-modal .btn-confirm {
-    background: #39ff14;
-    border: 1px solid #39ff14;
+    background: #00E5FF;
+    border: 1px solid #00E5FF;
     color: #0a0a0a;
     font-weight: 700;
 }
 .key-modal .btn-confirm:hover {
-    background: #2dd610;
-    box-shadow: 0 0 12px rgba(57,255,20,0.4);
+    background: #00c9e0;
+    box-shadow: 0 0 12px rgba(0,229,255,0.4);
 }
 .key-modal .btn-danger {
     background: transparent;
@@ -440,8 +440,8 @@ body {
     box-shadow: 0 0 6px rgba(255,68,68,0.5);
 }
 .gp-dot.connected {
-    background: #39ff14;
-    box-shadow: 0 0 8px rgba(57,255,20,0.6);
+    background: #00E5FF;
+    box-shadow: 0 0 8px rgba(0,229,255,0.6);
 }
 
 /* ── Controller image with overlaid labels ── */
@@ -1148,7 +1148,7 @@ document.querySelectorAll('#keyboard-visual .key[data-key]').forEach(el => {
             const item = document.querySelector('.legend-item[data-action="' + currentAction + '"]');
             if (item) {
                 item.style.transform = 'scale(1.05)';
-                item.style.borderColor = '#39ff14';
+                item.style.borderColor = '#00E5FF';
                 setTimeout(() => { item.style.transform = ''; item.style.borderColor = ''; }, 600);
             }
         } else {
@@ -1255,7 +1255,7 @@ function saveAndClose() {
     // Afficher le message de confirmation
     const toast = document.createElement('div');
     toast.textContent = msg;
-    toast.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#39ff14;color:#0a0a0a;padding:12px 24px;border-radius:8px;font-weight:600;font-size:14px;z-index:9999;animation:fadeInOut 3s forwards;';
+    toast.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#00E5FF;color:#0a0a0a;padding:12px 24px;border-radius:8px;font-weight:600;font-size:14px;z-index:9999;animation:fadeInOut 3s forwards;';
     const style = document.createElement('style');
     style.textContent = '@keyframes fadeInOut{0%{opacity:0;transform:translateX(-50%) translateY(-10px)}10%{opacity:1;transform:translateX(-50%) translateY(0)}80%{opacity:1}100%{opacity:0}}';
     document.head.appendChild(style);
@@ -1288,7 +1288,7 @@ const welcomeMsg = !comingFromGame ? InputConfig.getWelcomeMessage() : null;
 if (welcomeMsg) {
     const banner = document.createElement('div');
     banner.textContent = welcomeMsg;
-    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#1a2a10;border-bottom:1px solid #39ff14;color:#39ff14;padding:10px;text-align:center;font-size:13px;z-index:9999;cursor:pointer;';
+    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#0a0d1a;border-bottom:1px solid #00E5FF;color:#00E5FF;padding:10px;text-align:center;font-size:13px;z-index:9999;cursor:pointer;';
     banner.onclick = () => banner.remove();
     document.body.appendChild(banner);
     setTimeout(() => banner.remove(), 5000);
