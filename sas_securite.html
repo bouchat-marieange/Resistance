@@ -1323,7 +1323,12 @@ function onPointerDown(event) {
             const distCamera = closestPt.distanceTo(camera.position); // Profondeur
             // 0.65 m de rayon de clic + devant la caméra + portée 7 m
             if (distRay < 0.65 && distCamera > 0 && distCamera < 7) {
-                if (typeof DialogueManager !== 'undefined') DialogueManager.start('naby');
+                // Exécuter l'action de la zone Naby (définie dans project.json — actuellement video)
+                const nabyZone = interactionZones.find(z => z.surfaceMode === 'character')
+                              || interactionZones.find(z => z.actionValue === 'naby');
+                if (nabyZone) {
+                    executeZoneAction(nabyZone);
+                }
                 return;
             }
         }
