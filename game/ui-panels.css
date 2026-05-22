@@ -1,0 +1,188 @@
+/* ============================================================
+   UI-PANELS.CSS — Résistance
+   Icônes flottantes + panneaux Info / Volume / Paramètres
+   Inclure dans toutes les pages de jeu (présentes et futures)
+   ============================================================ */
+
+/* ── Colonne d'icônes (haut-gauche) ── */
+.ui-icon {
+    position: fixed;
+    left: 16px;
+    width: 36px;
+    height: 36px;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    pointer-events: auto;
+    transition: transform 0.18s ease, filter 0.18s ease;
+    z-index: 200;
+    filter: drop-shadow(0 2px 5px rgba(0,0,0,0.55));
+    padding: 0;
+}
+.ui-icon:hover {
+    transform: scale(1.14);
+    filter: drop-shadow(0 0 10px rgba(0,229,255,0.45));
+}
+.ui-icon svg {
+    width: 26px;
+    height: 26px;
+    stroke: #ffffff;
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* Positions verticales */
+#info-icon     { top: 16px; }
+#volume-icon   { top: 60px; }
+#settings-icon { top: 104px; }
+
+/* ── Panneau générique ── */
+.ui-panel {
+    position: fixed;
+    top: 16px;
+    left: 60px;
+    background: rgba(22, 22, 28, 0.97);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 12px;
+    z-index: 300;
+    min-width: 240px;
+    backdrop-filter: blur(14px);
+    display: none;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.65);
+    color: #e0e0e0;
+    font-size: 13px;
+    overflow: hidden;
+    pointer-events: auto;
+}
+
+/* Panneaux volume alignés sur l'icône volume */
+#volume-popup { top: 60px; left: 60px; }
+
+/* ── En-tête du panneau ── */
+.ui-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 13px 16px 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+.ui-panel-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+    letter-spacing: 0.04em;
+    margin: 0;
+}
+.ui-panel-close {
+    background: none;
+    border: none;
+    color: #555;
+    font-size: 18px;
+    cursor: pointer;
+    line-height: 1;
+    padding: 2px 4px;
+    transition: color 0.18s;
+    margin-left: auto;
+}
+.ui-panel-close:hover { color: #fff; }
+
+/* ── Corps du panneau ── */
+.ui-panel-body {
+    padding: 14px 16px 16px;
+}
+
+/* ── Lignes de curseur (salles 3D — 3 niveaux) ── */
+.volume-slider-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 11px;
+}
+.volume-slider-row:last-child { margin-bottom: 0; }
+
+.volume-slider-row label {
+    font-size: 12px;
+    color: #aaa;
+    min-width: 70px;
+    flex-shrink: 0;
+}
+.volume-slider-row input[type=range] {
+    flex: 1;
+    accent-color: #00E5FF;
+    cursor: pointer;
+    height: 4px;
+}
+.volume-value {
+    font-size: 11px;
+    color: #777;
+    min-width: 24px;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+/* ── Ligne volume unique avec bouton muet (Cocoon / cinématique) ── */
+.volume-single-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.volume-single-row input[type=range] {
+    flex: 1;
+    accent-color: #00E5FF;
+    cursor: pointer;
+    height: 4px;
+}
+
+#mute-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    transition: opacity 0.18s;
+}
+#mute-btn:hover { opacity: 0.75; }
+#mute-btn svg {
+    width: 22px;
+    height: 22px;
+    stroke: #ffffff;
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+#mute-btn.muted svg { stroke: #555; }
+
+/* ── Panneau info ── */
+#controls-info { top: 16px; left: 60px; }
+
+.info-line {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 8px;
+    color: #ccc;
+    font-size: 13px;
+    line-height: 1.45;
+}
+.info-line:last-child { margin-bottom: 0; }
+
+.info-key {
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    font-size: 11px;
+    background: rgba(255,255,255,0.09);
+    border: 1px solid rgba(255,255,255,0.16);
+    border-radius: 4px;
+    padding: 1px 7px;
+    color: #fff;
+    flex-shrink: 0;
+    white-space: nowrap;
+}

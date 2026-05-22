@@ -45,6 +45,7 @@
 
     <!-- Tailwind/DaisyUI et éditeur chargés uniquement via editor.html -->
 
+    <link rel="stylesheet" href="game/ui-panels.css">
     <style>
         body {
             margin: 0;
@@ -72,43 +73,8 @@
         .loading-bar { width: 0; height: 100%; background: #00E5FF; animation: loadBar 2s ease-in-out forwards; }
         @keyframes loadBar { 0% { width: 0; } 100% { width: 90%; } }
 
-        /* ========== GAME UI ========== */
-        #info-icon {
-            position: fixed; top: 16px; left: 16px; z-index: 100; cursor: pointer;
-            background: rgba(30,30,30,0.7); border-radius: 50%; padding: 6px;
-            width: 32px; height: 32px;
-            display: flex; align-items: center; justify-content: center;
-            transition: background 0.2s;
-        }
-        #info-icon:hover { background: rgba(60,60,60,0.9); }
-
-        #volume-icon {
-            position: fixed; top: 56px; left: 16px; z-index: 100; cursor: pointer;
-            background: rgba(30,30,30,0.7); border-radius: 50%; padding: 6px;
-            width: 40px; height: 40px;
-            display: flex; align-items: center; justify-content: center;
-            transition: background 0.2s;
-        }
-        #volume-icon:hover { background: rgba(60,60,60,0.9); }
-
-        #controls-info {
-            display: none; position: fixed; top: 50px; left: 16px;
-            background: rgba(30,30,30,0.95); border: 1px solid #444; border-radius: 10px;
-            padding: 16px; z-index: 120; color: #eee; font-size: 13px; min-width: 220px;
-        }
-
-        #volume-popup {
-            display: none; position: fixed; bottom: 70px; left: 20px;
-            background: rgba(30,30,30,0.95); border: 1px solid #444; border-radius: 10px;
-            padding: 16px 18px; z-index: 120; min-width: 210px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5); color: #eee; font-size: 13px;
-        }
-        #volume-popup h4 { margin: 0 0 10px 0; font-size: 14px; color: #aaa; text-align: center; }
-        .volume-slider-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-        .volume-slider-row label { width: 70px; font-size: 12px; color: #ccc; }
-        .volume-slider-row input[type=range] { flex: 1; accent-color: #00E5FF; }
-        .volume-value { width: 28px; text-align: right; font-size: 12px; color: #aaa; }
-        #volume-popup-close { position: absolute; top: 4px; right: 8px; background: none; border: none; color: #888; font-size: 16px; cursor: pointer; }
+        /* ========== GAME UI — styles spécifiques cocoon ========== */
+        /* Styles génériques icônes + panneaux dans game/ui-panels.css */
 
         /* Score indicator — masqué dans le Nexus (collecte silencieuse, parallèle GOMAX) */
         #game-score {
@@ -175,42 +141,43 @@
 <!-- ========== GAME UI ========== -->
 
 <!-- Icône info -->
-<div id="info-icon" title="Afficher/Masquer les contrôles">
-    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+<div id="info-icon" class="ui-icon" title="Informations">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
 </div>
 
-<!-- Panneau d'informations -->
-<div id="controls-info">
-    <strong>Navigation :</strong><br>
-    Z/Q/S/D : Déplacement<br>
-    Clic droit : Tourner la vue<br>
-    Molette : Zoomer / Dézoomer<br>
-    Espace : Sauter
+<!-- Panneau info — Cocoon : cinématique plein écran -->
+<div id="controls-info" class="ui-panel">
+    <div class="ui-panel-header">
+        <span class="ui-panel-title">Information</span>
+        <button class="ui-panel-close" onclick="document.getElementById('controls-info').style.display='none'">&#10005;</button>
+    </div>
+    <div class="ui-panel-body">
+        <div class="info-line">
+            <span class="info-key">Échap</span>
+            <span>Quitter le mode plein écran</span>
+        </div>
+    </div>
 </div>
 
 <!-- Icône volume -->
-<div id="volume-icon" title="Réglage du volume">
-    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+<div id="volume-icon" class="ui-icon" title="Volume">
+    <svg viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
 </div>
 
-<!-- Popup de réglage du volume -->
-<div id="volume-popup">
-    <button id="volume-popup-close" onclick="document.getElementById('volume-popup').style.display='none';">&#10005;</button>
-    <h4>Volume</h4>
-    <div class="volume-slider-row">
-        <label>Dialogues</label>
-        <input type="range" min="0" max="100" value="80" id="vol-dialogues" oninput="updateGameVolume()">
-        <span class="volume-value" id="vol-dialogues-val">80</span>
+<!-- Panneau volume — Cocoon : 1 curseur + bouton muet -->
+<div id="volume-popup" class="ui-panel">
+    <div class="ui-panel-header">
+        <span class="ui-panel-title">Volume</span>
+        <button class="ui-panel-close" onclick="document.getElementById('volume-popup').style.display='none'">&#10005;</button>
     </div>
-    <div class="volume-slider-row">
-        <label>Musique</label>
-        <input type="range" min="0" max="100" value="80" id="vol-musique" oninput="updateGameVolume()">
-        <span class="volume-value" id="vol-musique-val">80</span>
-    </div>
-    <div class="volume-slider-row">
-        <label>Bruitages</label>
-        <input type="range" min="0" max="100" value="80" id="vol-bruitages" oninput="updateGameVolume()">
-        <span class="volume-value" id="vol-bruitages-val">80</span>
+    <div class="ui-panel-body">
+        <div class="volume-single-row">
+            <button id="mute-btn" title="Couper / rétablir le son" onclick="toggleMute()">
+                <svg id="mute-icon" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+            </button>
+            <input type="range" min="0" max="100" value="80" id="vol-master" oninput="updateMasterVolume(this.value)">
+            <span class="volume-value" id="vol-master-val">80</span>
+        </div>
     </div>
 </div>
 
@@ -313,18 +280,38 @@ let collisionCacheCounter = 0;
 let isPanelCollapsed = false;
 
 // Stubs pour fonctions attendues par l'éditeur
-function getMasterVolume(category) {
-    const el = document.getElementById(
-        category === 'musique' ? 'vol-musique' :
-        category === 'ambiance' ? 'vol-dialogues' : 'vol-bruitages'
-    );
+// Volume unique pour la cinématique du Cocoon
+var _cocoonMuted = false;
+var _cocoonVolumeBeforeMute = 80;
+
+function getMasterVolume() {
+    if (_cocoonMuted) return 0;
+    const el = document.getElementById('vol-master');
     return el ? parseInt(el.value) / 100 : 1.0;
 }
-function updateGameVolume() {
-    document.getElementById('vol-dialogues-val').textContent = document.getElementById('vol-dialogues').value;
-    document.getElementById('vol-musique-val').textContent = document.getElementById('vol-musique').value;
-    document.getElementById('vol-bruitages-val').textContent = document.getElementById('vol-bruitages').value;
+function updateMasterVolume(val) {
+    document.getElementById('vol-master-val').textContent = val;
+    // Appliquer à tous les médias de la page si besoin
+    document.querySelectorAll('audio, video').forEach(function(m) { m.volume = val / 100; });
 }
+function toggleMute() {
+    _cocoonMuted = !_cocoonMuted;
+    const btn = document.getElementById('mute-btn');
+    const slider = document.getElementById('vol-master');
+    if (_cocoonMuted) {
+        btn.classList.add('muted');
+        _cocoonVolumeBeforeMute = parseInt(slider.value);
+        slider.value = 0;
+        document.querySelectorAll('audio, video').forEach(function(m) { m.volume = 0; });
+    } else {
+        btn.classList.remove('muted');
+        slider.value = _cocoonVolumeBeforeMute;
+        document.querySelectorAll('audio, video').forEach(function(m) { m.volume = _cocoonVolumeBeforeMute / 100; });
+    }
+    document.getElementById('vol-master-val').textContent = slider.value;
+}
+// Alias pour compatibilité avec les appels existants
+function updateGameVolume() {}
 function createCharacterCollisionProxy() {}
 function removeCharacterCollisionProxy() {}
 function updateCharacterCollisionProxy() {}

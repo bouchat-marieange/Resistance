@@ -15,6 +15,7 @@
 
     <!-- Tailwind/DaisyUI et éditeur chargés uniquement via editor.html -->
 
+    <link rel="stylesheet" href="game/ui-panels.css">
     <style>
         body {
             margin: 0;
@@ -34,55 +35,20 @@
             transition: opacity 0.6s ease;
         }
         #loading-screen.fade-out { opacity: 0; pointer-events: none; }
-        .loading-title { color: #39ff14; font-size: 28px; font-weight: 700; letter-spacing: 2px; margin-bottom: 6px; }
+        .loading-title { color: #00E5FF; font-size: 28px; font-weight: 700; letter-spacing: 2px; margin-bottom: 6px; }
         .loading-subtitle { color: #888; font-size: 14px; margin-bottom: 18px; }
         .loading-bar-container { width: 220px; height: 4px; background: #333; border-radius: 2px; overflow: hidden; }
-        .loading-bar { width: 0; height: 100%; background: #39ff14; animation: loadBar 2s ease-in-out forwards; }
+        .loading-bar { width: 0; height: 100%; background: #00E5FF; animation: loadBar 2s ease-in-out forwards; }
         @keyframes loadBar { 0% { width: 0; } 100% { width: 90%; } }
 
         /* ========== GAME UI ========== */
-        #info-icon {
-            position: fixed; top: 16px; left: 16px; z-index: 100; cursor: pointer;
-            background: rgba(30,30,30,0.7); border-radius: 50%; padding: 6px;
-            width: 32px; height: 32px;
-            display: flex; align-items: center; justify-content: center;
-            transition: background 0.2s;
-        }
-        #info-icon:hover { background: rgba(60,60,60,0.9); }
-
-        #volume-icon {
-            position: fixed; top: 56px; left: 16px; z-index: 100; cursor: pointer;
-            background: rgba(30,30,30,0.7); border-radius: 50%; padding: 6px;
-            width: 40px; height: 40px;
-            display: flex; align-items: center; justify-content: center;
-            transition: background 0.2s;
-        }
-        #volume-icon:hover { background: rgba(60,60,60,0.9); }
-
-        #controls-info {
-            display: none; position: fixed; top: 50px; left: 16px;
-            background: rgba(30,30,30,0.95); border: 1px solid #444; border-radius: 10px;
-            padding: 16px; z-index: 120; color: #eee; font-size: 13px; min-width: 220px;
-        }
-
-        #volume-popup {
-            display: none; position: fixed; bottom: 70px; left: 20px;
-            background: rgba(30,30,30,0.95); border: 1px solid #444; border-radius: 10px;
-            padding: 16px 18px; z-index: 120; min-width: 210px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5); color: #eee; font-size: 13px;
-        }
-        #volume-popup h4 { margin: 0 0 10px 0; font-size: 14px; color: #aaa; text-align: center; }
-        .volume-slider-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-        .volume-slider-row label { width: 70px; font-size: 12px; color: #ccc; }
-        .volume-slider-row input[type=range] { flex: 1; accent-color: #39ff14; }
-        .volume-value { width: 28px; text-align: right; font-size: 12px; color: #aaa; }
-        #volume-popup-close { position: absolute; top: 4px; right: 8px; background: none; border: none; color: #888; font-size: 16px; cursor: pointer; }
+        /* Icônes + panneaux → game/ui-panels.css */
 
         /* Score indicator */
         #game-score {
             position: fixed; bottom: 16px; left: 16px; z-index: 100;
             background: rgba(30,30,30,0.8); border: 1px solid #333; border-radius: 8px;
-            padding: 6px 14px; color: #39ff14; font-size: 14px; font-weight: 600;
+            padding: 6px 14px; color: #00E5FF; font-size: 14px; font-weight: 600;
         }
 
         /* Secret dialog */
@@ -93,7 +59,7 @@
             padding: 20px;
         }
         #secret-overlay input {
-            background: #111; color: #39ff14; border: 1px solid #333;
+            background: #111; color: #00E5FF; border: 1px solid #333;
             padding: 8px 16px; border-radius: 6px; font-size: 16px;
             outline: none; font-family: monospace; width: 180px;
         }
@@ -111,7 +77,7 @@
 <!-- ========== LOADING SCREEN ========== -->
 <div id="loading-screen">
     <div style="text-align: center; display: flex; flex-direction: column; align-items: center;">
-        <img src="images/lapin fond transpa.png" alt="Logo" style="width: 140px; height: auto; margin-bottom: 20px; filter: drop-shadow(0 4px 16px rgba(57,255,20,0.3));">
+        <img src="images/lapin fond transpa.png" alt="Logo" style="width: 140px; height: auto; margin-bottom: 20px; filter: drop-shadow(0 4px 16px rgba(0,229,255,0.3));">
         <div class="loading-title">Résistance</div>
         <div class="loading-subtitle">Chargement en cours...</div>
         <div class="loading-bar-container">
@@ -123,52 +89,67 @@
 <!-- ========== GAME UI ========== -->
 
 <!-- Icône info -->
-<div id="info-icon" title="Afficher/Masquer les contrôles">
-    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+<div id="info-icon" class="ui-icon" title="Informations">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
 </div>
 
-<!-- Panneau d'informations -->
-<div id="controls-info">
-    <strong>Navigation :</strong><br>
-    Z/Q/S/D : Déplacement<br>
-    Clic droit : Tourner la vue<br>
-    Molette : Zoomer / Dézoomer<br>
-    Espace : Sauter
+<!-- Panneau info -->
+<div id="controls-info" class="ui-panel">
+    <div class="ui-panel-header">
+        <span class="ui-panel-title">Navigation</span>
+        <button class="ui-panel-close" onclick="document.getElementById('controls-info').style.display='none'">&#10005;</button>
+    </div>
+    <div class="ui-panel-body">
+        <div class="info-line"><span class="info-key">Z Q S D</span><span>Déplacement</span></div>
+        <div class="info-line"><span class="info-key">Clic droit</span><span>Tourner la vue</span></div>
+        <div class="info-line"><span class="info-key">Molette</span><span>Zoomer / Dézoomer</span></div>
+        <div class="info-line"><span class="info-key">Espace</span><span>Sauter</span></div>
+        <div class="info-line"><span class="info-key">Échap</span><span>Quitter le plein écran</span></div>
+    </div>
 </div>
 
 <!-- Icône volume -->
-<div id="volume-icon" title="Réglage du volume">
-    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+<div id="volume-icon" class="ui-icon" title="Volume">
+    <svg viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
 </div>
 
-<!-- Popup de réglage du volume -->
-<div id="volume-popup">
-    <button id="volume-popup-close" onclick="document.getElementById('volume-popup').style.display='none';">&#10005;</button>
-    <h4>Volume</h4>
-    <div class="volume-slider-row">
-        <label>Dialogues</label>
-        <input type="range" min="0" max="100" value="80" id="vol-dialogues" oninput="updateGameVolume()">
-        <span class="volume-value" id="vol-dialogues-val">80</span>
+<!-- Panneau volume (3 curseurs) -->
+<div id="volume-popup" class="ui-panel">
+    <div class="ui-panel-header">
+        <span class="ui-panel-title">Volume</span>
+        <button class="ui-panel-close" onclick="document.getElementById('volume-popup').style.display='none'">&#10005;</button>
     </div>
-    <div class="volume-slider-row">
-        <label>Musique</label>
-        <input type="range" min="0" max="100" value="80" id="vol-musique" oninput="updateGameVolume()">
-        <span class="volume-value" id="vol-musique-val">80</span>
+    <div class="ui-panel-body">
+        <div class="volume-slider-row">
+            <label>Dialogues</label>
+            <input type="range" min="0" max="100" value="80" id="vol-dialogues" oninput="updateGameVolume()">
+            <span class="volume-value" id="vol-dialogues-val">80</span>
+        </div>
+        <div class="volume-slider-row">
+            <label>Musique</label>
+            <input type="range" min="0" max="100" value="80" id="vol-musique" oninput="updateGameVolume()">
+            <span class="volume-value" id="vol-musique-val">80</span>
+        </div>
+        <div class="volume-slider-row">
+            <label>Bruitages</label>
+            <input type="range" min="0" max="100" value="80" id="vol-bruitages" oninput="updateGameVolume()">
+            <span class="volume-value" id="vol-bruitages-val">80</span>
+        </div>
     </div>
-    <div class="volume-slider-row">
-        <label>Bruitages</label>
-        <input type="range" min="0" max="100" value="80" id="vol-bruitages" oninput="updateGameVolume()">
-        <span class="volume-value" id="vol-bruitages-val">80</span>
-    </div>
+</div>
+
+<!-- Icône paramètres -->
+<div id="settings-icon" class="ui-icon" title="Paramètres des contrôles" onclick="window.location.href='game/controls-screen.html'">
+    <svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
 </div>
 
 <!-- Score & Profil joueur -->
 <div id="game-score" style="position:fixed; bottom:16px; left:16px; z-index:100; background:rgba(30,30,30,0.8); border:1px solid #333; border-radius:8px; padding:8px 14px; display:none;">
     <div style="font-size:10px; color:#666; letter-spacing:1px; text-transform:uppercase;">Résistant</div>
-    <div id="player-pseudo-display" style="color:#39ff14; font-size:14px; font-weight:700; font-family:monospace;">???</div>
+    <div id="player-pseudo-display" style="color:#00E5FF; font-size:14px; font-weight:700; font-family:monospace;">???</div>
     <div style="display:flex; gap:12px; margin-top:4px;">
         <div><span style="font-size:10px; color:#666;">Pièce: </span><span id="room-score-val" style="color:#eee; font-size:13px; font-weight:600;">0</span></div>
-        <div><span style="font-size:10px; color:#666;">Total: </span><span id="total-score-val" style="color:#39ff14; font-size:13px; font-weight:600;">0</span></div>
+        <div><span style="font-size:10px; color:#666;">Total: </span><span id="total-score-val" style="color:#00E5FF; font-size:13px; font-weight:600;">0</span></div>
     </div>
 </div>
 <script src="game/debug-logger.js"></script>
