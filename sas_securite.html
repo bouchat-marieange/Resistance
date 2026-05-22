@@ -1568,7 +1568,7 @@ function updateControlsForMode() {
         // Mode FPS : clic droit maintenu pour orienter le regard
         controls.enableZoom = true;
         controls.enableRotate = true;
-        controls.minDistance = 0.5;
+        controls.minDistance = 0.001; // Garder très proche pour éviter que OrbitControls pousse la caméra en arrière
         controls.maxDistance = 20;
         controls.minPolarAngle = Math.PI * 0.15;
         controls.maxPolarAngle = Math.PI * 0.85;
