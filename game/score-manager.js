@@ -19,6 +19,7 @@
 var ScoreManager = (function() {
 
     var _currentRoom = null;
+    var _hideDisplay = false; // true dans les salles avant le sas (collecte silencieuse)
 
     function getAllProfiles() {
         try {
@@ -107,14 +108,14 @@ var ScoreManager = (function() {
         if (roomEl) roomEl.textContent = roomScore;
         if (pseudoEl) pseudoEl.textContent = pseudo || '???';
 
-        // Afficher le conteneur si un profil existe
-        if (containerEl && pseudo) {
+        // Afficher le conteneur uniquement si la salle l'autorise
+        if (containerEl && pseudo && !_hideDisplay) {
             containerEl.style.display = '';
         }
     }
 
     function animateScoreGain(points) {
-        if (points <= 0) return;
+        if (points <= 0 || _hideDisplay) return; // pas d'animation dans les salles silencieuses
         var el = document.createElement('div');
         el.textContent = '+' + points;
         el.style.cssText = 'position:fixed; bottom:50px; left:40px; z-index:200; color:#39ff14; font-size:24px; font-weight:800; pointer-events:none; opacity:1; transition: all 1s ease;';
@@ -127,10 +128,11 @@ var ScoreManager = (function() {
         setTimeout(function() { el.remove(); }, 1200);
     }
 
-    function init(roomName) {
+    function init(roomName, options) {
         _currentRoom = roomName;
+        _hideDisplay = (options && options.hideDisplay) ? true : false;
         updateScoreDisplay();
-        console.log('ScoreManager initialisé pour:', roomName, '| Pseudo:', getActivePseudo(), '| Total:', getTotalScore());
+        console.log('ScoreManager initialisé pour:', roomName, '| Pseudo:', getActivePseudo(), '| Total:', getTotalScore(), _hideDisplay ? '| [score masqué]' : '');
     }
 
     return {

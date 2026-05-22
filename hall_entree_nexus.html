@@ -34,10 +34,10 @@
             transition: opacity 0.6s ease;
         }
         #loading-screen.fade-out { opacity: 0; pointer-events: none; }
-        .loading-title { color: #39ff14; font-size: 28px; font-weight: 700; letter-spacing: 2px; margin-bottom: 6px; }
+        .loading-title { color: #00E5FF; font-size: 28px; font-weight: 700; letter-spacing: 2px; margin-bottom: 6px; }
         .loading-subtitle { color: #888; font-size: 14px; margin-bottom: 18px; }
         .loading-bar-container { width: 220px; height: 4px; background: #333; border-radius: 2px; overflow: hidden; }
-        .loading-bar { width: 0; height: 100%; background: #39ff14; animation: loadBar 2s ease-in-out forwards; }
+        .loading-bar { width: 0; height: 100%; background: #00E5FF; animation: loadBar 2s ease-in-out forwards; }
         @keyframes loadBar { 0% { width: 0; } 100% { width: 90%; } }
 
         /* ========== GAME UI ========== */
@@ -74,7 +74,7 @@
         #volume-popup h4 { margin: 0 0 10px 0; font-size: 14px; color: #aaa; text-align: center; }
         .volume-slider-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
         .volume-slider-row label { width: 70px; font-size: 12px; color: #ccc; }
-        .volume-slider-row input[type=range] { flex: 1; accent-color: #39ff14; }
+        .volume-slider-row input[type=range] { flex: 1; accent-color: #00E5FF; }
         .volume-value { width: 28px; text-align: right; font-size: 12px; color: #aaa; }
         #volume-popup-close { position: absolute; top: 4px; right: 8px; background: none; border: none; color: #888; font-size: 16px; cursor: pointer; }
 
@@ -82,7 +82,7 @@
         #game-score {
             position: fixed; bottom: 16px; left: 16px; z-index: 100;
             background: rgba(30,30,30,0.8); border: 1px solid #333; border-radius: 8px;
-            padding: 6px 14px; color: #39ff14; font-size: 14px; font-weight: 600;
+            padding: 6px 14px; color: #00E5FF; font-size: 14px; font-weight: 600;
         }
 
         /* Secret dialog */
@@ -93,7 +93,7 @@
             padding: 20px;
         }
         #secret-overlay input {
-            background: #111; color: #39ff14; border: 1px solid #333;
+            background: #111; color: #00E5FF; border: 1px solid #333;
             padding: 8px 16px; border-radius: 6px; font-size: 16px;
             outline: none; font-family: monospace; width: 180px;
         }
@@ -111,7 +111,7 @@
 <!-- ========== LOADING SCREEN ========== -->
 <div id="loading-screen">
     <div style="text-align: center; display: flex; flex-direction: column; align-items: center;">
-        <img src="images/lapin fond transpa.png" alt="Logo" style="width: 140px; height: auto; margin-bottom: 20px; filter: drop-shadow(0 4px 16px rgba(57,255,20,0.3));">
+        <img src="images/lapin fond transpa.png" alt="Logo" style="width: 140px; height: auto; margin-bottom: 20px; filter: drop-shadow(0 4px 16px rgba(0,229,255,0.3));">
         <div class="loading-title">Résistance</div>
         <div class="loading-subtitle">Chargement en cours...</div>
         <div class="loading-bar-container">
@@ -165,10 +165,10 @@
 <!-- Score & Profil joueur -->
 <div id="game-score" style="position:fixed; bottom:16px; left:16px; z-index:100; background:rgba(30,30,30,0.8); border:1px solid #333; border-radius:8px; padding:8px 14px; display:none;">
     <div style="font-size:10px; color:#666; letter-spacing:1px; text-transform:uppercase;">Résistant</div>
-    <div id="player-pseudo-display" style="color:#39ff14; font-size:14px; font-weight:700; font-family:monospace;">???</div>
+    <div id="player-pseudo-display" style="color:#00E5FF; font-size:14px; font-weight:700; font-family:monospace;">???</div>
     <div style="display:flex; gap:12px; margin-top:4px;">
         <div><span style="font-size:10px; color:#666;">Pièce: </span><span id="room-score-val" style="color:#eee; font-size:13px; font-weight:600;">0</span></div>
-        <div><span style="font-size:10px; color:#666;">Total: </span><span id="total-score-val" style="color:#39ff14; font-size:13px; font-weight:600;">0</span></div>
+        <div><span style="font-size:10px; color:#666;">Total: </span><span id="total-score-val" style="color:#00E5FF; font-size:13px; font-weight:600;">0</span></div>
     </div>
 </div>
 <script src="game/debug-logger.js"></script>
@@ -424,7 +424,7 @@ document.getElementById('volume-icon').addEventListener('click', function() {
  */
 window.onload = function() {
     init();
-    ScoreManager.init(ROOM_CONFIG.name);
+    ScoreManager.init(ROOM_CONFIG.name, { hideDisplay: true }); // score collecté silencieusement (parallèle GOMAX)
 
     // Charger la scène via scene-loader.js
     setTimeout(async () => {
