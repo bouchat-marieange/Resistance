@@ -74,9 +74,47 @@
             display: none; position: fixed; top: 50%; left: 50%;
             transform: translate(-50%,-50%); z-index: 500; pointer-events: none;
         }
+
+        /* ── Barre WIP + navigation ── */
+        #wip-bar {
+            position: fixed; bottom: 0; left: 0; right: 0; z-index: 9997;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 20px; gap: 12px;
+            background: rgba(6, 10, 16, 0.93);
+            border-top: 1px solid #1C2A38;
+            backdrop-filter: blur(12px);
+        }
+        .wip-msg {
+            display: flex; align-items: center; gap: 10px;
+            font-size: 12px; color: #607080; letter-spacing: .02em;
+        }
+        .wip-badge {
+            font-size: 10px; font-family: 'Courier New', monospace; font-weight: 700;
+            letter-spacing: .1em; text-transform: uppercase; color: #00E5FF;
+            background: rgba(0,229,255,0.07); border: 1px solid rgba(0,229,255,0.22);
+            border-radius: 3px; padding: 3px 8px; flex-shrink: 0; white-space: nowrap;
+        }
+        .wip-next {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 7px 16px; font-size: 11px; font-weight: 700;
+            letter-spacing: .1em; text-transform: uppercase; color: #00E5FF;
+            border: 1px solid rgba(0,229,255,0.45); border-radius: 6px;
+            text-decoration: none; flex-shrink: 0; white-space: nowrap;
+            transition: background .2s, border-color .2s;
+        }
+        .wip-next:hover { background: rgba(0,229,255,0.1); border-color: #00E5FF; }
     </style>
 </head>
 <body>
+
+<!-- ── Barre WIP + navigation ── -->
+<div id="wip-bar">
+    <div class="wip-msg">
+        <span class="wip-badge">🎬 En cours de montage vidéo</span>
+        Les séquences vidéo seront intégrées prochainement
+    </div>
+    <a class="wip-next" href="test-blackbox.html">Décodeur du Nexus →</a>
+</div>
 
 <!-- ========== LOADING SCREEN ========== -->
 <div id="loading-screen">
