@@ -38,7 +38,7 @@
         }
         .logo-container img {
             width: 120px; height: auto;
-            filter: drop-shadow(0 4px 24px rgba(57,255,20,0.3));
+            filter: drop-shadow(0 4px 24px rgba(0,229,255,0.3));
         }
         @keyframes logoFloat {
             0%, 100% { transform: translateY(0); }
@@ -48,12 +48,12 @@
         /* Titre */
         .game-title {
             font-size: 42px; font-weight: 800; letter-spacing: 4px;
-            color: #39ff14;
-            text-shadow: 0 0 20px rgba(57,255,20,0.4), 0 0 40px rgba(57,255,20,0.2);
+            color: #00E5FF;
+            text-shadow: 0 0 20px rgba(0,229,255,0.4), 0 0 40px rgba(0,229,255,0.2);
             margin-bottom: 4px;
         }
         .game-subtitle {
-            font-size: 13px; color: #555; letter-spacing: 6px;
+            font-size: 13px; color: #7ABECE; letter-spacing: 6px;
             text-transform: uppercase; margin-bottom: 32px;
         }
 
@@ -75,11 +75,11 @@
         }
         .tab-btn {
             flex: 1; padding: 10px 0; background: none; border: none;
-            color: #666; font-size: 13px; font-weight: 600; cursor: pointer;
+            color: #7A9AAE; font-size: 13px; font-weight: 600; cursor: pointer;
             border-bottom: 2px solid transparent; transition: all 0.2s;
             letter-spacing: 1px;
         }
-        .tab-btn.active { color: #39ff14; border-bottom-color: #39ff14; }
+        .tab-btn.active { color: #00E5FF; border-bottom-color: #00E5FF; }
         .tab-btn:hover { color: #aaa; }
 
         /* Vues */
@@ -88,19 +88,19 @@
 
         /* Labels et inputs */
         .field-label {
-            font-size: 11px; color: #888; letter-spacing: 1px;
+            font-size: 11px; color: #A8C4D4; letter-spacing: 1px;
             text-transform: uppercase; margin-bottom: 6px; display: block;
         }
         .input-row {
             display: flex; gap: 8px; margin-bottom: 16px;
         }
         .pseudo-input {
-            flex: 1; background: #111; color: #39ff14;
+            flex: 1; background: #111; color: #00E5FF;
             border: 1px solid #2a2a2a; padding: 12px 16px;
             border-radius: 8px; font-size: 18px; font-family: monospace;
             outline: none; transition: border-color 0.2s;
         }
-        .pseudo-input:focus { border-color: #39ff14; }
+        .pseudo-input:focus { border-color: #00E5FF; }
         .pseudo-input::placeholder { color: #333; }
 
         /* Bouton dé */
@@ -110,26 +110,26 @@
             display: flex; align-items: center; justify-content: center;
             transition: all 0.2s; font-size: 22px;
         }
-        .dice-btn:hover { background: #2a2a3a; border-color: #39ff14; transform: rotate(15deg); }
+        .dice-btn:hover { background: #2a2a3a; border-color: #00E5FF; transform: rotate(15deg); }
         .dice-btn:hover img { filter: brightness(0) invert(0.4) sepia(1) saturate(20) hue-rotate(80deg) !important; }
 
         /* Bouton principal */
         .main-btn {
-            width: 100%; padding: 14px; background: #39ff14; color: #000;
+            width: 100%; padding: 14px; background: #00E5FF; color: #000;
             border: none; border-radius: 10px; font-size: 16px;
             font-weight: 700; letter-spacing: 2px; cursor: pointer;
             transition: all 0.2s; text-transform: uppercase;
         }
-        .main-btn:hover { background: #4dff33; transform: translateY(-1px); box-shadow: 0 4px 20px rgba(57,255,20,0.3); }
+        .main-btn:hover { background: #33eeff; transform: translateY(-1px); box-shadow: 0 4px 20px rgba(0,229,255,0.3); }
         .main-btn:disabled { background: #333; color: #666; cursor: not-allowed; transform: none; box-shadow: none; }
 
         /* Lien récupérer pseudo */
         .recover-link {
             display: block; text-align: center; margin-top: 14px;
-            color: #555; font-size: 11px; cursor: pointer;
+            color: #6A9BAE; font-size: 11px; cursor: pointer;
             text-decoration: none; transition: color 0.2s;
         }
-        .recover-link:hover { color: #39ff14; }
+        .recover-link:hover { color: #00E5FF; }
 
         /* Liste de profils (récupération) */
         .profiles-list {
@@ -141,34 +141,34 @@
             background: #111; border: 1px solid #222; border-radius: 8px;
             cursor: pointer; transition: all 0.2s;
         }
-        .profile-item:hover { border-color: #39ff14; background: #151520; }
-        .profile-name { color: #39ff14; font-family: monospace; font-size: 15px; font-weight: 600; }
-        .profile-score { color: #888; font-size: 12px; }
-        .profile-date { color: #444; font-size: 10px; }
+        .profile-item:hover { border-color: #00E5FF; background: #151520; }
+        .profile-name { color: #00E5FF; font-family: monospace; font-size: 15px; font-weight: 600; }
+        .profile-score { color: #A8C4D4; font-size: 12px; }
+        .profile-date { color: #6A8CA0; font-size: 10px; }
 
         .empty-msg {
-            text-align: center; color: #444; font-size: 13px; padding: 24px 0;
+            text-align: center; color: #6A8CA0; font-size: 13px; padding: 24px 0;
             font-style: italic;
         }
 
         /* Score preview */
         .score-preview {
             display: none; margin-top: 16px; padding: 12px 16px;
-            background: #0d1a0d; border: 1px solid #1a3a1a; border-radius: 8px;
+            background: #0a0d1a; border: 1px solid #0d2040; border-radius: 8px;
             text-align: center;
         }
-        .score-preview .score-label { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
-        .score-preview .score-value { font-size: 28px; color: #39ff14; font-weight: 800; }
+        .score-preview .score-label { font-size: 11px; color: #7A9AAE; text-transform: uppercase; letter-spacing: 1px; }
+        .score-preview .score-value { font-size: 28px; color: #00E5FF; font-weight: 800; }
 
         /* Bouton config contrôles */
         .controls-btn {
             display: flex; align-items: center; justify-content: center; gap: 8px;
             width: 100%; padding: 10px; margin-top: 12px;
-            background: transparent; border: 1px solid #333;
-            border-radius: 8px; color: #888; font-size: 13px;
+            background: transparent; border: 1px solid #2A3A4A;
+            border-radius: 8px; color: #8AACBE; font-size: 13px;
             cursor: pointer; transition: all 0.2s; text-decoration: none;
         }
-        .controls-btn:hover { border-color: #39ff14; color: #39ff14; }
+        .controls-btn:hover { border-color: #00E5FF; color: #00E5FF; }
         .controls-btn svg { width: 18px; height: 18px; fill: currentColor; }
 
         /* Responsive */
@@ -245,7 +245,7 @@
     const canvas = document.getElementById('bg-canvas');
     const ctx = canvas.getContext('2d');
     let particles = [];
-    const PARTICLE_COUNT = 50;
+    const PARTICLE_COUNT = 70;
 
     function resize() {
         canvas.width = window.innerWidth;
@@ -255,13 +255,16 @@
     window.addEventListener('resize', resize);
 
     for (let i = 0; i < PARTICLE_COUNT; i++) {
+        // ~20% de particules "brillantes" plus grandes
+        var bright = Math.random() < 0.2;
         particles.push({
             x: Math.random() * canvas.width,
             y: Math.random() * canvas.height,
-            vx: (Math.random() - 0.5) * 0.3,
-            vy: (Math.random() - 0.5) * 0.3,
-            r: Math.random() * 2 + 0.5,
-            a: Math.random() * 0.3 + 0.05
+            vx: (Math.random() - 0.5) * 0.35,
+            vy: (Math.random() - 0.5) * 0.35,
+            r: bright ? Math.random() * 2 + 2 : Math.random() * 1.5 + 0.8,
+            a: bright ? Math.random() * 0.3 + 0.65 : Math.random() * 0.35 + 0.35,
+            glow: bright ? 10 : 5
         });
     }
 
@@ -275,11 +278,15 @@
             if (p.y < 0) p.y = canvas.height;
             if (p.y > canvas.height) p.y = 0;
 
+            ctx.shadowBlur = p.glow;
+            ctx.shadowColor = 'rgba(0, 229, 255, 0.9)';
             ctx.beginPath();
             ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(57, 255, 20, ' + p.a + ')';
+            ctx.fillStyle = 'rgba(0, 229, 255, ' + p.a + ')';
             ctx.fill();
         });
+        // Réinitialiser le glow pour ne pas affecter d'autres dessins
+        ctx.shadowBlur = 0;
         requestAnimationFrame(animateBg);
     }
     animateBg();
