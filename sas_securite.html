@@ -355,6 +355,7 @@
 <!-- Input Config + Gamepad (contrôles configurables) -->
 <script src="game/input-config.js"></script>
 <script src="game/gamepad-manager.js"></script>
+<script src="game/tutorial-manager.js"></script>
 
 <script>
 /**
@@ -394,6 +395,16 @@ var selectedWalls = [];
 var selectedEditorObject = null;
 var loadingScreenDismissed = false;
 var isPanelCollapsed = false;
+
+// ── Générateur — interaction lumière + son ─────────────────────────────────
+var _genLight        = null;   // THREE.PointLight ajoutée au clic
+var _genActivated    = false;  // true après le premier clic
+var _genSound        = null;   // Audio générateur
+var _genArrowEl      = null;   // Div flèche clignotante au-dessus du générateur
+var _genBubbleEl     = null;   // Bulle de proximité "Il fait sombre ici"
+var _genBubbleShown  = false;
+// Position monde du générateur (relevée dans loadPermanentObject)
+var GEN_POS = new THREE.Vector3(-18.795, 1.349, -22.631);
 var wallHeight = 2.5;
 var PLAYER_EYE_HEIGHT = 1.50;
 var spawnPosition = null;
@@ -1299,6 +1310,32 @@ function onPointerDown(event) {
 
     // Vérifier les zones d'interaction en mode Jeu
     if (interactionMode === 'game') {
+
+        // ── Clic direct sur Naby (tout le corps est réactif) ──────────────
+        if (babyModel) {
+            const nabyMeshes = [];
+            babyModel.traverse(child => { if (child.isMesh) nabyMeshes.push(child); });
+            const nabyHits = raycaster.intersectObjects(nabyMeshes, false);
+            if (nabyHits.length > 0) {
+                if (typeof DialogueManager !== 'undefined') DialogueManager.start('naby');
+                return;
+            }
+        }
+
+        // ── Clic sur le générateur → lumière + son ────────────────────────
+        if (!_genActivated) {
+            const genObj = importedObjects.find(o => o.userData.editorName === 'Générateur');
+            if (genObj) {
+                const genMeshes = [];
+                genObj.traverse(child => { if (child.isMesh) genMeshes.push(child); });
+                const genHits = raycaster.intersectObjects(genMeshes, false);
+                if (genHits.length > 0) {
+                    _activateGenerator();
+                    return;
+                }
+            }
+        }
+
         // Utiliser le système de crosshair : interagir avec la cible visée
         if (_crosshairTargetZone) {
             executeZoneAction(_crosshairTargetZone);
@@ -1337,6 +1374,148 @@ function onPointerDown(event) {
 function onPointerMove(event) {}
 function onPointerUp() {}
 function onKeyDown(event) {}
+
+// ── GÉNÉRATEUR : activation lumière + son ─────────────────────────────────
+function _activateGenerator() {
+    if (_genActivated) return;
+    _genActivated = true;
+
+    // Masquer la flèche + bulle de proximité
+    _hideGenArrow();
+    _hideGenBubble();
+
+    // Lumière ponctuelle au-dessus du générateur
+    _genLight = new THREE.PointLight(0xFFD080, 2.5, 14);
+    _genLight.position.set(GEN_POS.x, GEN_POS.y + 2.6, GEN_POS.z);
+    scene.add(_genLight);
+
+    // Son générateur (boucle)
+    _genSound = new Audio('sounds/generateur.mp3');
+    _genSound.loop = true;
+    _genSound.volume = 0.55;
+    _genSound.play().catch(() => {});
+
+    console.log('⚡ Générateur activé — lumière + son ON');
+}
+
+// Arrêter le son du générateur quand le joueur entre dans la zone Naby
+var _genSoundStoppedByNaby = false;
+function _checkGenSoundNabyProximity() {
+    if (!_genActivated || _genSoundStoppedByNaby || !_genSound) return;
+    const NABY_X = -2.25, NABY_Z = -8.0;
+    const dx = camera.position.x - NABY_X;
+    const dz = camera.position.z - NABY_Z;
+    if (Math.sqrt(dx*dx + dz*dz) < 5.5) {
+        _genSoundStoppedByNaby = true;
+        _genSound.pause();
+        console.log('🔇 Son générateur arrêté (entrée zone Naby)');
+    }
+}
+
+// ── FLÈCHE CLIGNOTANTE au-dessus du générateur ────────────────────────────
+function _initGenArrow() {
+    if (_genArrowEl || _genActivated) return;
+    var el = document.createElement('div');
+    el.id = 'gen-arrow';
+    el.style.cssText = [
+        'position:fixed;z-index:800;pointer-events:none;',
+        'display:none;flex-direction:column;align-items:center;gap:3px;',
+        'animation:genBlink 1.1s ease-in-out infinite;'
+    ].join('');
+    el.innerHTML =
+        '<div style="font-size:26px;line-height:1;filter:drop-shadow(0 0 6px rgba(0,229,255,.9))">⬇</div>' +
+        '<div style="font-size:10px;font-family:monospace;color:#00E5FF;letter-spacing:.08em;' +
+        'background:rgba(6,10,16,.8);border:1px solid rgba(0,229,255,.3);border-radius:4px;' +
+        'padding:2px 7px;white-space:nowrap;">Cliquez pour allumer</div>';
+    document.body.appendChild(el);
+    _genArrowEl = el;
+
+    // Keyframe CSS
+    if (!document.getElementById('gen-arrow-kf')) {
+        var s = document.createElement('style');
+        s.id = 'gen-arrow-kf';
+        s.textContent = '@keyframes genBlink{0%,100%{opacity:1;transform:translateY(0)}' +
+                        '50%{opacity:.35;transform:translateY(-6px)}}';
+        document.head.appendChild(s);
+    }
+}
+
+function _updateGenArrow() {
+    if (_genActivated) { _hideGenArrow(); return; }
+    _initGenArrow();
+    if (!_genArrowEl) return;
+
+    // Projeter la position 3D du générateur (légèrement au-dessus) en 2D écran
+    var topPos = GEN_POS.clone();
+    topPos.y += 3.2;
+    var proj = topPos.clone().project(camera);
+
+    // Vérifier si dans le champ de vision (z < 1 = devant la caméra)
+    if (proj.z > 1) { _genArrowEl.style.display = 'none'; return; }
+
+    var sx = (proj.x * 0.5 + 0.5) * window.innerWidth;
+    var sy = (-proj.y * 0.5 + 0.5) * window.innerHeight;
+
+    // Ne montrer que si dans l'écran
+    if (sx < -50 || sx > window.innerWidth + 50 || sy < -50 || sy > window.innerHeight + 50) {
+        _genArrowEl.style.display = 'none'; return;
+    }
+
+    // Distance joueur-générateur : seuil d'affichage entre 3m et 16m
+    var dist = camera.position.distanceTo(GEN_POS);
+    if (dist < 3 || dist > 16) { _genArrowEl.style.display = 'none'; return; }
+
+    _genArrowEl.style.display = 'flex';
+    _genArrowEl.style.left = (sx - 30) + 'px';
+    _genArrowEl.style.top  = (sy - 55) + 'px';
+}
+
+function _hideGenArrow() {
+    if (_genArrowEl) _genArrowEl.style.display = 'none';
+}
+
+// ── BULLE DE PROXIMITÉ (< 3m du générateur) ───────────────────────────────
+function _updateGenBubble() {
+    if (_genActivated) { _hideGenBubble(); return; }
+    var dist = camera.position.distanceTo(GEN_POS);
+
+    if (dist < 3.2 && !_genBubbleShown) {
+        _genBubbleShown = true;
+        var el = document.createElement('div');
+        el.id = 'gen-bubble';
+        el.style.cssText = [
+            'position:fixed;bottom:90px;left:50%;transform:translateX(-50%);',
+            'z-index:900;background:rgba(10,10,20,.88);border:1px solid rgba(0,229,255,.3);',
+            'border-radius:10px;padding:13px 20px;max-width:280px;text-align:center;',
+            'font-family:"Segoe UI",sans-serif;font-size:13px;color:#C8D8E8;',
+            'box-shadow:0 4px 18px rgba(0,0,0,.6);',
+            'animation:genBubbleFade .4s ease;'
+        ].join('');
+        el.innerHTML = '🔦 <strong style="color:#EEF4FF">Il fait très sombre ici.</strong><br>' +
+                       '<span style="font-size:12px;color:#607080">Cliquez sur le générateur pour allumer la lumière.</span>';
+        document.body.appendChild(el);
+        _genBubbleEl = el;
+
+        if (!document.getElementById('gen-bubble-kf')) {
+            var s = document.createElement('style');
+            s.id = 'gen-bubble-kf';
+            s.textContent = '@keyframes genBubbleFade{from{opacity:0;transform:translateX(-50%) translateY(8px)}' +
+                            'to{opacity:1;transform:translateX(-50%) translateY(0)}}';
+            document.head.appendChild(s);
+        }
+    } else if (dist >= 5 && _genBubbleShown) {
+        // Masquer si le joueur s'éloigne
+        _hideGenBubble();
+        _genBubbleShown = false;
+    }
+}
+
+function _hideGenBubble() {
+    if (_genBubbleEl && _genBubbleEl.parentNode) {
+        _genBubbleEl.parentNode.removeChild(_genBubbleEl);
+        _genBubbleEl = null;
+    }
+}
 
 /**
  * SYSTÈME DE DÉPLACEMENT & COLLISION CAMÉRA
@@ -1818,6 +1997,13 @@ function animate() {
 
     controls.update();
 
+    // ── Générateur : flèche + bulle proximité + arrêt son zone Naby ──────
+    if (interactionMode === 'game' && loadingScreenDismissed) {
+        _updateGenArrow();
+        _updateGenBubble();
+        _checkGenSoundNabyProximity();
+    }
+
     // GAMEPAD: Rotation caméra via stick droit (tous modes)
     // Appliqué APRÈS controls.update() pour ne pas être écrasé par OrbitControls
     if (GamepadManager.connected) {
@@ -2088,7 +2274,11 @@ function updateCrosshairHover() {
     _crosshairTargetZone = bestZone;
 
     // Dirty flag : ne modifier le DOM que si l'état change
-    const nowActive = !!bestZone;
+    // Sur Naby (zone de type 'dialogue') : n'afficher le surlignage doré que si une manette est connectée
+    // (avec la souris, le clic direct sur le personnage suffit — cf. onPointerDown)
+    const isNabyZone = bestZone && bestZone.actionType === 'dialogue' && bestZone.actionValue === 'naby';
+    const showHighlight = !!bestZone && (!isNabyZone || (typeof GamepadManager !== 'undefined' && GamepadManager.connected));
+    const nowActive = showHighlight;
     if (nowActive !== _crosshairActive) {
         _crosshairActive = nowActive;
         if (_crosshairCircles) {
@@ -2331,6 +2521,19 @@ setTimeout(async () => {
             console.log('🕹️ Retour arcade → spawn fixe X:', ARCADE_X, 'Z:', ARCADE_Z);
         }
 
+        // Spawn devant Naby (?spawn=naby) — venant du lien "Dialogue avec Naby" de liens-tfe.html
+        // Position déduite de la calibration minimap : Naby ≈ world(-2.25, -8.00)
+        if (new URLSearchParams(window.location.search).get('spawn') === 'naby') {
+            const NABY_X   = -2.25;
+            const NABY_Z   = -8.00;
+            const OFFSET_Z =  2.4;   // joueur placé 2.4m devant Naby (axe +Z)
+            const eyeH = (typeof gamePlayerY !== 'undefined' && gamePlayerY) || PLAYER_EYE_HEIGHT;
+            camera.position.set(NABY_X, eyeH, NABY_Z + OFFSET_Z);
+            controls.target.set(NABY_X, eyeH, NABY_Z);
+            controls.update();
+            console.log('👁️ Spawn Naby → face à Naby (', NABY_X, ',', NABY_Z, ')');
+        }
+
         // ── Nettoyage de la scène : supprimer les objets non autorisés ──────────
         // Objet importés autorisés (Naby animée est gérée séparément via loadAnimatedCharacter)
         // IMPORTANT: ces noms doivent correspondre EXACTEMENT aux editorName dans IndexedDB
@@ -2369,6 +2572,8 @@ setTimeout(async () => {
         clearTimeout(safetyTimeout);
         // Masquer l'écran de chargement DANS TOUS LES CAS
         hideLoadingScreen();
+        // Lancer le tutoriel interactif (première visite uniquement)
+        if (typeof TutorialManager !== 'undefined') TutorialManager.init();
     }
 }, 500);
 
