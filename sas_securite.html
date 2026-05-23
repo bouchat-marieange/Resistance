@@ -2541,7 +2541,7 @@ setTimeout(async () => {
         if (new URLSearchParams(window.location.search).get('spawn') === 'naby') {
             const NABY_X   = -2.25;
             const NABY_Z   = -8.00;
-            const OFFSET_Z =  2.4;   // joueur placé 2.4m devant Naby (axe -Z = face à elle)
+            const OFFSET_Z =  1.4;   // joueur placé 1.4m devant Naby (axe -Z = face à elle)
             const eyeH = (typeof gamePlayerY !== 'undefined' && gamePlayerY) || PLAYER_EYE_HEIGHT;
             camera.position.set(NABY_X, eyeH, NABY_Z - OFFSET_Z);
             controls.target.set(NABY_X, eyeH, NABY_Z);
