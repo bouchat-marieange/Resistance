@@ -2529,12 +2529,12 @@ setTimeout(async () => {
             // Arcade zone center : X=4.48, Z=-5.01
             // Joueur décalé à droite (direction perpendiculaire au regard vers l'arcade)
             // regard = vers (0.6, 0, 0.8), droite = (0.8, 0, -0.6)
-            const ARCADE_X  =  3.2;   // légèrement à droite du spawn original
-            const ARCADE_Z  = -7.4;
+            const ARCADE_X  =  4.0;   // décalé à droite (vecteur droite = +0.8X -0.6Z)
+            const ARCADE_Z  = -8.0;
             const eyeH = (typeof gamePlayerY !== 'undefined' && gamePlayerY) || PLAYER_EYE_HEIGHT;
             camera.position.set(ARCADE_X, eyeH, ARCADE_Z);
             // Cible dans la direction de l'arcade (centre ~4.48, -5.01)
-            controls.target.set(ARCADE_X + 0.6, eyeH, ARCADE_Z + 0.8);
+            controls.target.set(ARCADE_X + 0.6, eyeH, ARCADE_Z + 0.8);  // regard vers arcade (4.48, -5.01)
             controls.update();
             console.log('🕹️ Retour arcade → spawn fixe X:', ARCADE_X, 'Z:', ARCADE_Z);
         }
