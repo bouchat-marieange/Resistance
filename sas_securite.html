@@ -2526,12 +2526,15 @@ setTimeout(async () => {
         // par la position exacte devant la borne d'arcade (relevée en jeu : X=2.86, Z=-7.16, yaw=-98°)
         // Ce bloc DOIT être après applySpawnToCamera() pour avoir le dernier mot.
         if (new URLSearchParams(window.location.search).get('spawn') === 'arcade') {
-            const ARCADE_X  =  2.86;
-            const ARCADE_Z  = -7.16;
-            // yaw = -98° → dx = sin(-98°×π/180) ≈ -0.990 | dz = cos(-98°×π/180) ≈ -0.139
+            // Arcade zone center : X=4.48, Z=-5.01
+            // Joueur décalé à droite (direction perpendiculaire au regard vers l'arcade)
+            // regard = vers (0.6, 0, 0.8), droite = (0.8, 0, -0.6)
+            const ARCADE_X  =  3.2;   // légèrement à droite du spawn original
+            const ARCADE_Z  = -7.4;
             const eyeH = (typeof gamePlayerY !== 'undefined' && gamePlayerY) || PLAYER_EYE_HEIGHT;
             camera.position.set(ARCADE_X, eyeH, ARCADE_Z);
-            controls.target.set(ARCADE_X - 0.990, eyeH, ARCADE_Z - 0.139);
+            // Cible dans la direction de l'arcade (centre ~4.48, -5.01)
+            controls.target.set(ARCADE_X + 0.6, eyeH, ARCADE_Z + 0.8);
             controls.update();
             console.log('🕹️ Retour arcade → spawn fixe X:', ARCADE_X, 'Z:', ARCADE_Z);
         }
