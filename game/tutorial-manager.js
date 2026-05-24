@@ -729,6 +729,10 @@ var TutorialManager = (function () {
         if (_initCalled) return;
         // Ne jamais afficher si l'utilisateur a coché "ne plus afficher"
         if (localStorage.getItem(LS_SKIP_KEY) === 'true') return;
+        // Ne pas afficher après un retour depuis Naby, l'arcade, etc.
+        // Ces pages redirigent vers sas_securite.html?spawn=xxx — on saute le tutoriel.
+        var _params = new URLSearchParams(window.location.search);
+        if (_params.get('spawn')) return;
         _initCalled = true;
         setTimeout(showTutorial, 700);
     }

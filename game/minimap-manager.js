@@ -80,6 +80,7 @@
         if (document.getElementById('minimap-manager-styles')) return;
         var css = [
             '#minimap-hud {',
+            '  position: relative;',
             '  font-family: "Segoe UI", sans-serif;',
             '  transition: width 0.35s ease, height 0.35s ease, padding 0.35s ease;',
             '  background: rgba(18,18,26,0.88);',
@@ -92,7 +93,7 @@
             '  position: fixed; bottom: 16px; right: 16px; z-index: 100;',
             '}',
             '#minimap-hud.expanded {',
-            '  width: 300px; height: 320px; padding: 8px;',
+            '  width: 300px; padding: 8px;',
             '}',
             '#minimap-hud.collapsed {',
             '  width: 44px; height: 44px; padding: 0;',
@@ -193,17 +194,25 @@
             '}',
             '.mm-poi:hover { transform: translate(-50%, -50%) rotate(var(--mm-poi-rot, 0rad)) scale(1.2); }',
             '.mm-poi.done { background: rgba(57,255,20,0.85); }',
+            /* Contrôles positionnés en absolu sur le coin bas-droit du panneau */
             '.mm-controls {',
-            '  display: flex; gap: 4px; margin-top: 6px; justify-content: center;',
+            '  position: absolute; bottom: 8px; right: 8px;',
+            '  display: flex; flex-direction: column; gap: 4px; z-index: 10;',
             '}',
             '.mm-btn {',
-            '  flex: 1; background: rgba(126,214,223,0.1);',
-            '  border: 1px solid rgba(126,214,223,0.3); color: #eaeaf2;',
-            '  padding: 5px 0; border-radius: 4px; cursor: pointer;',
-            '  font-size: 14px; font-weight: 700; line-height: 1;',
-            '  transition: all 0.15s;',
+            '  background: transparent; border: none; padding: 3px;',
+            '  cursor: pointer; opacity: 0.55; transition: opacity 0.15s;',
+            '  display: flex; align-items: center; justify-content: center;',
             '}',
-            '.mm-btn:hover { background: rgba(126,214,223,0.25); }',
+            '.mm-btn:hover { background: transparent; opacity: 1; }',
+            '.mm-btn-icon {',
+            '  display: block; width: 18px; height: 18px;',
+            '  background-color: #7ed6df; transition: background-color 0.15s;',
+            '}',
+            '.mm-btn:hover .mm-btn-icon { background-color: #a8edf3; }',
+            '.mm-btn-icon.icon-zoom-in  { -webkit-mask: url("icones/zoom-in.svg")  center/contain no-repeat; mask: url("icones/zoom-in.svg")  center/contain no-repeat; }',
+            '.mm-btn-icon.icon-zoom-out { -webkit-mask: url("icones/zoom-out.svg") center/contain no-repeat; mask: url("icones/zoom-out.svg") center/contain no-repeat; }',
+            '.mm-btn-icon.icon-reset    { -webkit-mask: url("icones/rotate-ccw.svg") center/contain no-repeat; mask: url("icones/rotate-ccw.svg") center/contain no-repeat; }',
             '.mm-collapsed-tab {',
             '  display: none; width: 100%; height: 100%;',
             '  background: transparent; border: none; cursor: pointer; padding: 0;',
@@ -247,7 +256,7 @@
         _container.innerHTML = [
             '<div class="mm-header">',
             '  <span>Carte</span>',
-            '  <button class="mm-toggle-close" title="Replier la carte">–</button>',
+            '  <button class="mm-toggle-close" title="Replier la carte">×</button>',
             '</div>',
             '<div class="mm-viewport">',
             '  <div class="mm-rotator">',
@@ -259,9 +268,9 @@
             '  <div class="mm-player-marker" title="Ta position"></div>',
             '</div>',
             '<div class="mm-controls">',
-            '  <button class="mm-btn" data-act="zoom-in" title="Zoom +">+</button>',
-            '  <button class="mm-btn" data-act="zoom-out" title="Zoom -">−</button>',
-            '  <button class="mm-btn" data-act="home" title="Recentrer sur le joueur">⌂</button>',
+            '  <button class="mm-btn" data-act="zoom-in"  title="Zoom avant"><span class="mm-btn-icon icon-zoom-in"></span></button>',
+            '  <button class="mm-btn" data-act="zoom-out" title="Zoom arrière"><span class="mm-btn-icon icon-zoom-out"></span></button>',
+            '  <button class="mm-btn" data-act="home"     title="Recentrer"><span class="mm-btn-icon icon-reset"></span></button>',
             '</div>',
             '<button class="mm-collapsed-tab" title="Ouvrir la carte (M)" aria-label="Ouvrir la carte"></button>'
         ].join('');
@@ -480,7 +489,8 @@
     function _restoreState() {
         var saved = null;
         try { saved = localStorage.getItem(STORAGE_KEY); } catch (e) {}
-        if (saved === '1') close(); else open();
+        // Par défaut (première visite / navigation privée) : carte repliée
+        if (saved === '0') open(); else close();
     }
 
     // ============================================
