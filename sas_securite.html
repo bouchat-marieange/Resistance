@@ -1047,13 +1047,6 @@ function loadPermanentObjects() {
                         }
                     });
 
-                    // Sauvegarder l'état initial
-                    initialTransforms.set(model, {
-                        position: model.position.clone(),
-                        rotation: model.rotation.clone(),
-                        scale: model.scale.clone()
-                    });
-
                     console.log(`✅ ${name} chargé depuis URL`);
 
                     if (typeof onLoaded === 'function') onLoaded(model);

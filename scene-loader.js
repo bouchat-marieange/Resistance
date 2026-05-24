@@ -1365,13 +1365,10 @@ async function loadProjectOnStartup() {
     const idbTimestamp = (idbData && idbData.timestamp) || 0;
 
     if (idbData && idbData.version === 2) {
-        const timeDiff = lsTimestamp - idbTimestamp;
-        if (lsTimestamp > 0 && timeDiff > 5000) {
-            console.log(`⚠️ localStorage plus récent → chargement depuis localStorage`);
-            await loadProjectFromLocalStorage();
-            return;
-        }
-        console.log(`📂 Chargement depuis IndexedDB`);
+        // IDB version 2 = source de vérité (contient floorTiles, ceilingPolygons, etc.)
+        // On n'utilise JAMAIS le localStorage s'il existe en IDB : le format localStorage
+        // ne stocke pas les floorTiles et provoquerait la disparition des textures de sol.
+        console.log(`📂 Chargement depuis IndexedDB (timestamp: ${new Date(idbTimestamp).toLocaleTimeString()})`);
         await loadProjectFromIndexedDB(idbData);
         return;
     }
