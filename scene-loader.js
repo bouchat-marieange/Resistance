@@ -1309,6 +1309,35 @@ async function bootstrapFromFiles() {
             await RoomEditorDB.put(RoomEditorDB.STORE_PROJECTS, fileManifest.project);
             console.log('📦 Projet restauré dans IndexedDB (timestamp: ' + new Date(fileManifest.project.timestamp || 0).toLocaleTimeString() + ')');
         }
+
+        // ── Restaurer les blobs (textures murs/sol/plafond + GLB objets) ──────
+        // bootstrapFromFiles ne charge que le projet — les blobs vivent dans
+        // scene_data/blobs/{id}.json et doivent être mis dans STORE_BLOBS pour
+        // que restoreWall / restoreFloorPolygon / restoreCeilingPolygon / restoreImportedObject
+        // puissent les lire. Sans ça, toutes les textures disparaissent si l'IDB est vidée.
+        const blobIds = fileManifest.blobIds || [];
+        if (blobIds.length > 0) {
+            if (subtitle) subtitle.textContent = 'Restauration des textures (' + blobIds.length + ')...';
+            let blobsOk = 0, blobsFail = 0;
+            await Promise.all(blobIds.map(async function(blobId) {
+                try {
+                    // Vérifier si le blob est déjà dans IDB (évite un re-fetch inutile)
+                    const existing = await RoomEditorDB.get(RoomEditorDB.STORE_BLOBS, blobId);
+                    if (existing) { blobsOk++; return; }
+
+                    const resp = await fetch('scene_data/blobs/' + blobId + '.json?_=' + Date.now());
+                    if (!resp.ok) { blobsFail++; return; }
+                    const blobRecord = await resp.json();
+                    await RoomEditorDB.put(RoomEditorDB.STORE_BLOBS, blobRecord);
+                    blobsOk++;
+                } catch (e) {
+                    console.warn('⚠️ Blob ' + blobId + ' non restauré:', e);
+                    blobsFail++;
+                }
+            }));
+            console.log('🖼️ Blobs restaurés : ' + blobsOk + ' OK, ' + blobsFail + ' échec(s)');
+        }
+
         if (subtitle) subtitle.textContent = 'Construction de la scène...';
     } catch (e) {
         console.warn('⚠️ Bootstrap depuis fichiers échoué:', e);
