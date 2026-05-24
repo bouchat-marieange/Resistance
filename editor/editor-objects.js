@@ -616,6 +616,12 @@ function toggleEditor() {
             scheduleUpdateObjectsList();
             console.log('📋 [1500ms] Liste finale:', selectableObjects.length, 'objets');
         }, 1500);
+
+        setTimeout(() => {
+            makeObjectsSelectable();
+            scheduleUpdateObjectsList();
+            console.log('📋 [3000ms] Liste finale étendue:', selectableObjects.length, 'objets');
+        }, 3000);
     } else {
         panel.style.display = 'none';
         collapseBtn.style.display = 'none'; // Masquer le bouton de pliage

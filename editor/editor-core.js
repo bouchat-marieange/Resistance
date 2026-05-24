@@ -81,10 +81,6 @@ function initEditor() {
     // Bouton créer un dossier
     document.getElementById('add-folder-btn').onclick = createFolder;
 
-    // Switch Mode Jeu/Développeur (panneau éditeur + bouton flottant)
-    document.getElementById('interaction-mode-switch').onclick = toggleInteractionMode;
-    document.getElementById('floating-mode-switch').onclick = toggleInteractionMode;
-
     // Bouton de sauvegarde
     document.getElementById('save-project-btn').onclick = saveProject;
 
@@ -387,14 +383,6 @@ function initEditor() {
     document.getElementById('lightbox-text-overlay').onclick = (e) => { if (e.target.id === 'lightbox-text-overlay') closeTextLightbox(); };
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAllOverlays(); });
 
-    // Right-click handler for game mode (turn-button reverse rotation)
-    renderer.domElement.addEventListener('contextmenu', (event) => {
-        if (interactionMode === 'game') {
-            event.preventDefault();
-            checkZoneInteraction(event, 'right-click');
-        }
-    });
-
     // Annuler le hold quand le clic est relâché
     renderer.domElement.addEventListener('pointerup', () => {
         heldZone = null;
@@ -405,40 +393,6 @@ function initEditor() {
     renderer.domElement.addEventListener('pointerdown', onZoneMouseDown, true);
     window.addEventListener('pointermove', onZoneMouseMove, false);
     renderer.domElement.addEventListener('pointerup', onZoneMouseUp, true);
-
-    // Audio hover trigger detection (debounced)
-    renderer.domElement.addEventListener('pointermove', (event) => {
-        if (interactionMode !== 'game') return;
-        if (audioHoverDebounceTimer) return;
-        audioHoverDebounceTimer = setTimeout(() => { audioHoverDebounceTimer = null; }, 100);
-
-        const rect = renderer.domElement.getBoundingClientRect();
-        const mx = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-        const my = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-        const hoverRaycaster = new THREE.Raycaster();
-        hoverRaycaster.setFromCamera(new THREE.Vector2(mx, my), camera);
-
-        const meshes = [];
-        importedObjects.forEach(obj => { obj.traverse(child => { if (child.isMesh) meshes.push(child); }); });
-        const hits = hoverRaycaster.intersectObjects(meshes, false);
-        if (hits.length > 0) {
-            let hit = hits[0].object;
-            while (hit) {
-                if (hit.userData.isImported && importedObjects.includes(hit)) {
-                    checkAudioHoverTriggers(hit.userData.editorName || hit.name || '');
-                    return;
-                }
-                hit = hit.parent;
-            }
-        }
-        lastHoveredAudioObject = null;
-    });
-
-    // Masquer l'onglet Jeu et Audio si on est en mode jeu au démarrage
-    if (interactionMode === 'game') {
-        document.getElementById('mode-game-setup').style.display = 'none';
-        document.getElementById('mode-audio').style.display = 'none';
-    }
 
     // Panneau Plan de Pièce
     document.getElementById('plan-view-top').onclick = setPlanViewTop;
@@ -660,7 +614,7 @@ function handleEditorKeyboard(event) {
     if (!editorMode) return;
 
     // SPACEBAR : Activer le mode panning (style Figma)
-    if (event.code === 'Space' && interactionMode === 'developer' && !isSpacePressed) {
+    if (event.code === 'Space' && !isSpacePressed) {
         event.preventDefault();
         isSpacePressed = true;
 
@@ -861,140 +815,6 @@ function updateAxisControls() {
     console.log(`Axes actifs: X=${axisX}, Y=${axisY}, Z=${axisZ}`);
 }
 
-function toggleInteractionMode() {
-    // Auto-sauvegarder la zone en cours d'édition avant de changer de mode
-    if (currentEditingZone) {
-        saveCurrentZone();
-    }
-
-    // Basculer entre mode 'game' et 'developer'
-    interactionMode = interactionMode === 'game' ? 'developer' : 'game';
-
-    const indicator = document.getElementById('switch-indicator');
-    const floatingIndicator = document.getElementById('floating-switch-indicator');
-
-    const gameSetupTab = document.getElementById('mode-game-setup');
-    const audioTab = document.getElementById('mode-audio');
-
-    // Reset état mouvement à chaque changement de mode
-    currentSpeed = 0;
-    headBobOffset = 0;
-    headBobTime = 0;
-    isMoving = false;
-    wasMoving = false;
-
-    if (interactionMode === 'developer') {
-        // Mode Développeur : indicateur en bas
-        indicator.style.top = '40px';
-        indicator.style.background = '#4a9eff'; // Bleu pour mode dev
-        indicator.innerHTML = '<img src="icones/code-xml.svg" width="20" height="20" style="filter: brightness(0) invert(1);">';
-        if (floatingIndicator) {
-            floatingIndicator.style.top = '40px';
-            floatingIndicator.style.background = '#4a9eff';
-            floatingIndicator.innerHTML = '<img src="icones/code-xml.svg" width="20" height="20" style="filter: brightness(0) invert(1);">';
-        }
-        // Afficher les onglets développeur
-        if (gameSetupTab) gameSetupTab.style.display = 'flex';
-        if (audioTab) audioTab.style.display = 'flex';
-        // Masquer le marqueur de spawn (mode dev = visible seulement dans l'onglet game-setup)
-        if (spawnMarkerGroup) spawnMarkerGroup.visible = (currentEditorMode === 'game-setup');
-        // Nettoyer la surbrillance turquoise des objets interactifs
-        clearAllInteractionHighlights();
-        // Afficher les zones d'interaction en mode développeur
-        interactionZones.forEach(zone => {
-            if (zone.meshGroup) zone.meshGroup.visible = true;
-            if (zone.labelSprite) zone.labelSprite.visible = true;
-        });
-        // Arrêter l'audio de jeu
-        stopAllGameAudio();
-        // Réafficher les éléments d'interface éditeur
-        const editorPanel = document.getElementById('editor-panel');
-        if (editorPanel && editorMode) editorPanel.style.display = 'flex';
-        const toggleEditorBtn = document.getElementById('toggle-editor-btn');
-        if (toggleEditorBtn) toggleEditorBtn.style.display = '';
-        const collapseBtn = document.getElementById('toggle-panel-collapse');
-        if (collapseBtn && editorMode) collapseBtn.style.display = 'block';
-        // Restaurer les gizmos selon le mode éditeur courant
-        switchEditorMode(currentEditorMode);
-        // Restaurer les contrôles développeur
-        updateControlsForMode();
-        // Masquer le viseur de jeu
-        const crosshairDev = document.getElementById('game-crosshair');
-        if (crosshairDev) crosshairDev.style.display = 'none';
-        console.log('🔧 Mode Développeur activé - Les interactions de jeu sont désactivées');
-    } else {
-        // Mode Jeu : indicateur en haut
-        indicator.style.top = '4px';
-        indicator.style.background = '#ff6b35'; // Orange pour mode jeu
-        indicator.innerHTML = '<img src="icones/gamepad-2.svg" width="20" height="20" style="filter: brightness(0) invert(1);">';
-        if (floatingIndicator) {
-            floatingIndicator.style.top = '4px';
-            floatingIndicator.style.background = '#ff6b35';
-            floatingIndicator.innerHTML = '<img src="icones/gamepad-2.svg" width="20" height="20" style="filter: brightness(0) invert(1);">';
-        }
-        // Masquer les onglets développeur
-        if (gameSetupTab) gameSetupTab.style.display = 'none';
-        if (audioTab) audioTab.style.display = 'none';
-        // Si on était dans un onglet dev-only, revenir aux objets
-        if (currentEditorMode === 'game-setup' || currentEditorMode === 'audio') {
-            switchEditorMode('objects');
-        }
-        // Masquer le marqueur de spawn en mode jeu
-        if (spawnMarkerGroup) spawnMarkerGroup.visible = false;
-        // Désactiver l'outil spawn et zone
-        deactivateSpawnTool();
-        deactivateZoneTool();
-        // Reset trigger states
-        heldZone = null; holdStartTime = 0;
-        lastClickTime = 0; lastClickZone = null;
-        hoveredZones.clear();
-        proximityTriggeredZones.clear();
-        // Masquer les zones d'interaction (elles apparaîtront par proximité)
-        interactionZones.forEach(zone => {
-            if (zone.meshGroup) zone.meshGroup.visible = false;
-            if (zone.labelSprite) zone.labelSprite.visible = false;
-        });
-        // Masquer TOUS les gizmos et helpers pour l'immersion du joueur
-        if (transformControl) { transformControl.detach(); transformControl.visible = false; }
-        if (cameraTransformControl) { cameraTransformControl.detach(); cameraTransformControl.visible = false; }
-        if (lightTransformControl) { lightTransformControl.detach(); lightTransformControl.visible = false; }
-        if (targetTransformControl) { targetTransformControl.detach(); targetTransformControl.visible = false; }
-        if (cameraHelper) cameraHelper.visible = false;
-        hideAllLightHelpers();
-        if (floorPlanGrid) floorPlanGrid.visible = false;
-        selectedEditorObject = null;
-        // Masquer l'étiquette de dimensions
-        hideDimensionsLabel();
-        // Masquer tous les éléments d'interface éditeur pour l'immersion
-        const editorPanel = document.getElementById('editor-panel');
-        if (editorPanel) editorPanel.style.display = 'none';
-        const toggleEditorBtn = document.getElementById('toggle-editor-btn');
-        if (toggleEditorBtn) toggleEditorBtn.style.display = 'none';
-        const collapseBtn = document.getElementById('toggle-panel-collapse');
-        if (collapseBtn) collapseBtn.style.display = 'none';
-        // Activer le mode FPS (verrouiller la hauteur, configurer les contrôles)
-        setupFPSCamera();
-        // Démarrer l'audio de jeu (seulement si l'écran de chargement est déjà parti)
-        if (loadingScreenDismissed) {
-            startGameAudio();
-        }
-        // Diagnostic des proxies de collision pour les personnages
-        const collMeshes = getCollisionMeshes();
-        const proxyCount = collMeshes.filter(m => m.userData.isCollisionProxy).length;
-        // Afficher le viseur de jeu
-        const crosshairGame = document.getElementById('game-crosshair');
-        if (crosshairGame) crosshairGame.style.display = 'block';
-        console.log(`🎮 Mode Jeu activé - Vue FPS immersive`);
-        console.log(`🛡️ Diagnostic collision: ${characterCollisionProxies.length} proxy(s) enregistrés, ${proxyCount} dans la liste de collision`);
-        characterCollisionProxies.forEach((entry, i) => {
-            const inScene = entry.proxy.parent === scene;
-            const inList = collMeshes.includes(entry.proxy);
-            const pos = entry.proxy.position;
-            const name = entry.character.userData.editorName || entry.character.name || 'personnage';
-            console.log(`  🛡️ Proxy #${i} "${name}": scene=${inScene}, collision=${inList}, visible=${entry.proxy.visible}, pos=(${pos.x.toFixed(2)}, ${pos.y.toFixed(2)}, ${pos.z.toFixed(2)}), h=${entry.height.toFixed(2)}m, r=${entry.radius.toFixed(2)}m`);
-        });
-    }
-}
 
 /**
  * ============================================
@@ -1046,18 +866,18 @@ function openNewRoomDialog() {
     }
 
     overlay.innerHTML =
-        '<div style="background:#1e1e1e; border:1px solid #39ff14; border-radius:12px; padding:24px 28px; min-width:340px; max-width:420px; box-shadow:0 8px 32px rgba(0,0,0,0.6);">' +
+        '<div style="background:#1e1e1e; border:1px solid #00E5FF; border-radius:12px; padding:24px 28px; min-width:340px; max-width:420px; box-shadow:0 8px 32px rgba(0,0,0,0.6);">' +
             '<div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">' +
-                '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#39ff14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>' +
-                '<span style="font-size:18px; font-weight:700; color:#39ff14;">Nouvelle Pièce</span>' +
+                '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00E5FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>' +
+                '<span style="font-size:18px; font-weight:700; color:#00E5FF;">Nouvelle Pièce</span>' +
             '</div>' +
             '<label style="font-size:12px; color:#aaa; display:block; margin-bottom:6px;">Titre affiché :</label>' +
             '<input type="text" id="new-room-title-input" placeholder="ex: Salle de Contrôle" style="width:100%; background:#111; color:#eee; border:1px solid #333; padding:10px 14px; border-radius:6px; font-size:15px; outline:none; box-sizing:border-box;" autofocus>' +
             '<label style="font-size:12px; color:#aaa; display:block; margin-top:12px; margin-bottom:6px;">Identifiant technique (auto-généré) :</label>' +
-            '<input type="text" id="new-room-name-input" placeholder="salle_controle" style="width:100%; background:#111; color:#39ff14; border:1px solid #333; padding:10px 14px; border-radius:6px; font-size:15px; font-family:monospace; outline:none; box-sizing:border-box;">' +
+            '<input type="text" id="new-room-name-input" placeholder="salle_controle" style="width:100%; background:#111; color:#00E5FF; border:1px solid #333; padding:10px 14px; border-radius:6px; font-size:15px; font-family:monospace; outline:none; box-sizing:border-box;">' +
             '<div id="new-room-error" style="color:#ff4444; font-size:11px; margin-top:6px; display:none;"></div>' +
             '<div style="display:flex; gap:10px; margin-top:18px;">' +
-                '<button id="new-room-create-btn" style="flex:1; background:#1a3a1a; border:1px solid #39ff14; color:#39ff14; padding:10px; border-radius:8px; cursor:pointer; font-size:14px; font-weight:600; transition:all 0.2s;">Créer la pièce</button>' +
+                '<button id="new-room-create-btn" style="flex:1; background:#0d2040; border:1px solid #00E5FF; color:#00E5FF; padding:10px; border-radius:8px; cursor:pointer; font-size:14px; font-weight:600; transition:all 0.2s;">Créer la pièce</button>' +
                 '<button id="new-room-cancel-btn" style="padding:10px 18px; background:#2a2a2a; border:1px solid #555; color:#ccc; border-radius:8px; cursor:pointer; font-size:14px; transition:all 0.2s;">Annuler</button>' +
             '</div>' +
             roomsListHTML +

@@ -25,8 +25,8 @@
 
         <!-- Bouton Nouvelle Pièce -->
         <div style="display: flex; flex-direction: column; align-items: center; padding: 8px 0;">
-            <button id="new-room-btn" class="flex items-center justify-center" style="background: #1a3a1a; border: 1px solid #39ff14; border-radius: 8px; width: 40px; height: 40px; cursor: pointer; transition: all 0.3s;" title="Créer une nouvelle pièce">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#39ff14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+            <button id="new-room-btn" class="flex items-center justify-center" style="background: #0d2040; border: 1px solid #00E5FF; border-radius: 8px; width: 40px; height: 40px; cursor: pointer; transition: all 0.3s;" title="Créer une nouvelle pièce">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00E5FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
             </button>
         </div>
 
@@ -39,25 +39,13 @@
             </button>
         </div>
 
-        <!-- Switch Mode Jeu/Développeur -->
-        <div style="display: flex; flex-direction: column; align-items: center; padding: 8px 0; gap: 6px;">
-            <button id="interaction-mode-switch" class="flex flex-col items-center justify-center" style="background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 20px; width: 40px; height: 80px; padding: 4px; cursor: pointer; position: relative; transition: all 0.3s;" title="Basculer entre mode Jeu et mode Développeur">
-                <!-- Indicateur qui se déplace -->
-                <div id="switch-indicator" style="position: absolute; top: 4px; width: 32px; height: 36px; background: #ff6b35; border-radius: 16px; transition: all 0.3s; display: flex; align-items: center; justify-content: center;">
-                    <img src="icones/gamepad-2.svg" width="20" height="20" style="filter: brightness(0) invert(1);">
-                </div>
-
-                <!-- Icône Mode Jeu (en haut) -->
-                <div style="width: 32px; height: 36px; display: flex; align-items: center; justify-content: center; z-index: 1;">
-                    <!-- Icône affichée par l'indicateur -->
-                </div>
-
-                <!-- Icône Mode Développeur (en bas) -->
-                <div style="width: 32px; height: 36px; display: flex; align-items: center; justify-content: center; z-index: 1;">
-                    <img src="icones/code-xml.svg" width="20" height="20" style="filter: brightness(0) invert(1);">
-                </div>
+        <!-- Bouton Export scene_data (pour propager lumières et réglages vers sas_securite même après clear cache) -->
+        <div style="display: flex; flex-direction: column; align-items: center; padding: 8px 0;">
+            <button id="export-scenedata-btn" class="flex items-center justify-center" onclick="generateSceneDataDownload()" style="background: #1a2a1a; border: 1px solid #2a4a2a; border-radius: 8px; width: 40px; height: 40px; cursor: pointer; position: relative; transition: all 0.3s;" title="📥 Exporter pour le jeu — Génère project.json à placer dans scene_data/ (synchronise lumières et réglages vers sas_securite.html)">
+                <span style="font-size: 18px; line-height: 1;">📥</span>
             </button>
         </div>
+
     </div>
 
     <!-- Contenu principal (flex column: sticky header + scrollable content) -->

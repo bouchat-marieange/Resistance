@@ -17,7 +17,7 @@ var selectedEditorObject = (typeof selectedEditorObject !== 'undefined') ? selec
 var selectedEditorObjects = (typeof selectedEditorObjects !== 'undefined') ? selectedEditorObjects : [];
 var editorMode = (typeof editorMode !== 'undefined') ? editorMode : false;
 var currentTransformMode = (typeof currentTransformMode !== 'undefined') ? currentTransformMode : 'translate';
-var interactionMode = (typeof interactionMode !== 'undefined') ? interactionMode : 'game';
+var interactionMode = (typeof interactionMode !== 'undefined') ? interactionMode : 'developer';
 var selectableObjects = (typeof selectableObjects !== 'undefined') ? selectableObjects : [];
 var editorRaycaster = (typeof editorRaycaster !== 'undefined') ? editorRaycaster : new THREE.Raycaster();
 var editorMouse = (typeof editorMouse !== 'undefined') ? editorMouse : new THREE.Vector2();

@@ -26,10 +26,10 @@
             transition: opacity 0.6s ease;
         }
         #loading-screen.fade-out { opacity: 0; pointer-events: none; }
-        .loading-title { color: #39ff14; font-size: 28px; font-weight: 700; letter-spacing: 2px; margin-bottom: 6px; }
+        .loading-title { color: #00E5FF; font-size: 28px; font-weight: 700; letter-spacing: 2px; margin-bottom: 6px; }
         .loading-subtitle { color: #888; font-size: 14px; margin-bottom: 18px; }
         .loading-bar-container { width: 220px; height: 4px; background: #333; border-radius: 2px; overflow: hidden; }
-        .loading-bar { width: 0; height: 100%; background: #39ff14; animation: loadBar 2s ease-in-out forwards; }
+        .loading-bar { width: 0; height: 100%; background: #00E5FF; animation: loadBar 2s ease-in-out forwards; }
         @keyframes loadBar { 0% { width: 0; } 100% { width: 90%; } }
 
         /* ========== ROOM SELECTOR ========== */
@@ -44,7 +44,7 @@
             box-shadow: 0 8px 40px rgba(0,0,0,0.6);
         }
         #room-selector-panel h2 {
-            color: #39ff14; font-size: 22px; font-weight: 700;
+            color: #00E5FF; font-size: 22px; font-weight: 700;
             margin: 0 0 8px 0; letter-spacing: 1px;
         }
         #room-selector-panel p { color: #888; font-size: 13px; margin: 0 0 20px 0; }
@@ -55,39 +55,39 @@
             padding: 12px 16px; margin-bottom: 8px; cursor: pointer;
             transition: border-color 0.2s, background 0.2s;
         }
-        .room-card:hover { border-color: #39ff14; background: #2a2a3e; }
+        .room-card:hover { border-color: #00E5FF; background: #2a2a3e; }
         .room-card .room-name { color: #eee; font-size: 15px; font-weight: 600; }
         .room-card .room-title { color: #888; font-size: 12px; margin-top: 2px; }
         .room-card .room-date { color: #555; font-size: 11px; }
         .room-card-btn {
-            background: #39ff14; color: #111; border: none; border-radius: 8px;
+            background: #00E5FF; color: #111; border: none; border-radius: 8px;
             padding: 8px 18px; font-size: 13px; font-weight: 600; cursor: pointer;
         }
-        .room-card-btn:hover { background: #2de00f; }
+        .room-card-btn:hover { background: #00c9e0; }
         #btn-new-room {
             display: block; width: 100%; background: #333; color: #aaa;
             border: 1px dashed #555; border-radius: 10px; padding: 12px;
             font-size: 14px; cursor: pointer; text-align: center;
         }
-        #btn-new-room:hover { border-color: #39ff14; color: #39ff14; }
+        #btn-new-room:hover { border-color: #00E5FF; color: #00E5FF; }
         .new-room-form { margin-top: 12px; }
         .new-room-form input {
             background: #222; border: 1px solid #444; color: #eee;
             border-radius: 8px; padding: 8px 12px; font-size: 14px; width: 100%;
             margin-bottom: 8px; outline: none;
         }
-        .new-room-form input:focus { border-color: #39ff14; }
+        .new-room-form input:focus { border-color: #00E5FF; }
 
         /* ========== LOAD ROOM BUTTON (dans l'éditeur) ========== */
         #btn-load-room {
             position: fixed; top: 16px; left: 16px; z-index: 100;
-            background: rgba(30,30,30,0.85); border: 1px solid #39ff14;
+            background: rgba(30,30,30,0.85); border: 1px solid #00E5FF;
             border-radius: 10px; padding: 8px 16px; cursor: pointer;
-            color: #39ff14; font-size: 13px; font-weight: 600;
+            color: #00E5FF; font-size: 13px; font-weight: 600;
             display: flex; align-items: center; gap: 6px;
             transition: background 0.2s;
         }
-        #btn-load-room:hover { background: rgba(57,255,20,0.15); }
+        #btn-load-room:hover { background: rgba(0,229,255,0.15); }
     </style>
 </head>
 <body>
@@ -95,7 +95,7 @@
 <!-- ========== LOADING SCREEN ========== -->
 <div id="loading-screen">
     <div style="text-align: center; display: flex; flex-direction: column; align-items: center;">
-        <img src="images/lapin fond transpa.png" alt="Logo" style="width: 140px; height: auto; margin-bottom: 20px; filter: drop-shadow(0 4px 16px rgba(57,255,20,0.3));">
+        <img src="images/lapin fond transpa.png" alt="Logo" style="width: 140px; height: auto; margin-bottom: 20px; filter: drop-shadow(0 4px 16px rgba(0,229,255,0.3));">
         <div class="loading-title">Résistance — Éditeur</div>
         <div class="loading-subtitle">Chargement de l'éditeur...</div>
         <div class="loading-bar-container">
@@ -487,6 +487,25 @@ async function selectRoom(name, title) {
         }
     }
 
+    // Charger les overrides position/matériaux depuis localStorage AVANT les objets permanents
+    // (fonctionne que ce soit le chemin IndexedDB ou localStorage)
+    window._permanentObjectOverrides = {};
+    try {
+        const objOverridesRaw = localStorage.getItem(name + '_importedObjects');
+        if (objOverridesRaw) {
+            const objOverrides = JSON.parse(objOverridesRaw);
+            objOverrides.forEach(function(obj) {
+                if (obj.editorName) window._permanentObjectOverrides[obj.editorName] = obj;
+            });
+            console.log('📦 Overrides objets (editor) depuis localStorage :', Object.keys(window._permanentObjectOverrides).length, 'objets');
+        }
+    } catch (e) { console.warn('⚠️ Erreur lecture _importedObjects localStorage :', e); }
+
+    // Objets permanents spécifiques à chaque pièce
+    if (name === 'sas_securite') {
+        loadSasSecuriteObjects();
+    }
+
     // Appliquer le spawn en mode dev
     if (spawnPosition && spawnSaved) {
         camera.position.set(spawnPosition.x, spawnPosition.y + PLAYER_EYE_HEIGHT + 3, spawnPosition.z + 5);
@@ -516,6 +535,178 @@ async function selectRoom(name, title) {
     hideLoadingScreen();
 
     console.log(`✅ Pièce "${name}" chargée dans l'éditeur`);
+}
+
+// ========== OBJETS PERMANENTS PAR PIÈCE ==========
+
+/**
+ * Charge le tapis procédural et les GLBs permanents du Sas de Sécurité
+ * qui ne sont pas sauvegardés dans IndexedDB (tapis) ou pas encore présents
+ * dans la sauvegarde de l'utilisateur (arcade, chien).
+ */
+function loadSasSecuriteObjects() {
+    // --- Tapis procédural ---
+    if (!rug) {
+        const rugSize = 2.5;
+        const rugGeo = new THREE.PlaneGeometry(rugSize, rugSize);
+        const rugMat = new THREE.MeshStandardMaterial({ color: 0xddc4a2, roughness: 1.0 });
+        new THREE.TextureLoader().load('images/tapis.jpg', (tex) => {
+            rugMat.color.set(0xffffff);
+            rugMat.map = tex;
+            rugMat.needsUpdate = true;
+        });
+        rug = new THREE.Mesh(rugGeo, rugMat);
+        rug.rotation.x = -Math.PI / 2;
+        rug.position.set(0, 0.08, 0);
+        rug.receiveShadow = true;
+        rug.name = 'rug';
+        rug.userData.editorName = 'Tapis';
+        rug.userData.isImported = true;     // déclenche saveImportedObjectsToStorage() sur déplacement
+        rug.userData.fileName = '__rug__';  // marqueur procédural (pas de GLB)
+        scene.add(rug);
+        if (!selectableObjects.includes(rug)) selectableObjects.push(rug);
+        if (!importedObjects.includes(rug)) importedObjects.push(rug);
+        // Restaurer la position sauvegardée si disponible
+        const rugOv = window._permanentObjectOverrides && window._permanentObjectOverrides['Tapis'];
+        if (rugOv) {
+            if (rugOv.position) rug.position.set(rugOv.position.x, rugOv.position.y !== undefined ? rugOv.position.y : 0.08, rugOv.position.z);
+            if (rugOv.rotation) rug.rotation.set(-Math.PI / 2, rugOv.rotation.y || 0, rugOv.rotation.z || 0);
+            if (rugOv.scale)    rug.scale.set(rugOv.scale.x, rugOv.scale.y, rugOv.scale.z);
+            console.log('🧶 Tapis : position restaurée depuis overrides');
+        }
+        console.log('🧶 Tapis Sas créé');
+        scheduleUpdateObjectsList();
+    }
+
+    // --- GLBs permanents ---
+    const permanents = [
+        {
+            url: '3D/perso/berger-allemand-debout.glb',
+            name: 'Berger Allemand Debout',
+            pos: { x: -2.158, y: 0.487, z: -6.462 },
+            rot: { x: -Math.PI, y: 0.1494, z: -Math.PI },
+            scl: { x: 0.705, y: 0.705, z: 0.705 }
+        },
+        {
+            url: '3D/arcade-ai-mythology.glb',
+            name: 'Borne Arcade AI Mythology',
+            pos: { x: 0.5, y: 0.85, z: -7.5 },
+            rot: { x: 0, y: THREE.MathUtils.degToRad(90), z: 0 },
+            scl: { x: 1.0, y: 1.0, z: 1.0 }
+        }
+    ];
+
+    permanents.forEach(({ url, name, pos, rot, scl }) => {
+        // Anti-doublon : déjà en scène, dans importedObjects, ou en cours de chargement depuis IndexedDB ?
+        // Vérifier par editorName ET par fileName (couvre le cas d'un import manuel avec nom différent)
+        const fileName = url.split('/').pop();
+        const idbHasName = window._idbPendingObjects && window._idbPendingObjects.has(name);
+        const idbHasFile = window._idbPendingFileNames && window._idbPendingFileNames.has(fileName);
+        if (idbHasName || idbHasFile) {
+            console.log(`⏳ ${name} (${fileName}) en cours depuis IndexedDB — skip loadSasSecuriteObjects`);
+            return;
+        }
+        const existing = importedObjects.find(o => o.userData.editorName === name)
+                      || scene.children.find(o => o.userData && o.userData.editorName === name);
+        if (existing) {
+            console.log(`♻️ ${name} déjà en scène — enregistrement dans selectableObjects`);
+            if (!selectableObjects.includes(existing)) {
+                selectableObjects.push(existing);
+                existing.traverse(child => {
+                    if (child.isMesh && !selectableObjects.includes(child)) {
+                        child.userData.editorName = name;
+                        selectableObjects.push(child);
+                    }
+                });
+            }
+            if (!importedObjects.includes(existing)) importedObjects.push(existing);
+            // Appliquer les overrides localStorage si présents (chemin fallback localStorage)
+            const ov = window._permanentObjectOverrides && window._permanentObjectOverrides[name];
+            if (ov) {
+                if (ov.position) existing.position.set(ov.position.x, ov.position.y, ov.position.z);
+                if (ov.rotation) existing.rotation.set(ov.rotation.x, ov.rotation.y, ov.rotation.z);
+                if (ov.scale)    existing.scale.set(ov.scale.x, ov.scale.y, ov.scale.z);
+                ['customBrightness','customExposure','customContrast','customOffset','customGamma'].forEach(k => {
+                    if (ov[k] !== undefined) existing.userData[k] = ov[k];
+                });
+                if (ov.customRoughness !== undefined) {
+                    existing.userData.customRoughness = ov.customRoughness;
+                    existing.traverse(child => {
+                        if (child.isMesh && child.material) { child.material.roughness = ov.customRoughness; child.material.needsUpdate = true; }
+                    });
+                }
+                if (typeof applyVisualSettings === 'function') applyVisualSettings(existing);
+                console.log(`🎨 Sas override anti-doublon appliqué : ${name}`);
+            }
+            scheduleUpdateObjectsList();
+            return;
+        }
+
+        // Fetcher le binaire d'abord pour que fileData soit défini → saveProject() peut sauvegarder dans IndexedDB
+        fetch(url)
+            .then(r => r.arrayBuffer())
+            .then(buffer => {
+                const bytes = new Uint8Array(buffer);
+                let binary = '';
+                for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+                const fileDataBase64 = 'data:model/gltf-binary;base64,' + btoa(binary);
+
+                sharedGLTFLoader.load(url, function(gltf) {
+                    const model = gltf.scene;
+                    // Position par défaut d'abord
+                    model.position.set(pos.x, pos.y, pos.z);
+                    model.rotation.set(rot.x, rot.y, rot.z);
+                    model.scale.set(scl.x, scl.y, scl.z);
+                    model.traverse(child => {
+                        if (child.isMesh) {
+                            child.castShadow = true;
+                            child.receiveShadow = true;
+                            child.userData.editorName = name;
+                        }
+                    });
+                    model.userData.editorName = name;
+                    model.userData.isImported = true;
+                    model.userData.fileName = url.split('/').pop();
+                    model.userData.fileData = fileDataBase64; // ← indispensable pour saveProject()
+
+                    // Appliquer les overrides localStorage si présents (position/matériaux sauvegardés)
+                    const ov = window._permanentObjectOverrides && window._permanentObjectOverrides[name];
+                    if (ov) {
+                        if (ov.position) model.position.set(ov.position.x, ov.position.y, ov.position.z);
+                        if (ov.rotation) model.rotation.set(ov.rotation.x, ov.rotation.y, ov.rotation.z);
+                        if (ov.scale)    model.scale.set(ov.scale.x, ov.scale.y, ov.scale.z);
+                        if (ov.customRoughness !== undefined) {
+                            model.userData.customRoughness = ov.customRoughness;
+                            model.traverse(child => {
+                                if (child.isMesh && child.material) { child.material.roughness = ov.customRoughness; child.material.needsUpdate = true; }
+                            });
+                        }
+                        ['customBrightness','customExposure','customContrast','customOffset','customGamma'].forEach(k => {
+                            if (ov[k] !== undefined) model.userData[k] = ov[k];
+                        });
+                        if (typeof applyVisualSettings === 'function') applyVisualSettings(model);
+                        console.log(`🎨 Sas override appliqué : ${name}`);
+                    }
+
+                    scene.add(model);
+                    importedObjects.push(model);
+                    selectableObjects.push(model);
+                    model.traverse(child => {
+                        if (child.isMesh && !selectableObjects.includes(child)) selectableObjects.push(child);
+                    });
+                    initialTransforms.set(model, {
+                        position: model.position.clone(),
+                        rotation: model.rotation.clone(),
+                        scale: model.scale.clone()
+                    });
+                    console.log(`✅ Sas permanent chargé : ${name}`);
+                    scheduleUpdateObjectsList();
+                }, undefined, err => {
+                    console.warn(`⚠️ Impossible de charger ${name} :`, err);
+                });
+            })
+            .catch(err => console.warn(`⚠️ Fetch binaire impossible pour ${name} :`, err));
+    });
 }
 
 // ========== SCENE 3D ==========
@@ -678,12 +869,6 @@ async function initEditorPanel() {
     const collapseBtn = document.getElementById('toggle-panel-collapse');
     if (collapseBtn) collapseBtn.style.display = 'block';
 
-    // Cacher le switch Jeu/Développeur dans le panneau (pas de mode jeu dans l'éditeur)
-    const modeSwitch = document.getElementById('interaction-mode-switch');
-    if (modeSwitch) {
-        modeSwitch.parentElement.style.display = 'none';
-    }
-
     // Dans editor.html, l'éditeur est TOUJOURS actif.
     // Empêcher toggleEditor() de désactiver editorMode.
     const toggleBtn = document.getElementById('toggle-editor-btn');
@@ -730,15 +915,6 @@ function addEditorUIElements() {
                 btnImg.src = 'icones/circle-chevron-right.svg';
             }
         });
-    }
-
-    // Pas de switch Jeu/Développeur dans l'éditeur — mode développeur permanent
-    // Le floating-mode-switch est créé vide pour éviter les erreurs dans editor-core.js
-    if (!document.getElementById('floating-mode-switch')) {
-        const sw = document.createElement('div');
-        sw.id = 'floating-mode-switch';
-        sw.style.display = 'none';
-        document.body.appendChild(sw);
     }
 
     // Étiquette dimensions

@@ -439,6 +439,10 @@ async function saveProject() {
 
         // 7. Aussi sauvegarder dans localStorage (backup/compatibilité)
         saveFloorPlan();
+        // Synchroniser explicitement lumières et objets dans localStorage
+        // (normalement écrits à chaque modification, mais s'assurer qu'ils sont à jour au Save)
+        saveCustomLightsToStorage();
+        saveImportedObjectsToStorage();
 
         markAsSaved();
         console.log(`💾 Projet sauvegardé ! (${wallsData.length} murs, ${roomsData.length} pièces, ${floorTilesData.length} dalles sol, ${ceilingTilesData.length} dalles plafond, ${floorPolygonsData.length} polygones sol, ${ceilingPolygonsData.length} polygones plafond, ${objectsData.length} objets, ${lightsData.length} lumières)`);
@@ -455,6 +459,139 @@ async function saveProject() {
         }
         markAsSaved();
         console.log('💾 Projet partiellement sauvegardé (localStorage uniquement)');
+    }
+}
+
+// ==================== EXPORT SCENE_DATA ====================
+/**
+ * Génère un project.json à jour incluant les données localStorage (lumières, objets)
+ * et le déclenche en téléchargement. L'utilisateur place ce fichier dans scene_data/
+ * pour que sas_securite.html le lise même après un clear cache.
+ */
+async function generateSceneDataDownload() {
+    try {
+        // S'assurer que localStorage est à jour
+        saveFloorPlan();
+        saveCustomLightsToStorage();
+        saveImportedObjectsToStorage();
+
+        // Charger le projet depuis IndexedDB
+        const projectData = await RoomEditorDB.get(RoomEditorDB.STORE_PROJECTS, 'project_' + currentRoomName);
+        if (!projectData) {
+            alert('⚠️ Aucun projet sauvegardé dans IndexedDB.\nSauvegardez d\'abord avec le bouton Enregistrer.');
+            return;
+        }
+
+        // Collecter les clés localStorage pertinentes
+        const lsSnapshot = {};
+        const lsKeys = [
+            'floorPlan_' + currentRoomName,
+            currentRoomName + '_customLights',
+            currentRoomName + '_importedObjects'
+        ];
+        lsKeys.forEach(function(key) {
+            var val = localStorage.getItem(key);
+            if (val) lsSnapshot[key] = val;
+        });
+
+        // Lister les blobIds référencés (GLB et textures)
+        const blobIds = [];
+        if (projectData.importedObjects) {
+            projectData.importedObjects.forEach(function(obj) {
+                if (obj.fileDataBlobId && !blobIds.includes(obj.fileDataBlobId)) blobIds.push(obj.fileDataBlobId);
+            });
+        }
+        if (projectData.walls) {
+            projectData.walls.forEach(function(w) {
+                if (w.textureInfo) {
+                    ['blobId','normalBlobId','roughnessBlobId'].forEach(function(k) {
+                        if (w.textureInfo[k] && !blobIds.includes(w.textureInfo[k])) blobIds.push(w.textureInfo[k]);
+                    });
+                }
+            });
+        }
+        if (projectData.floorTiles) {
+            projectData.floorTiles.forEach(function(t) {
+                if (t.textureBlobId && !blobIds.includes(t.textureBlobId)) blobIds.push(t.textureBlobId);
+            });
+        }
+
+        const manifest = {
+            generatedAt: new Date().toISOString(),
+            room: currentRoomName,
+            project: projectData,
+            localStorage: lsSnapshot,
+            blobIds: blobIds
+        };
+
+        // Helper : déclenche un téléchargement JSON
+        function triggerDownload(filename, jsonData) {
+            const blob = new Blob([JSON.stringify(jsonData, null, 2)], { type: 'application/json' });
+            const dlUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = dlUrl;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(function() { URL.revokeObjectURL(dlUrl); }, 2000);
+        }
+
+        // 1) Télécharger project.json
+        triggerDownload('project.json', manifest);
+
+        // 2) Télécharger chaque blob → fichiers à placer dans scene_data/blobs/
+        let blobsExported = 0;
+        let blobsFailed = 0;
+        for (let i = 0; i < blobIds.length; i++) {
+            const blobId = blobIds[i];
+            try {
+                // Lire le blob directement dans IndexedDB (sans passer par le fallback fetch)
+                const blobRecord = await new Promise(function(resolve, reject) {
+                    const req = indexedDB.open('RoomEditorDB', 1);
+                    req.onsuccess = function(ev) {
+                        const db = ev.target.result;
+                        try {
+                            const tx = db.transaction('blobs', 'readonly');
+                            const store = tx.objectStore('blobs');
+                            const getReq = store.get(blobId);
+                            getReq.onsuccess = function() { resolve(getReq.result); };
+                            getReq.onerror = function() { resolve(null); };
+                        } catch(e) { resolve(null); }
+                    };
+                    req.onerror = function() { resolve(null); };
+                });
+
+                if (blobRecord && blobRecord.data) {
+                    // Délai progressif pour que le navigateur ne bloque pas les téléchargements multiples
+                    await new Promise(function(resolve) { setTimeout(resolve, 300 * (i + 1)); });
+                    triggerDownload(blobId + '.json', blobRecord);
+                    blobsExported++;
+                    console.log('📦 Blob exporté : ' + blobId);
+                } else {
+                    console.warn('⚠️ Blob ' + blobId + ' absent d\'IndexedDB — non exporté');
+                    blobsFailed++;
+                }
+            } catch (e) {
+                console.warn('⚠️ Erreur export blob ' + blobId + ':', e);
+                blobsFailed++;
+            }
+        }
+
+        console.log('📥 Export terminé — project.json + ' + blobsExported + ' blob(s).');
+        const blobMsg = blobsFailed > 0
+            ? '\n⚠️ ' + blobsFailed + ' blob(s) non exporté(s) — ces objets se chargeront depuis leurs URLs statiques.'
+            : '';
+        alert('✅ Export terminé !\n\n' +
+              '• project.json (1 fichier)\n' +
+              '• blob_*.json (' + blobsExported + ' fichier(s))\n' +
+              blobMsg +
+              '\n\nÀ placer dans :\n' +
+              '  scene_data/project.json\n' +
+              '  scene_data/blobs/blob_*.json');
+    } catch (e) {
+        console.error('❌ Erreur génération scene_data:', e);
+        alert('❌ Erreur : ' + e.message);
     }
 }
 
@@ -1112,6 +1249,35 @@ async function loadProjectFromIndexedDB(projectData) {
     }
 
     // 5. Restaurer les objets importés
+    // Dédupliquer par fileName AVANT de restaurer (évite les doublons arcade si sauvegardés 2 fois)
+    if (projectData.importedObjects) {
+        const seenFileNames = new Set();
+        const deduped = [];
+        for (const obj of projectData.importedObjects) {
+            const fname = obj.fileName;
+            if (fname && fname !== '__rug__') {
+                if (seenFileNames.has(fname)) {
+                    console.warn(`⚠️ Doublon IDB ignoré : "${obj.editorName}" (${fname})`);
+                    continue;
+                }
+                seenFileNames.add(fname);
+            }
+            deduped.push(obj);
+        }
+        projectData.importedObjects = deduped;
+    }
+
+    // Marquer les editorNames ET fileNames avec blob pour que loadSasSecuriteObjects() ne double-charge pas
+    window._idbPendingObjects = new Set();   // par editorName
+    window._idbPendingFileNames = new Set(); // par fileName
+    if (projectData.importedObjects) {
+        projectData.importedObjects.forEach(function(obj) {
+            if (obj.editorName && obj.fileDataBlobId) {
+                window._idbPendingObjects.add(obj.editorName);
+                if (obj.fileName) window._idbPendingFileNames.add(obj.fileName);
+            }
+        });
+    }
     if (projectData.importedObjects && projectData.importedObjects.length > 0) {
         for (const objData of projectData.importedObjects) {
             await restoreImportedObject(objData);
@@ -2160,8 +2326,25 @@ function loadObjectFromURL(url, data) {
                 importedCharacters.push(model);
             }
 
+            // Anti-doublon final : si un objet du même nom OU du même fichier est déjà en scène, ignorer
+            const existingDuplicate = importedObjects.find(o =>
+                o.userData.editorName === data.editorName ||
+                (data.fileName && data.fileName !== '__rug__' && o.userData.fileName === data.fileName)
+            );
+            if (existingDuplicate) {
+                console.warn(`⚠️ Doublon détecté pour "${data.editorName}" (${data.fileName}) — suppression du fantôme IndexedDB`);
+                // model n'a pas encore été ajouté à scene, inutile de le retirer
+                if (window._idbPendingObjects) window._idbPendingObjects.delete(data.editorName);
+                if (window._idbPendingFileNames && data.fileName) window._idbPendingFileNames.delete(data.fileName);
+                return;
+            }
+
             scene.add(model);
             importedObjects.push(model);
+
+            // Retirer des Sets en attente IndexedDB (utilisé par loadSasSecuriteObjects())
+            if (window._idbPendingObjects) window._idbPendingObjects.delete(data.editorName);
+            if (window._idbPendingFileNames && data.fileName) window._idbPendingFileNames.delete(data.fileName);
 
             // Rendre sélectionnable
             selectableObjects.push(model);
