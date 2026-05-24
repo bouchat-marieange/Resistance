@@ -985,105 +985,90 @@ function loadPermanentObjects() {
         // Chargement depuis l'URL — extrait en inner function pour être appelé
         // aussi en fallback si le blob IndexedDB est manquant.
         function _doLoadFromUrl() {
-            fetch(url)
-                .then(response => response.arrayBuffer())
-                .then(buffer => {
-                    // Convertir en base64 pour la sauvegarde
-                    const bytes = new Uint8Array(buffer);
-                    let binary = '';
-                    for (let i = 0; i < bytes.byteLength; i++) {
-                        binary += String.fromCharCode(bytes[i]);
-                    }
-                    const fileDataBase64 = 'data:model/gltf-binary;base64,' + btoa(binary);
+            // Chargement direct via loader (supporte Draco via sharedGLTFLoader).
+            // On ne passe PAS par fetch()+btoa() : pour les gros fichiers (>1 Mo),
+            // la boucle de conversion base64 gèle le thread JS et le .catch() masque
+            // l'erreur → loader.load() n'est jamais appelé et l'objet reste absent.
+            loader.load(
+                url,
+                function(gltf) {
+                    const model = gltf.scene;
 
-                    // Maintenant charger le modèle
-                    loader.load(
-                        url,
-                        function(gltf) {
-                            const model = gltf.scene;
+                    // Appliquer les coordonnées par défaut
+                    model.position.set(defaultPos.x, defaultPos.y, defaultPos.z);
+                    model.rotation.set(defaultRot.x, defaultRot.y, defaultRot.z);
+                    model.scale.set(defaultScale.x, defaultScale.y, defaultScale.z);
 
-                            // Appliquer les coordonnées par défaut
-                            model.position.set(defaultPos.x, defaultPos.y, defaultPos.z);
-                            model.rotation.set(defaultRot.x, defaultRot.y, defaultRot.z);
-                            model.scale.set(defaultScale.x, defaultScale.y, defaultScale.z);
-
-                            // Configurer les ombres et matériaux
-                            model.traverse((child) => {
-                                if (child.isMesh) {
-                                    child.castShadow = true;
-                                    child.receiveShadow = true;
-                                    if (child.material) {
-                                        if (child.material.type === 'MeshBasicMaterial') {
-                                            const oldMaterial = child.material;
-                                            child.material = new THREE.MeshStandardMaterial({
-                                                color: oldMaterial.color,
-                                                map: oldMaterial.map,
-                                                roughness: 0.7,
-                                                metalness: 0.1
-                                            });
-                                        }
-                                        // Correction critique : metalness=1 rend les objets comme des miroirs noirs
-                                        if (child.material.metalness === 1) child.material.metalness = 0;
-                                        // Correction encodage texture : assure que les couleurs s'affichent correctement
-                                        if (child.material.map) { child.material.map.encoding = THREE.sRGBEncoding; child.material.map.needsUpdate = true; }
-                                        if (child.material.aoMap) child.material.aoMapIntensity = 0.3;
-                                        child.material.needsUpdate = true;
-                                    }
+                    // Configurer les ombres et matériaux
+                    model.traverse((child) => {
+                        if (child.isMesh) {
+                            child.castShadow = true;
+                            child.receiveShadow = true;
+                            if (child.material) {
+                                if (child.material.type === 'MeshBasicMaterial') {
+                                    const oldMaterial = child.material;
+                                    child.material = new THREE.MeshStandardMaterial({
+                                        color: oldMaterial.color,
+                                        map: oldMaterial.map,
+                                        roughness: 0.7,
+                                        metalness: 0.1
+                                    });
                                 }
-                            });
-
-                            // Marquer le modèle - IMPORTANT: ajouter fileData et isImported
-                            model.userData.editorName = name;
-                            model.userData.isImported = true;
-                            model.userData.fileName = url.split('/').pop();
-                            model.userData.fileData = fileDataBase64; // Pour la sauvegarde
-
-                            // Appliquer les overrides localStorage si présents
-                            // (position/matériaux sauvegardés depuis l'éditeur, chemin fallback localStorage)
-                            _applyPermanentOverride(model, name);
-
-                            scene.add(model);
-
-                            // Ajouter à importedObjects pour la sauvegarde
-                            importedObjects.push(model);
-
-                            // Ajouter aux objets sélectionnables
-                            selectableObjects.push(model);
-                            model.traverse((child) => {
-                                if (child.isMesh) {
-                                    child.userData.editorName = name;
-                                    selectableObjects.push(child);
-                                }
-                            });
-
-                            // Sauvegarder l'état initial
-                            initialTransforms.set(model, {
-                                position: model.position.clone(),
-                                rotation: model.rotation.clone(),
-                                scale: model.scale.clone()
-                            });
-
-                            console.log(`✅ ${name} chargé et positionné`);
-
-                            if (typeof onLoaded === 'function') onLoaded(model);
-
-                            // Mettre à jour la liste éditeur quelle que soit la valeur d'editorMode
-                            // (l'objet peut finir de charger après que l'éditeur ait été ouvert)
-                            if (typeof scheduleUpdateObjectsList === 'function') {
-                                scheduleUpdateObjectsList();
-                            } else if (typeof updateObjectsList === 'function') {
-                                updateObjectsList();
+                                // Correction critique : metalness=1 rend les objets comme des miroirs noirs
+                                if (child.material.metalness === 1) child.material.metalness = 0;
+                                // Correction encodage texture
+                                if (child.material.map) { child.material.map.encoding = THREE.sRGBEncoding; child.material.map.needsUpdate = true; }
+                                if (child.material.aoMap) child.material.aoMapIntensity = 0.3;
+                                child.material.needsUpdate = true;
                             }
-                        },
-                        undefined,
-                        function(error) {
-                            console.log(`ℹ️ ${url.split('/').pop()} non trouvé (normal si non importé)`);
                         }
-                    );
-                })
-                .catch(err => {
-                    console.log(`ℹ️ Impossible de charger ${url}: ${err.message}`);
-                });
+                    });
+
+                    // Marquer le modèle
+                    model.userData.editorName = name;
+                    model.userData.isImported = true;
+                    model.userData.fileName = url.split('/').pop();
+                    // Note : pas de fileData (pas de btoa) — objets permanents rechargés depuis URL
+
+                    // Appliquer les overrides localStorage si présents
+                    _applyPermanentOverride(model, name);
+
+                    scene.add(model);
+
+                    // Ajouter à importedObjects pour la sauvegarde
+                    importedObjects.push(model);
+
+                    // Ajouter aux objets sélectionnables
+                    selectableObjects.push(model);
+                    model.traverse((child) => {
+                        if (child.isMesh) {
+                            child.userData.editorName = name;
+                            selectableObjects.push(child);
+                        }
+                    });
+
+                    // Sauvegarder l'état initial
+                    initialTransforms.set(model, {
+                        position: model.position.clone(),
+                        rotation: model.rotation.clone(),
+                        scale: model.scale.clone()
+                    });
+
+                    console.log(`✅ ${name} chargé depuis URL`);
+
+                    if (typeof onLoaded === 'function') onLoaded(model);
+
+                    if (typeof scheduleUpdateObjectsList === 'function') {
+                        scheduleUpdateObjectsList();
+                    } else if (typeof updateObjectsList === 'function') {
+                        updateObjectsList();
+                    }
+                },
+                undefined,
+                function(error) {
+                    console.warn(`❌ Erreur chargement permanent "${name}" depuis ${url.split('/').pop()}:`, error);
+                }
+            );
         }
 
         if ((window._idbPendingObjects && window._idbPendingObjects.has(name)) ||
