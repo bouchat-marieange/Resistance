@@ -515,6 +515,16 @@ async function generateSceneDataDownload() {
                 if (t.textureBlobId && !blobIds.includes(t.textureBlobId)) blobIds.push(t.textureBlobId);
             });
         }
+        if (projectData.floorPolygons) {
+            projectData.floorPolygons.forEach(function(t) {
+                if (t.textureBlobId && !blobIds.includes(t.textureBlobId)) blobIds.push(t.textureBlobId);
+            });
+        }
+        if (projectData.ceilingPolygons) {
+            projectData.ceilingPolygons.forEach(function(t) {
+                if (t.textureBlobId && !blobIds.includes(t.textureBlobId)) blobIds.push(t.textureBlobId);
+            });
+        }
 
         const manifest = {
             generatedAt: new Date().toISOString(),
