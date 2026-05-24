@@ -1234,6 +1234,29 @@ function loadPermanentObjects() {
         { x: 0.705, y: 0.705, z: 0.705 }
     );
 
+    // Porte industrielle d'entrée (derrière le joueur — côté Bruxelles Dystopique)
+    loadPermanentObject(
+        resolveURL('3D/objet/porte-industrielle.glb'),
+        'Porte entrée',
+        { x: 2.309, y: 0, z: -39.948 },
+        { x: 0, y: -0.0255, z: 0 },
+        { x: 0.00873, y: 0.00873, z: 0.00873 },
+        function(model) {
+            interactionZones.push({
+                id: 'porte-entree-bruxelles',
+                surfaceMode: 'object',
+                objectRef: { editorName: 'Porte entrée' },
+                actionType: 'link',
+                actionValue: 'bruxelles_dystopique.html',
+                customName: '← Retour — Bruxelles Dystopique',
+                triggerType: 'click',
+                bounds: { minX: 0.0, maxX: 4.6, minZ: -42.0, maxZ: -37.5 },
+                y: 1.5
+            });
+            console.log('🚪 Porte entrée (Bruxelles Dystopique) enregistrée');
+        }
+    );
+
     // Borne d'arcade AI Mythology (y relevé pour éviter de s'enfoncer dans le sol)
     loadPermanentObject(
         resolveURL('3D/arcade-ai-mythology.glb'),
