@@ -11,10 +11,11 @@
  */
 var TutorialManager = (function () {
 
-    var LS_SKIP_KEY = 'resistance_tutorial_skip_v2';
-    // sessionStorage : évite que le tutoriel réapparaisse après une navigation
-    // (ex : vidéo Naby → retour sur sas_securite.html dans le même onglet)
-    var SS_ONCE_KEY = 'resistance_tutorial_once_v2';
+    var LS_SKIP_KEY  = 'resistance_tutorial_skip_v2';
+    // Flag par page-load : init() ne peut se déclencher qu'une seule fois
+    // par chargement de page, quelle que soit la navigation dans l'onglet.
+    var _initCalled  = false;
+    var _suspended   = false; // mis à true pendant une vidéo cinématique
 
     // Ordre des étapes (données légères — la logique est dans les _run* functions)
     var STEPS = [
@@ -718,13 +719,24 @@ var TutorialManager = (function () {
 
     // ── API publique ────────────────────────────────────────────────────────
     function init() {
+        // Une seule activation par chargement de page (flag module-level)
+        if (_initCalled) return;
         // Ne jamais afficher si l'utilisateur a coché "ne plus afficher"
         if (localStorage.getItem(LS_SKIP_KEY) === 'true') return;
-        // Ne jamais afficher une 2e fois dans le même onglet/session
-        // (évite le retour après vidéo Naby ou toute navigation interne)
-        if (sessionStorage.getItem(SS_ONCE_KEY) === 'true') return;
-        sessionStorage.setItem(SS_ONCE_KEY, 'true');
+        _initCalled = true;
         setTimeout(showTutorial, 700);
+    }
+
+    // Suspend : appelé par showVideoOverlay() pour désactiver les éléments
+    // de tutoriel pendant une vidéo cinématique (Naby, etc.)
+    function suspend() {
+        _suspended = true;
+        _cleanupAll();
+    }
+
+    // Resume : appelé si besoin après fermeture de la vidéo
+    function resume() {
+        _suspended = false;
     }
 
     // Suspend le tutoriel proprement (appelé quand une vidéo ou interaction démarre)
@@ -741,10 +753,12 @@ var TutorialManager = (function () {
         showTutorial   : showTutorial,
         startOnboarding: _startOnboarding,
         suspend        : _suspend,
+        suspend        : suspend,
+        resume         : resume,
         reset          : function () {
-            _suspended = false;
+            _initCalled = false;
+            _suspended  = false;
             localStorage.removeItem(LS_SKIP_KEY);
-            sessionStorage.removeItem(SS_ONCE_KEY);
             showTutorial();
         }
     };
