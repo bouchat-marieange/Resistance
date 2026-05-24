@@ -2097,6 +2097,9 @@ function executeZoneAction(zone) {
 function showVideoOverlay(url, zone) {
     if (!url) return;
     _currentCinematicZone = zone || null;
+    // Suspendre le tutoriel : évite que les bulles/spots restent visibles
+    // au-dessus de la vidéo ou réapparaissent à la sortie du plein écran
+    if (typeof TutorialManager !== 'undefined') TutorialManager.suspend();
     const overlay = document.getElementById('video-overlay');
     const video = document.getElementById('overlay-video-player');
     const iframe = document.getElementById('video-iframe');
@@ -2167,6 +2170,10 @@ function closeVideoOverlay() {
     _currentCinematicZone = null;
     if (typeof clock !== 'undefined') clock.getDelta();
     _unmuteGameAudio();
+    // Réactiver le tutoriel (les watchers peuvent reprendre si nécessaire)
+    if (typeof TutorialManager !== 'undefined' && typeof TutorialManager.resume === 'function') {
+        TutorialManager.resume();
+    }
     setTimeout(() => { _closingVideoOverlay = false; }, 200);
 }
 

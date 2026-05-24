@@ -288,6 +288,7 @@ var TutorialManager = (function () {
     }
 
     function _showStep() {
+        if (_suspended) return; // ne pas spawner d'étape si vidéo en cours
         _cleanupAll();
         if (_step >= STEPS.length) { _finish(); return; }
         var s = STEPS[_step];
@@ -457,6 +458,7 @@ var TutorialManager = (function () {
                 // Phase 2 : attendre fin de la transition CSS (350ms) AVANT de mesurer
                 // getBoundingClientRect() pendant la transition retourne les dimensions collapsed
                 setTimeout(function () {
+                    if (_suspended) return; // vidéo lancée entre temps → on abandonne
                     _spawnMapCloseTip('Pour fermer : <kbd>M</kbd> ou clique sur ×');
                 }, 420);
                 // Attendre fermeture
@@ -466,6 +468,7 @@ var TutorialManager = (function () {
                         return hud && hud.classList.contains('collapsed');
                     },
                     function () {
+                        if (_suspended) return;
                         _canInteract = false;
                         _cleanupAll();
                         onDone();
@@ -496,6 +499,7 @@ var TutorialManager = (function () {
                 return false;
             },
             function () {
+                if (_suspended) return;
                 // Phase 2 : tip aligné avec le bouton ×
                 _spawnNotebookCloseTip('Pour fermer : <kbd>J</kbd>, <kbd>Échap</kbd> ou clique sur ×');
                 // Attendre fermeture
@@ -507,6 +511,7 @@ var TutorialManager = (function () {
                         return true;
                     },
                     function () {
+                        if (_suspended) return;
                         _canInteract = false;
                         _cleanupAll();
                         onDone();
@@ -692,6 +697,7 @@ var TutorialManager = (function () {
 
     // ── Avance + nettoyage ──────────────────────────────────────────────────
     function _advance() {
+        if (_suspended) return; // ne pas progresser si vidéo en cours
         _canInteract = false;
         _cleanupAll();
         _step++;
@@ -727,25 +733,21 @@ var TutorialManager = (function () {
         setTimeout(showTutorial, 700);
     }
 
-    // Suspend : appelé par showVideoOverlay() pour désactiver les éléments
-    // de tutoriel pendant une vidéo cinématique (Naby, etc.)
-    function suspend() {
-        _suspended = true;
-        _cleanupAll();
-    }
-
-    // Resume : appelé si besoin après fermeture de la vidéo
-    function resume() {
-        _suspended = false;
-    }
-
-    // Suspend le tutoriel proprement (appelé quand une vidéo ou interaction démarre)
-    // Les watchers _watchUntil en cours s'arrêtent au prochain tick.
+    // Suspend proprement le tutoriel (appelé par showVideoOverlay pour Naby, etc.)
+    // Stoppe tous les watchers et retire les éléments DOM du tutoriel.
     function _suspend() {
-        _suspended = true;
+        _suspended   = true;
         _canInteract = false;
-        _step = -1;
+        _step        = -1;   // reset complet de la progression
         _cleanupAll();
+        // Retirer aussi le modal tutoriel s'il est encore ouvert
+        var overlay = document.getElementById('tuto-overlay');
+        if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
+    }
+
+    // Resume : réactive les watchers après fermeture de la vidéo
+    function _resume() {
+        _suspended = false;
     }
 
     return {
@@ -753,11 +755,11 @@ var TutorialManager = (function () {
         showTutorial   : showTutorial,
         startOnboarding: _startOnboarding,
         suspend        : _suspend,
-        suspend        : suspend,
-        resume         : resume,
+        resume         : _resume,
         reset          : function () {
             _initCalled = false;
             _suspended  = false;
+            _step       = -1;
             localStorage.removeItem(LS_SKIP_KEY);
             showTutorial();
         }

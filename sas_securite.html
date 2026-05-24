@@ -2532,6 +2532,10 @@ setTimeout(async () => {
         // Reconstruire la scène (murs, objets, lumières, zones)
         await loadProjectOnStartup();
 
+        // Charger les objets permanents (dont la porte d'entrée)
+        // Anti-doublon intégré : les objets déjà en scène (depuis IDB) sont ignorés
+        loadPermanentObjects();
+
         // Charger Naby
         try {
             await loadAnimatedCharacter();
