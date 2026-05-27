@@ -287,9 +287,13 @@
             '.nb-room-btn.locked {',
             '  opacity: 0.4; cursor: not-allowed;',
             '}',
+            '.nb-room-btn.current {',
+            '  background: rgba(0,229,255,0.10); border-color: rgba(0,229,255,0.45);',
+            '}',
             '.nb-room-status { font-size: 11px; font-weight: 700; }',
             '.nb-room-status.ok { color: #39ff14; }',
             '.nb-room-status.no { color: #666; }',
+            '.nb-room-status.current { color: #00e5ff; }',
 
             // ---- Right page : room title + character chip ----
             '.nb-room-title {',
@@ -547,14 +551,29 @@
             { id: 'sas_securite',         title: 'Sas de sécurité — Naby', file: 'sas_securite.html' }
         ];
         var validated = _loadSet('rooms_validated');
-        rooms.forEach(function (r) {
+        var visible = rooms.filter(function (r) {
+            return r.id === _currentRoom.id || validated.has(r.id);
+        });
+        if (visible.length === 0) {
+            var empty = document.createElement('p');
+            empty.style.cssText = 'color:#aaa;font-size:0.85em;margin:8px 0;';
+            empty.textContent = 'Aucune pièce déverrouillée pour l\'instant.';
+            list.appendChild(empty);
+            return;
+        }
+        visible.forEach(function (r) {
             var btn = document.createElement('button');
+            var isCurrent = r.id === _currentRoom.id;
             var ok = validated.has(r.id);
-            btn.className = 'nb-room-btn' + (ok ? ' validated' : ' locked');
-            btn.innerHTML = '<span>' + r.title + '</span>' +
-                '<span class="nb-room-status ' + (ok ? 'ok' : 'no') + '">' +
-                (ok ? '✓ débloqué' : '— verrouillé') + '</span>';
-            if (ok) {
+            if (isCurrent) {
+                btn.className = 'nb-room-btn current';
+                btn.innerHTML = '<span>' + r.title + '</span>' +
+                    '<span class="nb-room-status current">▶ en cours</span>';
+                btn.style.cursor = 'default';
+            } else {
+                btn.className = 'nb-room-btn validated';
+                btn.innerHTML = '<span>' + r.title + '</span>' +
+                    '<span class="nb-room-status ok">✓ débloqué</span>';
                 btn.addEventListener('click', function () {
                     window.location.href = r.file;
                 });

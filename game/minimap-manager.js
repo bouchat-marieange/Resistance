@@ -324,30 +324,35 @@
         var cw = _content.offsetWidth || vpW;
         var ch = _content.offsetHeight || vpH;
 
+        // En mode follow, le joueur est affiché à 75 % du haut du viewport
+        // (au lieu de 50 %) pour que la salle soit visible au-dessus de lui.
+        var FOLLOW_Y_RATIO = 0.75;
+
         var tx, ty;
         if (_followPlayer) {
-            // Positionner la carte pour que le joueur soit au centre du viewport
             var playerInContentX = (_playerMapPct.x / 100) * cw;
             var playerInContentY = (_playerMapPct.y / 100) * ch;
-            tx = vpW / 2 - playerInContentX * _zoom;
-            ty = vpH / 2 - playerInContentY * _zoom;
+            tx = vpW / 2          - playerInContentX * _zoom;
+            ty = vpH * FOLLOW_Y_RATIO - playerInContentY * _zoom;
         } else {
-            // Mode libre : carte centree + pan manuel
+            // Mode libre : carte centrée + pan manuel
             tx = (vpW - cw * _zoom) / 2 + _panX;
             ty = (vpH - ch * _zoom) / 2 + _panY;
         }
         _content.style.transform = 'translate(' + tx + 'px, ' + ty + 'px) scale(' + _zoom + ')';
 
-        // Rotation du rotator : seulement en mode follow
-        // + contre-rotation des POI pour qu'ils restent droits (le `?` ne doit pas s'inverser).
+        // Rotation boussole : la carte tourne avec le yaw du joueur (direction toujours en haut).
+        // Le pivot de rotation est aligné sur la position écran du joueur
+        // (50 % en X, FOLLOW_Y_RATIO en Y en mode follow ; centre en mode libre).
         if (_rotator) {
             var rotRad = 0;
             if (_followPlayer) {
                 rotRad = _rotationSign * _playerWorld.yaw + _rotationOffset;
-                _rotator.style.transform = 'rotate(' + rotRad + 'rad)';
+                _rotator.style.transformOrigin = '50% ' + (FOLLOW_Y_RATIO * 100) + '%';
             } else {
-                _rotator.style.transform = 'rotate(0rad)';
+                _rotator.style.transformOrigin = '50% 50%';
             }
+            _rotator.style.transform = 'rotate(' + rotRad + 'rad)';
             if (_poisLayer) {
                 _poisLayer.style.setProperty('--mm-poi-rot', (-rotRad) + 'rad');
             }
@@ -358,7 +363,7 @@
             if (_followPlayer) {
                 _playerMarker.classList.remove('free');
                 _playerMarker.style.left = '50%';
-                _playerMarker.style.top = '50%';
+                _playerMarker.style.top = (FOLLOW_Y_RATIO * 100) + '%';
             } else {
                 _playerMarker.classList.add('free');
                 // En mode libre, on veut que le curseur suive sa position sur la carte.

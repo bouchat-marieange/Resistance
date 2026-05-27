@@ -263,7 +263,7 @@
         var portraitEl = document.getElementById('dialogue-portrait-img');
         var nameEl = document.getElementById('dialogue-char-name');
         if (tree.portrait) {
-            portraitEl.style.backgroundImage = 'url(' + tree.portrait + ')';
+            portraitEl.style.backgroundImage = 'url("' + tree.portrait + '")';
             portraitEl.textContent = '';
         } else {
             portraitEl.style.backgroundImage = '';

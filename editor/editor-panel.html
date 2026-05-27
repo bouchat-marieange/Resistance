@@ -299,6 +299,23 @@
                 </div>
                 <input type="range" id="gamma-slider" min="0.3" max="2.5" step="0.05" value="1.0" class="range range-xs" disabled />
             </div>
+            <!-- Transparence — désactivée par défaut, case à cocher pour activer -->
+            <div class="mb-2 mt-2 border border-base-300 rounded p-1.5">
+                <div class="text-[9px] font-semibold mb-1 flex items-center gap-1.5">
+                    <input type="checkbox" id="opacity-enabled-checkbox" class="checkbox checkbox-xs checkbox-warning" disabled />
+                    <label for="opacity-enabled-checkbox" class="cursor-pointer select-none">
+                        Transparence : <span id="opacity-value">100%</span>
+                    </label>
+                    <span class="text-[8px] text-base-content/60 ml-auto">0%=Invisible</span>
+                </div>
+                <input type="range" id="opacity-slider" min="0" max="100" step="1" value="100" class="range range-xs range-warning opacity-40" disabled />
+                <div class="flex justify-between text-[8px] text-base-content/60 mt-0.5">
+                    <span>Invisible</span>
+                    <span>50% translucide</span>
+                    <span>Opaque</span>
+                </div>
+                <div class="text-[8px] text-base-content/60 italic mt-0.5">⚠️ Cocher pour activer</div>
+            </div>
             <div class="text-[8px] text-base-content/60 italic">
                 💡 Sélectionne un objet importé pour ajuster
             </div>

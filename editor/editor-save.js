@@ -61,6 +61,14 @@ function applyVisualSettings(object) {
 
         // Appliquer
         mat.color.setRGB(r, g, b);
+
+        // --- Transparence ---
+        var opacity = object.userData.customOpacity;
+        if (opacity !== undefined) {
+            mat.transparent = opacity < 1.0;
+            mat.opacity = opacity;
+        }
+
         mat.needsUpdate = true;
     });
 }
@@ -320,6 +328,7 @@ async function saveProject() {
                     customContrast: obj.userData.customContrast,
                     customOffset: obj.userData.customOffset,
                     customGamma: obj.userData.customGamma,
+                    customOpacity: obj.userData.customOpacity,
                     isCharacter: obj.userData.isCharacter || false,
                     armatureScaleY: obj.userData.armatureScaleY || 1,
                     fileDataBlobId: blobId
@@ -336,6 +345,7 @@ async function saveProject() {
             .map(light => {
                 const data = {
                     type: light.userData.type,
+                    name: light.userData.name || '',
                     position: { x: light.position.x, y: light.position.y, z: light.position.z },
                     color: '#' + light.color.getHexString(),
                     intensity: light.intensity,
@@ -382,8 +392,9 @@ async function saveProject() {
             ceilingPolygons: ceilingPolygonsData,
             importedObjects: objectsData,
             lights: lightsData,
-            // Intensité de la lumière ambiante par défaut
+            // Intensité + nom de la lumière ambiante par défaut
             ambientLightIntensity: window.defaultAmbientLight ? window.defaultAmbientLight.intensity : 0.7,
+            ambientLightName: window.defaultAmbientLight ? (window.defaultAmbientLight.userData.name || '') : '',
             // Transform de Naby (personnage animé)
             nabyTransform: babyModel ? {
                 position: { x: babyModel.position.x, y: babyModel.position.y, z: babyModel.position.z },
@@ -394,7 +405,8 @@ async function saveProject() {
                 customExposure: babyModel.userData.customExposure,
                 customContrast: babyModel.userData.customContrast,
                 customOffset: babyModel.userData.customOffset,
-                customGamma: babyModel.userData.customGamma
+                customGamma: babyModel.userData.customGamma,
+                customOpacity: babyModel.userData.customOpacity
             } : null,
             // Position de départ du joueur
             spawn: spawnSaved && spawnPosition ? {
@@ -550,6 +562,10 @@ async function generateSceneDataDownload() {
         // 1) Télécharger project.json
         triggerDownload('project.json', manifest);
 
+        // 1b) Télécharger version.json (timestamp uniquement — utilisé par bootstrapFromFiles())
+        const versionData = { timestamp: manifest.project ? manifest.project.timestamp : Date.now() };
+        triggerDownload('version.json', versionData);
+
         // 2) Télécharger chaque blob → fichiers à placer dans scene_data/blobs/
         let blobsExported = 0;
         let blobsFailed = 0;
@@ -594,10 +610,12 @@ async function generateSceneDataDownload() {
             : '';
         alert('✅ Export terminé !\n\n' +
               '• project.json (1 fichier)\n' +
+              '• version.json (1 fichier)\n' +
               '• blob_*.json (' + blobsExported + ' fichier(s))\n' +
               blobMsg +
               '\n\nÀ placer dans :\n' +
               '  scene_data/project.json\n' +
+              '  scene_data/version.json\n' +
               '  scene_data/blobs/blob_*.json');
     } catch (e) {
         console.error('❌ Erreur génération scene_data:', e);
@@ -704,17 +722,8 @@ async function loadProjectOnStartup() {
     const idbTimestamp = (idbData && idbData.timestamp) || 0;
 
     if (idbData && idbData.version === 2) {
-        // Utiliser localStorage SEULEMENT si nettement plus récent (>5s = IndexedDB a échoué)
-        // En fonctionnement normal, les 2 sauvegardes se font à ~100ms d'intervalle
-        const timeDiff = lsTimestamp - idbTimestamp;
-        if (lsTimestamp > 0 && timeDiff > 5000) {
-            console.log(`⚠️ localStorage nettement plus récent (+${(timeDiff/1000).toFixed(1)}s) → chargement depuis localStorage`);
-            console.log(`   IndexedDB: ${new Date(idbTimestamp).toLocaleString()}, localStorage: ${new Date(lsTimestamp).toLocaleString()}`);
-            await loadProjectFromLocalStorage();
-            markAsSaved();
-            return;
-        }
-        // IndexedDB est préféré (contient textures, objets importés, etc.)
+        // IndexedDB v2 est toujours autoritaire (même logique que scene-loader.js)
+        // On ne vérifie plus le timestamp localStorage : l'IDB contient les textures et blobs.
         console.log(`📂 Chargement depuis IndexedDB (timestamp: ${new Date(idbTimestamp).toLocaleString()})`);
         await loadProjectFromIndexedDB(idbData);
         markAsSaved();
@@ -731,6 +740,7 @@ async function loadProjectOnStartup() {
 // Les blobs (textures, modèles 3D) seront chargés à la demande via RoomEditorDB.get()
 async function bootstrapFromFiles() {
     // Vérifier si IndexedDB a des données COMPLÈTES (pas corrompues)
+    // ET si elles sont à jour avec le dernier project.json exporté (via scene_data/version.json)
     try {
         const existing = await RoomEditorDB.get(
             RoomEditorDB.STORE_PROJECTS,
@@ -744,11 +754,41 @@ async function bootstrapFromFiles() {
             const hasTiles = existing.floorTiles && existing.floorTiles.length > 0;
 
             if (hasWalls || hasObjects || hasLights || hasTiles) {
-                console.log('✅ IndexedDB contient des données valides (' +
-                    (existing.walls ? existing.walls.length : 0) + ' murs, ' +
-                    (existing.importedObjects ? existing.importedObjects.length : 0) + ' objets, ' +
-                    (existing.lights ? existing.lights.length : 0) + ' lumières)');
-                return;
+                // Comparer le timestamp IDB avec celui de scene_data/version.json
+                // Si version.json est plus récent → re-bootstrap pour prendre les changements de project.json
+                // Si IDB est plus récent → l'utilisateur a sauvegardé des modifications → garder l'IDB
+                try {
+                    const vRes = await fetch('scene_data/version.json?_=' + Date.now());
+                    if (vRes.ok) {
+                        const vData = await vRes.json();
+                        const idbTs = existing.timestamp || 0;
+                        const fileTs = vData.timestamp || 0;
+                        if (fileTs > idbTs) {
+                            console.warn('🔄 scene_data/project.json plus récent que IndexedDB (' +
+                                new Date(fileTs).toLocaleString() + ' > ' +
+                                new Date(idbTs).toLocaleString() + ') — re-bootstrap...');
+                            try { await RoomEditorDB.delete(RoomEditorDB.STORE_PROJECTS, 'project_' + currentRoomName); } catch (e) {}
+                            // fall through to bootstrap
+                        } else {
+                            console.log('✅ IndexedDB à jour avec project.json (' +
+                                (existing.importedObjects ? existing.importedObjects.length : 0) + ' objets, ' +
+                                (existing.walls ? existing.walls.length : 0) + ' murs, ' +
+                                (existing.lights ? existing.lights.length : 0) + ' lumières)');
+                            return;
+                        }
+                    } else {
+                        // Pas de version.json → comportement original (garder IDB si données valides)
+                        console.log('✅ IndexedDB contient des données valides (' +
+                            (existing.walls ? existing.walls.length : 0) + ' murs, ' +
+                            (existing.importedObjects ? existing.importedObjects.length : 0) + ' objets, ' +
+                            (existing.lights ? existing.lights.length : 0) + ' lumières)');
+                        return;
+                    }
+                } catch (ve) {
+                    // Erreur fetch version.json → garder IDB
+                    console.log('✅ IndexedDB contient des données valides (version.json inaccessible)');
+                    return;
+                }
             } else {
                 console.warn('⚠️ IndexedDB contient un projet vide/corrompu, re-bootstrap nécessaire...');
                 try { await RoomEditorDB.delete(RoomEditorDB.STORE_PROJECTS, 'project_' + currentRoomName); } catch (e) {}
@@ -975,10 +1015,11 @@ async function loadProjectFromLocalStorage() {
                 console.log('📂 Position de spawn chargée depuis localStorage');
             }
 
-            // Restaurer l'intensité de la lumière ambiante
+            // Restaurer l'intensité + nom de la lumière ambiante
             if (planData.ambientLightIntensity !== undefined && window.defaultAmbientLight) {
                 window.defaultAmbientLight.intensity = planData.ambientLightIntensity;
                 window.defaultAmbientLight.userData.savedIntensity = planData.ambientLightIntensity;
+                if (planData.ambientLightName) window.defaultAmbientLight.userData.name = planData.ambientLightName;
                 console.log(`  💡 Lumière ambiante restaurée: ${planData.ambientLightIntensity}`);
             }
 
@@ -1310,10 +1351,11 @@ async function loadProjectFromIndexedDB(projectData) {
         console.log(`  ✅ ${projectData.lights.length} lumières restaurées`);
     }
 
-    // Restaurer l'intensité de la lumière ambiante
+    // Restaurer l'intensité + nom de la lumière ambiante
     if (projectData.ambientLightIntensity !== undefined && window.defaultAmbientLight) {
         window.defaultAmbientLight.intensity = projectData.ambientLightIntensity;
         window.defaultAmbientLight.userData.savedIntensity = projectData.ambientLightIntensity;
+        if (projectData.ambientLightName) window.defaultAmbientLight.userData.name = projectData.ambientLightName;
         console.log(`  💡 Lumière ambiante restaurée: intensité = ${projectData.ambientLightIntensity}`);
     }
 
@@ -2049,6 +2091,7 @@ function saveImportedObjectsToStorage() {
             customContrast: obj.userData.customContrast,
             customOffset: obj.userData.customOffset,
             customGamma: obj.userData.customGamma,
+            customOpacity: obj.userData.customOpacity,
             isCharacter: obj.userData.isCharacter || false,
             armatureScaleY: obj.userData.armatureScaleY || 1
             // NE PAS sauvegarder fileData - fichiers GLB trop volumineux pour localStorage
@@ -2076,6 +2119,7 @@ function saveCustomLightsToStorage() {
         .map(light => {
             const data = {
                 type: light.userData.type,
+                name: light.userData.name || '',
                 position: { x: light.position.x, y: light.position.y, z: light.position.z },
                 color: '#' + light.color.getHexString(),
                 intensity: light.intensity,
@@ -2287,17 +2331,26 @@ function loadObjectFromURL(url, data) {
             if (data.fileData) {
                 model.userData.fileData = data.fileData;
             }
-            // Restaurer customRoughness si présent
-            if (data.customRoughness !== undefined) {
-                model.userData.customRoughness = data.customRoughness;
-            }
-            // Restaurer tous les réglages visuels
+            // Restaurer tous les réglages visuels dans userData
+            if (data.customRoughness  !== undefined) model.userData.customRoughness  = data.customRoughness;
             if (data.customBrightness !== undefined) model.userData.customBrightness = data.customBrightness;
-            if (data.customExposure !== undefined) model.userData.customExposure = data.customExposure;
-            if (data.customContrast !== undefined) model.userData.customContrast = data.customContrast;
-            if (data.customOffset !== undefined) model.userData.customOffset = data.customOffset;
-            if (data.customGamma !== undefined) model.userData.customGamma = data.customGamma;
-            // Appliquer les réglages visuels aux matériaux
+            if (data.customExposure   !== undefined) model.userData.customExposure   = data.customExposure;
+            if (data.customContrast   !== undefined) model.userData.customContrast   = data.customContrast;
+            if (data.customOffset     !== undefined) model.userData.customOffset     = data.customOffset;
+            if (data.customGamma      !== undefined) model.userData.customGamma      = data.customGamma;
+            if (data.customOpacity    !== undefined) model.userData.customOpacity    = data.customOpacity;
+
+            // Appliquer customRoughness aux matériaux (même logique que scene-loader.js)
+            if (data.customRoughness !== undefined) {
+                model.traverse(function(child) {
+                    if (child.isMesh && child.material && child.material.roughness !== undefined) {
+                        child.material.roughness = data.customRoughness;
+                        child.material.needsUpdate = true;
+                    }
+                });
+            }
+
+            // Appliquer luminosité / exposition / contraste / offset / gamma (et opacité)
             applyVisualSettings(model);
 
             // Restaurer le flag personnage et les propriétés associées
