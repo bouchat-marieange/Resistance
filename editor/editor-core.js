@@ -195,6 +195,63 @@ function initEditor() {
         }
     });
 
+    // Checkbox de transparence — active/désactive le slider d'opacité
+    document.getElementById('opacity-enabled-checkbox').addEventListener('change', (e) => {
+        const slider = document.getElementById('opacity-slider');
+        const checked = e.target.checked;
+        slider.disabled = !checked;
+        slider.classList.toggle('opacity-40', !checked);
+        if (selectedEditorObject) {
+            if (checked) {
+                // Activer : appliquer la valeur actuelle du slider
+                const percent = parseInt(slider.value);
+                const opacity = percent / 100;
+                selectedEditorObject.userData.customOpacity = opacity;
+                selectedEditorObject.traverse((child) => {
+                    if (child.isMesh && child.material) {
+                        child.material.transparent = opacity < 1.0;
+                        child.material.opacity = opacity;
+                        child.material.needsUpdate = true;
+                    }
+                });
+            } else {
+                // Désactiver : rétablir l'opacité complète et supprimer le réglage
+                delete selectedEditorObject.userData.customOpacity;
+                selectedEditorObject.traverse((child) => {
+                    if (child.isMesh && child.material) {
+                        child.material.transparent = false;
+                        child.material.opacity = 1.0;
+                        child.material.needsUpdate = true;
+                    }
+                });
+                // Remettre le slider à 100%
+                slider.value = 100;
+                document.getElementById('opacity-value').textContent = '100%';
+            }
+            if (selectedEditorObject.userData.isImported) saveImportedObjectsToStorage();
+            if (typeof markUnsavedChanges === 'function') markUnsavedChanges();
+        }
+    });
+
+    // Slider de transparence (opacité)
+    document.getElementById('opacity-slider').addEventListener('input', (e) => {
+        const percent = parseInt(e.target.value);
+        document.getElementById('opacity-value').textContent = percent + '%';
+        if (selectedEditorObject) {
+            const opacity = percent / 100;
+            selectedEditorObject.userData.customOpacity = opacity;
+            selectedEditorObject.traverse((child) => {
+                if (child.isMesh && child.material) {
+                    child.material.transparent = opacity < 1.0;
+                    child.material.opacity = opacity;
+                    child.material.needsUpdate = true;
+                }
+            });
+            if (selectedEditorObject.userData.isImported) saveImportedObjectsToStorage();
+            if (typeof markUnsavedChanges === 'function') markUnsavedChanges();
+        }
+    });
+
     // Initialiser le clic pour masquer les labels de zone
     if (typeof _initZoneLabelClickHandler === 'function') _initZoneLabelClickHandler();
 

@@ -283,6 +283,9 @@ var TutorialManager = (function () {
 
     // ── ONBOARDING ──────────────────────────────────────────────────────────
     function _startOnboarding() {
+        // Fermer la carte et le carnet s'ils sont ouverts avant de commencer le tutoriel
+        if (typeof MinimapManager !== 'undefined' && MinimapManager.isOpen()) MinimapManager.close();
+        if (typeof NotebookManager !== 'undefined' && NotebookManager.isOpen()) NotebookManager.close();
         _step = 0;
         _showStep();
     }
@@ -313,7 +316,6 @@ var TutorialManager = (function () {
         var spot = document.createElement('div');
         spot.id = 'ob-spot';
         document.body.appendChild(spot);
-        _placeSpot(target, spot);
 
         var arrow = document.createElement('div');
         arrow.id = 'ob-arrow';
@@ -327,7 +329,10 @@ var TutorialManager = (function () {
             '<div id="ob-ask">' + info.ask   + '</div>';
         document.body.appendChild(bubble);
 
+        // Tout placer dans le même rAF pour que le layout soit stabilisé
+        // (right-dock est un flex right-anchored : getBCR synchrone peut être décalé)
         requestAnimationFrame(function () {
+            _placeSpot(target, spot);
             _placeArrow(target, arrow);
             _placeBubble(target, bubble);
         });
@@ -352,7 +357,8 @@ var TutorialManager = (function () {
     }
 
     // ── Tip fermeture Carte ──────────────────────────────────────────────────
-    // Bulle AU-DESSUS du panneau map, flèche ↓ pointant vers le bouton ×
+    // Bulle compacte (largeur = texte) alignée à droite avec le panneau map,
+    // flèche ↓ pointant vers le bouton ×
     function _spawnMapCloseTip(html) {
         _cleanupAll();
         var hud      = document.getElementById('minimap-hud');
@@ -364,43 +370,36 @@ var TutorialManager = (function () {
                             : { left: hudR.right - 40, top: hudR.top, width: 30, height: 30 };
         var btnCX = btnR.left + btnR.width / 2;
 
-        var GAP = 10;  // espace entre bulle/flèche/panneau
-        var vW  = window.innerWidth;
+        var GAP      = 10;
+        var BH       = 52; // hauteur estimée de la bulle
+        var arrowTop = hudR.top - GAP - 16;
 
-        // Bulle : part du bord gauche du panneau, cadrée pour ne PAS dépasser la fenêtre
-        var bubL = hudR.left + 4;
-        var bubW = Math.min(hudR.width - 8, vW - bubL - 12); // jamais hors écran
-        var BH   = 58;
-
-        // Flèche ↓ : centrée sur le bouton ×, mais clampée dans les limites de la bulle
-        var arrowLRaw = btnCX - 11;
-        var arrowLMin = bubL;                     // pas à gauche de la bulle
-        var arrowLMax = bubL + bubW - 22;         // pas à droite de la bulle
-        var arrowL    = Math.min(arrowLMax, Math.max(arrowLMin, arrowLRaw));
-        var arrowTop  = hudR.top - GAP - 16;
-
+        // Flèche ↓ pointant vers le bouton ×
         var arrow = document.createElement('div');
         arrow.id = 'ob-arrow';
         arrow.classList.add('dir-bottom');
-        arrow.style.left = Math.max(0, arrowL) + 'px';
+        arrow.style.left = Math.max(0, btnCX - 11) + 'px';
         arrow.style.top  = Math.max(0, arrowTop) + 'px';
         document.body.appendChild(arrow);
 
-        // Bulle : strictement AU-DESSUS de la flèche
+        // Bulle : largeur adaptée au texte (fit-content), bord droit aligné avec le panneau
         var bubT = Math.max(8, arrowTop - GAP - BH);
-
         var bubble = document.createElement('div');
         bubble.id = 'ob-bubble';
-        bubble.style.width    = bubW + 'px';
-        bubble.style.maxWidth = 'none';
-        bubble.style.left = bubL + 'px';
-        bubble.style.top  = bubT + 'px';
+        bubble.style.width    = 'auto';
+        bubble.style.minWidth = '0';
+        bubble.style.maxWidth = '280px';
+        bubble.style.whiteSpace = 'nowrap';
+        // Aligner le bord droit de la bulle avec le bord droit du panneau
+        bubble.style.right = (window.innerWidth - hudR.right) + 'px';
+        bubble.style.left  = 'auto';
+        bubble.style.top   = bubT + 'px';
         bubble.innerHTML = '<div id="ob-ask" class="visible" style="border-top:none;padding-top:0;margin-top:0;">' + html + '</div>';
         document.body.appendChild(bubble);
     }
 
     // ── Tip fermeture Carnet ─────────────────────────────────────────────────
-    // Bulle de left=8 jusqu'à juste avant le bouton ×, flèche → vers ×
+    // Bulle compacte (largeur = texte), flèche → vers le bouton ×
     function _spawnNotebookCloseTip(html) {
         _cleanupAll();
         var closeBtn = document.getElementById('notebook-close');
@@ -408,10 +407,10 @@ var TutorialManager = (function () {
 
         var r   = closeBtn.getBoundingClientRect();
         var cy  = r.top + r.height / 2;
-        var GAP = 12; // espace entre bulle et flèche, flèche et bouton
-        var BH  = 52; // hauteur estimée de la bulle compacte
+        var GAP = 10; // espace entre bulle, flèche et bouton ×
+        var BH  = 48; // hauteur estimée de la bulle
 
-        // Flèche → pointant vers ×, positionnée juste à sa gauche
+        // Flèche → pointant vers ×, juste à sa gauche
         var arrowL = Math.max(8, r.left - GAP - 16);
         var arrow = document.createElement('div');
         arrow.id = 'ob-arrow';
@@ -420,17 +419,19 @@ var TutorialManager = (function () {
         arrow.style.top  = (cy - 11) + 'px';
         document.body.appendChild(arrow);
 
-        // Bulle : de left=8 jusqu'au bord gauche de la flèche (- petit écart)
-        var bubL = 8;
-        var bubW = Math.max(120, arrowL - bubL - GAP);
+        // Bulle : largeur = contenu, bord droit = bord gauche de la flèche - GAP
+        var bubRightEdge = arrowL - GAP;
         var bubT = Math.max(8, cy - BH / 2);
-
         var bubble = document.createElement('div');
         bubble.id = 'ob-bubble';
-        bubble.style.left     = bubL + 'px';
-        bubble.style.width    = bubW + 'px';
-        bubble.style.maxWidth = 'none';
-        bubble.style.top      = bubT + 'px';
+        bubble.style.width    = 'auto';
+        bubble.style.minWidth = '0';
+        bubble.style.maxWidth = Math.max(120, bubRightEdge - 8) + 'px';
+        bubble.style.whiteSpace = 'nowrap';
+        // Bord droit de la bulle = bord gauche de la flèche
+        bubble.style.right = (window.innerWidth - bubRightEdge) + 'px';
+        bubble.style.left  = 'auto';
+        bubble.style.top   = bubT + 'px';
         bubble.innerHTML = '<div id="ob-ask" class="visible" style="border-top:none;padding-top:0;margin-top:0;">' + html + '</div>';
         document.body.appendChild(bubble);
     }

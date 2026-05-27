@@ -1975,6 +1975,32 @@ function updateObjectInfo() {
         }
     });
 
+    // Mettre à jour le contrôle de transparence
+    const opacitySlider   = document.getElementById('opacity-slider');
+    const opacityValueEl  = document.getElementById('opacity-value');
+    const opacityCheckbox = document.getElementById('opacity-enabled-checkbox');
+    if (opacitySlider && opacityCheckbox) {
+        if (hasMaterial) {
+            // Activer la checkbox (on peut cocher), quel que soit l'état courant
+            opacityCheckbox.disabled = false;
+            const hasCustomOpacity = obj.userData.customOpacity !== undefined;
+            const opacityVal = hasCustomOpacity ? obj.userData.customOpacity : 1.0;
+            const percent = Math.round(opacityVal * 100);
+            opacityCheckbox.checked = hasCustomOpacity;
+            opacitySlider.disabled = !hasCustomOpacity;
+            opacitySlider.classList.toggle('opacity-40', !hasCustomOpacity);
+            opacitySlider.value = percent;
+            opacityValueEl.textContent = percent + '%';
+        } else {
+            opacityCheckbox.disabled = true;
+            opacityCheckbox.checked = false;
+            opacitySlider.disabled = true;
+            opacitySlider.classList.add('opacity-40');
+            opacitySlider.value = 100;
+            opacityValueEl.textContent = '100%';
+        }
+    }
+
     // Mettre à jour l'étiquette de dimensions
     showDimensionsLabel(obj);
 }

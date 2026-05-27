@@ -252,7 +252,7 @@
 
 
 <!-- ========== PLAYER HUD (pseudo + axe lucidite/emprise) — charte carnet ========== -->
-<div id="player-hud" style="position:fixed; bottom:16px; left:16px; z-index:100; background:rgba(18,18,26,0.92); border:1px solid rgba(126,214,223,0.35); border-radius:10px; padding:12px 16px; min-width:270px; font-family:'Segoe UI',Tahoma,sans-serif; backdrop-filter:blur(6px); box-shadow:0 4px 18px rgba(0,0,0,0.45);">
+<div id="player-hud" style="position:fixed; bottom:16px; left:16px; z-index:100; background:rgba(18,18,26,0.92); border:1px solid rgba(126,214,223,0.35); border-radius:10px; padding:10px 12px; min-width:200px; font-family:'Segoe UI',Tahoma,sans-serif; backdrop-filter:blur(6px); box-shadow:0 4px 18px rgba(0,0,0,0.45);">
     <!-- Pseudo du resistant -->
     <div style="font-size:10px; color:#7ed6df; letter-spacing:1.6px; text-transform:uppercase; font-weight:700;">Résistant·e</div>
     <div id="player-pseudo-display" style="color:#eaeaf2; font-size:16px; font-weight:700; font-family:'Segoe UI',Tahoma,sans-serif; margin-bottom:10px; letter-spacing:0.5px;">???</div>
@@ -971,6 +971,7 @@ function loadPermanentObjects() {
         if (ov.customContrast  !== undefined) model.userData.customContrast  = ov.customContrast;
         if (ov.customOffset    !== undefined) model.userData.customOffset    = ov.customOffset;
         if (ov.customGamma     !== undefined) model.userData.customGamma     = ov.customGamma;
+        if (ov.customOpacity   !== undefined) model.userData.customOpacity   = ov.customOpacity;
         if (typeof _applyVisualSettings === 'function') _applyVisualSettings(model);
         console.log(`🎨 Override appliqué : ${name}`);
     }
@@ -1243,6 +1244,21 @@ function loadPermanentObjects() {
         { x: 0, y: THREE.MathUtils.degToRad(90), z: 0 },
         { x: 1.0, y: 1.0, z: 1.0 },
         function(model) {
+            // Supprimer toute zone existante liée à la borne arcade
+            // (l'IDB peut avoir id:8 ou id:'arcade-ai-mythology' selon la version sauvegardée)
+            for (var _i = interactionZones.length - 1; _i >= 0; _i--) {
+                var _z = interactionZones[_i];
+                if (_z.id === 'arcade-ai-mythology' ||
+                    (_z.objectRef && _z.objectRef.editorName === 'Borne Arcade AI Mythology') ||
+                    (_z.actionValue && _z.actionValue.indexOf('AI') > -1 && _z.actionValue.indexOf('Mythology') > -1)) {
+                    interactionZones.splice(_i, 1);
+                }
+            }
+
+            // Bounds calculées depuis la position réelle du modèle chargé
+            var _arcadePos = new THREE.Vector3();
+            model.getWorldPosition(_arcadePos);
+            var _hs = 0.6; // demi-largeur de la zone de détection
             interactionZones.push({
                 id: 'arcade-ai-mythology',
                 surfaceMode: 'object',
@@ -1251,15 +1267,38 @@ function loadPermanentObjects() {
                 actionValue: './AI Mythology - mini jeu/index.html',
                 customName: 'Jouer — AI Mythology',
                 triggerType: 'click',
-                bounds: { minX: -1.5, maxX: 2.5, minZ: -9.0, maxZ: -6.0 },
-                y: 1.5
+                bounds: {
+                    minX: _arcadePos.x - _hs,
+                    maxX: _arcadePos.x + _hs,
+                    minZ: _arcadePos.z - _hs,
+                    maxZ: _arcadePos.z + _hs
+                },
+                y: _arcadePos.y + 1.0
             });
-            console.log('🕹️ Zone arcade AI Mythology enregistrée');
+
+            // Boîte de collision invisible autour de la borne
+            // (la géométrie GLB seule n'est pas assez fiable pour bloquer le joueur)
+            var box = new THREE.Mesh(
+                new THREE.BoxGeometry(1.0, 2.2, 0.7),
+                new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false })
+            );
+            box.position.set(model.position.x, model.position.y + 1.1 - 0.85, model.position.z);
+            box.userData.isEnvironment = true;
+            box.userData.editorName = 'Arcade-collision-proxy';
+            scene.add(box);
+            invalidateCollisionCache();
+            console.log('🕹️ Zone arcade AI Mythology enregistrée + collision proxy');
         }
     );
+
+    // Tapis procédural — recréé ici car loadProjectFromIndexedDB purge importedObjects
+    createRug();
 }
 
 function createRug() {
+    // Anti-doublon : loadProjectFromIndexedDB supprime les importedObjects existants
+    // puis loadPermanentObjects le recrée — on vérifie avant de dupliquer
+    if (importedObjects.find(function(o) { return o.userData && o.userData.fileName === '__rug__'; })) return;
     const rugSize = 2.5; // ~2.5m de côté (proportion réaliste)
     const rugGeo = new THREE.PlaneGeometry(rugSize, rugSize);
     const rugMat = new THREE.MeshStandardMaterial({ color: 0xddc4a2, roughness: 1.0 });
@@ -1403,13 +1442,14 @@ function _activateGenerator() {
     _genLight.position.set(GEN_POS.x, GEN_POS.y + 2.6, GEN_POS.z);
     scene.add(_genLight);
 
-    // Son générateur (boucle)
-    _genSound = new Audio('sounds/generateur.mp3');
-    _genSound.loop = true;
+    // Son générateur — joué une seule fois, s'arrête à la fin naturelle du fichier
+    _genSound = new Audio('audios/Ambiance/generator-loop.mp3');
+    _genSound.loop = false;
     _genSound.volume = 0.55;
     _genSound.play().catch(() => {});
 
-    console.log('⚡ Générateur activé — lumière + son ON');
+
+    console.log('⚡ Générateur activé — lumière ON + son joué une fois');
 }
 
 // Arrêter le son du générateur quand le joueur entre dans la zone Naby
@@ -2571,6 +2611,9 @@ setTimeout(async () => {
             'Berger Allemand Debout',
             'Borne Arcade AI Mythology',
             'Porte entrée',             // porte industrielle derrière le joueur → bruxelles_dystopique.html
+            // Objets ajoutés via l'éditeur
+            'ascenseur',
+            'bureau',
             // Objet procédural (pas de GLB — recréé par createRug())
             'Tapis'
         ]);

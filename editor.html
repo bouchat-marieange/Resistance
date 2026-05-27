@@ -579,13 +579,59 @@ function loadSasSecuriteObjects() {
     }
 
     // --- GLBs permanents ---
+    // Miroir exact de loadPermanentObjects() dans sas_securite.html
+    // L'anti-doublon détecte si l'objet est déjà chargé depuis IndexedDB (window._idbPendingObjects)
     const permanents = [
+        {
+            url: '3D/objet/lampe-sur-pied.glb',
+            name: 'lampe sur pied',
+            pos: { x: -4.665, y: 0,     z: -7.297 },
+            rot: { x: Math.PI, y: -0.2087, z: Math.PI },
+            scl: { x: 1.798, y: 1.798, z: 1.798 }
+        },
+        {
+            url: '3D/objet/fauteuil-rouge-expo.glb',
+            name: 'Fauteuil rouge expo +',
+            pos: { x: -4.404, y: 0,     z: -6.478 },
+            rot: { x: 0, y: 1.5693, z: 0 },
+            scl: { x: 1.311, y: 1.311, z: 1.311 }
+        },
+        {
+            url: '3D/objet/cadre-dessin.glb',
+            name: 'Cadre dessin',
+            pos: { x: -4.894, y: 1.656, z: -6.476 },
+            rot: { x: -Math.PI, y: 1.5143, z: -Math.PI },
+            scl: { x: 1.0, y: 1.0, z: 1.0 }
+        },
+        {
+            url: '3D/objet/guitare-classique.glb',
+            name: 'Guitare classique',
+            pos: { x: -4.527, y: 0.491, z: -5.691 },
+            rot: { x: -0.7499, y: 0.7965, z: 0.5777 },
+            scl: { x: 1.182, y: 1.182, z: 1.182 }
+        },
+        {
+            url: '3D/objet/generateur.glb',
+            name: 'Générateur',
+            pos: { x: -18.795, y: 1.349, z: -22.631 },
+            rot: { x: -Math.PI, y: 1.540, z: -Math.PI },
+            scl: { x: 2.095, y: 2.095, z: 2.095 }
+        },
         {
             url: '3D/perso/berger-allemand-debout.glb',
             name: 'Berger Allemand Debout',
             pos: { x: -2.158, y: 0.487, z: -6.462 },
             rot: { x: -Math.PI, y: 0.1494, z: -Math.PI },
             scl: { x: 0.705, y: 0.705, z: 0.705 }
+        },
+        {
+            url: '3D/objet/porte-industrielle.glb',
+            name: 'Porte entrée',
+            // Noms alternatifs dans l'IDB (ancienne version du projet)
+            altNames: ['Porte industrielle'],
+            pos: { x: 2.309, y: 0,     z: -39.948 },
+            rot: { x: 0, y: -0.0255, z: 0 },
+            scl: { x: 0.00873, y: 0.00873, z: 0.00873 }
         },
         {
             url: '3D/arcade-ai-mythology.glb',
@@ -596,19 +642,32 @@ function loadSasSecuriteObjects() {
         }
     ];
 
-    permanents.forEach(({ url, name, pos, rot, scl }) => {
+    permanents.forEach(({ url, name, pos, rot, scl, altNames }) => {
         // Anti-doublon : déjà en scène, dans importedObjects, ou en cours de chargement depuis IndexedDB ?
         // Vérifier par editorName ET par fileName (couvre le cas d'un import manuel avec nom différent)
         const fileName = url.split('/').pop();
+        const allNames = [name].concat(altNames || []);
+        // Pour les pending IDB : vérifier uniquement le nom canonique et le fileName
+        // (ne pas vérifier les altNames — sinon "Porte entrée" serait bloquée par "Porte industrielle" pending)
         const idbHasName = window._idbPendingObjects && window._idbPendingObjects.has(name);
         const idbHasFile = window._idbPendingFileNames && window._idbPendingFileNames.has(fileName);
         if (idbHasName || idbHasFile) {
             console.log(`⏳ ${name} (${fileName}) en cours depuis IndexedDB — skip loadSasSecuriteObjects`);
             return;
         }
-        const existing = importedObjects.find(o => o.userData.editorName === name)
-                      || scene.children.find(o => o.userData && o.userData.editorName === name);
+        // Pour la détection "déjà en scène" : vérifier le nom canonique ET les altNames
+        const existing = allNames.reduce(function(found, n) {
+            return found ||
+                importedObjects.find(function(o) { return o.userData.editorName === n; }) ||
+                scene.children.find(function(o) { return o.userData && o.userData.editorName === n; });
+        }, null);
         if (existing) {
+            // Si trouvé via un altName (ex: "Porte industrielle" → "Porte entrée"), renommer vers le nom canonique
+            if (existing.userData.editorName !== name) {
+                console.log(`✏️ Renommage ${existing.userData.editorName} → ${name}`);
+                existing.userData.editorName = name;
+                existing.traverse(child => { if (child.isMesh) child.userData.editorName = name; });
+            }
             console.log(`♻️ ${name} déjà en scène — enregistrement dans selectableObjects`);
             if (!selectableObjects.includes(existing)) {
                 selectableObjects.push(existing);
@@ -707,6 +766,38 @@ function loadSasSecuriteObjects() {
             })
             .catch(err => console.warn(`⚠️ Fetch binaire impossible pour ${name} :`, err));
     });
+
+    // ── Nettoyage différé des objets non autorisés (ex: "bouton cuisiniere", "Porte industrielle") ──
+    // Attendre que tous les chargements IDB soient terminés (window._idbPendingObjects vide)
+    // avant de purger les objets qui ne font pas partie de la scène sas_securite.
+    var _cleanupAllowed = new Set([
+        'lampe sur pied', 'Fauteuil rouge expo +', 'Cadre dessin',
+        'Guitare classique', 'Générateur', 'Berger Allemand Debout',
+        'Borne Arcade AI Mythology', 'Porte entrée', 'Tapis',
+        'ascenseur', 'bureau'
+    ]);
+    var _cleanupCheckInterval = setInterval(function() {
+        var pending = window._idbPendingObjects;
+        if (pending && pending.size > 0) return; // attendre la fin des chargements IDB
+        clearInterval(_cleanupCheckInterval);
+
+        var toRemove = importedObjects.filter(function(o) {
+            return o.userData.editorName && !_cleanupAllowed.has(o.userData.editorName);
+        });
+        toRemove.forEach(function(obj) {
+            scene.remove(obj);
+            var ii = importedObjects.indexOf(obj);
+            if (ii > -1) importedObjects.splice(ii, 1);
+            var si = selectableObjects.indexOf(obj);
+            if (si > -1) selectableObjects.splice(si, 1);
+            console.log('🗑️ Éditeur: objet non autorisé supprimé : ' + obj.userData.editorName);
+        });
+        if (toRemove.length > 0 && typeof scheduleUpdateObjectsList === 'function') {
+            scheduleUpdateObjectsList();
+        }
+    }, 500);
+    // Timeout de sécurité : 20 secondes max
+    setTimeout(function() { clearInterval(_cleanupCheckInterval); }, 20000);
 }
 
 // ========== SCENE 3D ==========

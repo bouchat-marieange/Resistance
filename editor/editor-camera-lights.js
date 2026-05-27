@@ -739,13 +739,33 @@ function updateLightsList() {
             'spot': 'Spot'
         };
 
-        const typeIcon = typeIcons[light.userData.type] || typeIcons['point'];
-        const typeName = typeNames[light.userData.type] || 'Lumière';
+        // Inférer 'ambient' pour la lumière par défaut si userData.type n'est pas défini
+        const resolvedType = light.userData.type || (light.userData.isDefault ? 'ambient' : 'point');
+        const typeIcon = typeIcons[resolvedType] || typeIcons['point'];
+        const typeName = typeNames[resolvedType] || 'Lumière';
 
-        // Afficher le nom personnalisé pour les lumières par défaut
-        const displayName = light.userData.isDefault
-            ? light.userData.name
-            : `${typeName} #${customLightCounter}`;
+        // ── Préfixe de type ────────────────────────────────────────────
+        const TYPE_PREFIXES = { ambient: '(A)', point: '(P)', directional: '(D)', spot: '(S)' };
+        const typePrefix = TYPE_PREFIXES[resolvedType] || '(P)';
+
+        // Nom affiché : userData.name s'il est défini, sinon nom par défaut numéroté
+        // On s'assure que le préfixe est toujours présent en tête.
+        function _stripPrefix(name) {
+            return name ? name.replace(/^\([APDS]\)\s*/i, '') : '';
+        }
+        function _buildDisplayName(light, counter) {
+            if (light.userData.isDefault) {
+                // Lumière ambiante par défaut : même système de préfixe
+                const raw = _stripPrefix(light.userData.name || '');
+                const base = raw || 'Lumière ambiante';
+                return typePrefix + ' ' + base;
+            }
+            const raw = _stripPrefix(light.userData.name || '');
+            const base = raw || `${typeName} ${counter}`;
+            return typePrefix + ' ' + base;
+        }
+
+        const displayName = _buildDisplayName(light, customLightCounter);
 
         // Incrémenter le compteur uniquement pour les lumières non-default
         if (!light.userData.isDefault) {
@@ -754,49 +774,86 @@ function updateLightsList() {
 
         // Zone de texte cliquable pour sélectionner
         const textDiv = document.createElement('div');
-        textDiv.style.cssText = 'flex: 1; display: flex; align-items: center; gap: 6px;';
+        textDiv.style.cssText = 'flex: 1; display: flex; align-items: center; gap: 6px; min-width: 0;';
 
         const iconSpan = document.createElement('span');
-        iconSpan.style.cssText = 'display: inline-flex; align-items: center;';
+        iconSpan.style.cssText = 'display: inline-flex; align-items: center; flex-shrink: 0;';
         iconSpan.innerHTML = typeIcon;
 
         const nameSpan = document.createElement('span');
-        nameSpan.style.cssText = 'font-size: 10px; color: #d4d4d4; font-weight: 500; cursor: text;';
+        nameSpan.style.cssText = 'font-size: 10px; color: #d4d4d4; font-weight: 500; cursor: text; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;';
+        nameSpan.title = 'Double-clic pour renommer';
         nameSpan.textContent = displayName;
         nameSpan.dataset.lightId = light.userData.lightId || 'default';
 
-        // Double-clic pour renommer
-        nameSpan.ondblclick = (e) => {
-            e.stopPropagation();
-            const currentName = nameSpan.textContent;
+        // Clic simple → sélectionner ; double-clic → renommer.
+        // On détecte le double-clic manuellement (timer 260 ms) car selectLight()
+        // appelle updateLightsList() qui reconstruit le DOM, empêchant l'événement
+        // natif dblclick de se déclencher sur le même élément.
+        let _clickTimer = null;
+
+        function _startRename() {
+            // Valeur actuelle sans préfixe = ce que l'utilisatrice tape
+            const currentRaw = _stripPrefix(light.userData.name || '')
+                             || _stripPrefix(displayName);
+
+            // Conteneur inline : [ (P) ] [ input ]
+            const renameWrap = document.createElement('span');
+            renameWrap.style.cssText = 'display: inline-flex; align-items: center; gap: 3px;';
+
+            const prefixTag = document.createElement('span');
+            prefixTag.textContent = typePrefix;
+            prefixTag.style.cssText = 'font-size: 9px; font-weight: 700; color: #4a7ebf; background: rgba(74,126,191,0.15); border: 1px solid rgba(74,126,191,0.4); border-radius: 3px; padding: 1px 4px; flex-shrink: 0; font-family: monospace;';
+
             const input = document.createElement('input');
             input.type = 'text';
-            input.value = currentName;
-            input.style.cssText = 'font-size: 10px; padding: 2px 4px; background: #1a1a1a; color: #d4d4d4; border: 1px solid #4a7ebf; border-radius: 2px; outline: none; width: 120px;';
+            input.value = currentRaw;
+            input.style.cssText = 'font-size: 10px; padding: 2px 4px; background: #1a1a1a; color: #d4d4d4; border: 1px solid #4a7ebf; border-radius: 2px; outline: none; width: 100px;';
+            input.placeholder = 'Nom de la lumière…';
 
-            input.onblur = () => {
-                const newName = input.value.trim() || currentName;
-                light.userData.name = newName;
-                updateLightsList();
-            };
-
-            input.onkeydown = (e) => {
-                if (e.key === 'Enter') {
-                    input.blur();
-                } else if (e.key === 'Escape') {
-                    input.value = currentName;
-                    input.blur();
+            let _committed = false;
+            function _commit() {
+                if (_committed) return;
+                _committed = true;
+                const typed = input.value.trim();
+                if (typed) {
+                    light.userData.name = typePrefix + ' ' + typed;
                 }
+                markUnsavedChanges();
+                updateLightsList();
+            }
+
+            input.onblur  = () => _commit();
+            input.onkeydown = (ev) => {
+                if (ev.key === 'Enter') { input.blur(); }
+                else if (ev.key === 'Escape') {
+                    _committed = true;
+                    updateLightsList();
+                }
+                ev.stopPropagation();
             };
 
-            nameSpan.replaceWith(input);
+            renameWrap.appendChild(prefixTag);
+            renameWrap.appendChild(input);
+            nameSpan.replaceWith(renameWrap);
             input.focus();
             input.select();
-        };
+        }
 
         nameSpan.onclick = (e) => {
             e.stopPropagation();
-            selectLight(light);
+            if (_clickTimer !== null) {
+                // Deuxième clic dans la fenêtre → double-clic détecté
+                clearTimeout(_clickTimer);
+                _clickTimer = null;
+                _startRename();
+            } else {
+                // Premier clic → attendre un éventuel deuxième
+                _clickTimer = setTimeout(() => {
+                    _clickTimer = null;
+                    selectLight(light);
+                }, 260);
+            }
         };
 
         textDiv.appendChild(iconSpan);

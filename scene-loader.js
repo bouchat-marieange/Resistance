@@ -92,6 +92,14 @@ function _applyVisualSettings(object) {
             b = Math.pow(b, invGamma);
         }
         mat.color.setRGB(r, g, b);
+
+        // --- Transparence ---
+        var opacity = object.userData.customOpacity;
+        if (opacity !== undefined) {
+            mat.transparent = opacity < 1.0;
+            mat.opacity = opacity;
+        }
+
         mat.needsUpdate = true;
     });
 }
@@ -1054,6 +1062,7 @@ function loadObjectFromURL(url, data) {
         if (data.customContrast !== undefined) model.userData.customContrast = data.customContrast;
         if (data.customOffset !== undefined) model.userData.customOffset = data.customOffset;
         if (data.customGamma !== undefined) model.userData.customGamma = data.customGamma;
+        if (data.customOpacity !== undefined) model.userData.customOpacity = data.customOpacity;
 
         // Appliquer roughness personnalisé
         if (data.customRoughness !== undefined) {
