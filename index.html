@@ -863,6 +863,9 @@ window.onYouTubeIframeAPIReady = function() {
         events: {
             onReady: function() { hideLoader(); },
             onStateChange: function(event) {
+                if (event.data === YT.PlayerState.PLAYING) {
+                    document.getElementById('skip-intro-btn').style.display = 'block';
+                }
                 if (event.data === YT.PlayerState.ENDED) goToGame();
             }
         }
