@@ -1480,6 +1480,64 @@
     }
     .choice-method-btn svg { width: 15px; height: 15px; stroke: #ffffff; stroke-width: 1.5; }
   </style>
+
+  <style>
+    /* ── Overlay vidéo de transition Nexus → Bruxelles ── */
+    #transition-overlay {
+      display: none;
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: #000; z-index: 999999;
+      align-items: center; justify-content: center;
+    }
+    #transition-overlay.visible { display: flex; }
+    #transition-video { width: 100%; height: 100%; object-fit: contain; }
+
+    /* Indicateur pause/reprise */
+    #transition-pause-indicator {
+      display: none;
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 90px; color: rgba(255,255,255,0.75);
+      pointer-events: none;
+      text-shadow: 0 0 40px rgba(0,0,0,0.8);
+      animation: tr-fadeOut 1.2s forwards;
+    }
+    @keyframes tr-fadeOut {
+      0%,60% { opacity: 1; }
+      100%   { opacity: 0; }
+    }
+
+    /* Écran de chargement — même style que les autres salles */
+    #transition-loader {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      background: #1a1a1a; z-index: 2;
+      transition: opacity 0.6s ease;
+    }
+    #transition-loader.hidden { opacity: 0; pointer-events: none; }
+    #transition-loader .loading-title {
+      font-family: 'Bebas Neue', sans-serif;
+      color: #00E5FF;
+      font-size: clamp(48px, 8vw, 88px);
+      letter-spacing: .04em;
+      margin-bottom: 8px;
+    }
+    #transition-loader .loading-subtitle {
+      color: #666; font-size: 12px; margin-bottom: 30px;
+    }
+    #transition-loader .loading-bar-container {
+      width: 240px; height: 4px; background: #333;
+      border-radius: 2px; overflow: hidden;
+    }
+    #transition-loader .loading-bar {
+      width: 0%; height: 100%;
+      background: linear-gradient(90deg, #00E5FF, #00c9e0);
+      border-radius: 2px;
+      box-shadow: 0 0 8px rgba(0,229,255,0.6);
+      transition: width 0.4s ease;
+    }
+  </style>
 </head>
 <body data-phase="intro">
 
@@ -1971,6 +2029,15 @@
      Les points sont ajoutés silencieusement (le HUD #lucidite-hud n'est pas
      présent sur cette page → aucune animation visible — l'immersion est préservée).
 ============================================================================ -->
+<script>
+(function() {
+    var pseudo = localStorage.getItem('resistance_active_pseudo');
+    if (!pseudo) return;
+    var profiles = JSON.parse(localStorage.getItem('resistance_profiles') || '[]');
+    var p = profiles.find(function(x) { return x.pseudo === pseudo; });
+    if (p) { p.lastRoom = 'test-blackbox.html'; localStorage.setItem('resistance_profiles', JSON.stringify(profiles)); }
+})();
+</script>
 <script src="game/score-manager.js"></script>
 <script src="game/lucidity-manager.js"></script>
 
@@ -3320,6 +3387,141 @@ try { localStorage.setItem('resistance_hud_hidden', 'blackbox'); } catch(_){}
 window.addEventListener('beforeunload', () => {
   try { localStorage.removeItem('resistance_hud_hidden'); } catch(_){}
 });
+
+// ── Transition vidéo Nexus → Bruxelles ──────────────────────────────────────
+(function() {
+  var IS_LOCAL = location.hostname === 'localhost'
+    || location.hostname === '127.0.0.1'
+    || location.protocol === 'file:';
+
+  // ID YouTube de la vidéo de transition (à renseigner quand la vidéo sera prête)
+  var YT_TRANSITION_ID = '';
+
+  var ytPlayer = null;
+
+  if (!IS_LOCAL && YT_TRANSITION_ID) {
+    var s = document.createElement('script');
+    s.src = 'https://www.youtube.com/iframe_api';
+    document.head.appendChild(s);
+  }
+
+  window.onYouTubeIframeAPIReady_transition = function() {
+    if (!YT_TRANSITION_ID) return;
+    ytPlayer = new YT.Player('transition-yt-player', {
+      videoId: YT_TRANSITION_ID,
+      playerVars: { autoplay: 0, controls: 1, rel: 0, modestbranding: 1, fs: 1, enablejsapi: 1 },
+      events: {
+        onReady: hideTransitionLoader,
+        onStateChange: function(e) { if (e.data === YT.PlayerState.ENDED) goToBruxelles(); }
+      }
+    });
+  };
+
+  function hideTransitionLoader() {
+    var loader = document.getElementById('transition-loader');
+    loader.classList.add('hidden');
+    setTimeout(function() { loader.style.display = 'none'; }, 650);
+  }
+
+  function goToBruxelles() {
+    window.location.href = 'bruxelles_dystopique.html';
+  }
+
+  function doRequestFS(el) {
+    var fn = el.requestFullscreen || el.webkitRequestFullscreen
+      || el.mozRequestFullScreen || el.msRequestFullscreen;
+    if (fn) fn.call(el);
+  }
+
+  // Remplace la fonction exitNexus définie plus haut
+  window.exitNexus = function() {
+    var overlay = document.getElementById('transition-overlay');
+    overlay.classList.add('visible');
+    doRequestFS(overlay);
+
+    if (IS_LOCAL) {
+      var video = document.getElementById('transition-video');
+      video.play();
+    } else if (YT_TRANSITION_ID) {
+      document.getElementById('transition-yt-container').style.display = 'block';
+      if (ytPlayer && ytPlayer.playVideo) ytPlayer.playVideo();
+    } else {
+      // Vidéo de transition pas encore disponible → passer directement
+      goToBruxelles();
+    }
+  };
+
+  // Barre de progression + masquage loader (local)
+  document.addEventListener('DOMContentLoaded', function() {
+    var video = document.getElementById('transition-video');
+    var bar   = document.getElementById('transition-bar');
+    if (!video) return;
+
+    video.addEventListener('progress', function() {
+      if (!video.buffered.length || !video.duration) return;
+      var pct = (video.buffered.end(video.buffered.length - 1) / video.duration) * 100;
+      bar.style.width = Math.min(pct, 100) + '%';
+    });
+    video.addEventListener('playing', hideTransitionLoader);
+    video.addEventListener('waiting', function() {
+      var loader = document.getElementById('transition-loader');
+      loader.style.display = 'flex';
+      loader.classList.remove('hidden');
+    });
+    video.addEventListener('ended', goToBruxelles);
+  });
+
+  // Barre d'espace : pause / reprise
+  document.addEventListener('keydown', function(e) {
+    if (e.code !== 'Space' && e.key !== ' ') return;
+    var overlay = document.getElementById('transition-overlay');
+    if (!overlay.classList.contains('visible')) return;
+    e.preventDefault();
+
+    var indicator = document.getElementById('transition-pause-indicator');
+    if (IS_LOCAL) {
+      var video = document.getElementById('transition-video');
+      if (video.paused) { video.play(); indicator.textContent = '▶'; }
+      else              { video.pause(); indicator.textContent = '⏸'; }
+    } else if (ytPlayer) {
+      var state = ytPlayer.getPlayerState();
+      if (state === YT.PlayerState.PLAYING) { ytPlayer.pauseVideo(); indicator.textContent = '⏸'; }
+      else                                  { ytPlayer.playVideo();  indicator.textContent = '▶'; }
+    }
+    indicator.style.display = 'block';
+    indicator.style.animation = 'none';
+    void indicator.offsetWidth;
+    indicator.style.animation = 'tr-fadeOut 1.2s forwards';
+    setTimeout(function() { indicator.style.display = 'none'; }, 1200);
+  });
+})();
 </script>
+
+<!-- ── Overlay vidéo de transition Nexus → Bruxelles ── -->
+<div id="transition-overlay">
+  <video id="transition-video" preload="auto" playsinline>
+    <source src="videos/transition-nexus-bruxelles.mp4" type="video/mp4">
+  </video>
+
+  <!-- Conteneur YouTube (version en ligne) -->
+  <div id="transition-yt-container" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%;">
+    <div id="transition-yt-player" style="width:100%; height:100%;"></div>
+  </div>
+
+  <!-- Écran de chargement -->
+  <div id="transition-loader">
+    <div style="text-align:center; display:flex; flex-direction:column; align-items:center;">
+      <img src="images/lapin fond transpa.png" alt="Logo" style="width:140px; height:auto; margin-bottom:20px; filter:drop-shadow(0 4px 16px rgba(0,229,255,0.3));">
+      <div class="loading-title">Résistance</div>
+      <div class="loading-subtitle">Chargement en cours...</div>
+      <div class="loading-bar-container">
+        <div class="loading-bar" id="transition-bar"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="transition-pause-indicator">⏸</div>
+</div>
+
 </body>
 </html>

@@ -7,7 +7,7 @@
 
 const InputConfig = (function() {
     const STORAGE_KEY_BASE = 'resistance-input-config';
-    const CONFIG_VERSION = 5; // Incrementer pour forcer le reset des bindings par defaut
+    const CONFIG_VERSION = 6; // Incrementer pour forcer le reset des bindings par defaut
 
     // Cle de stockage liee au pseudo actif
     function getStorageKey() {
@@ -23,7 +23,6 @@ const InputConfig = (function() {
         backward: { label: 'Reculer',          category: 'Déplacements' },
         left:     { label: 'Gauche',           category: 'Déplacements' },
         right:    { label: 'Droite',           category: 'Déplacements' },
-        jump:     { label: 'Sauter',           category: 'Déplacements' },
         crouch:   { label: 'S\'accroupir',     category: 'Déplacements' },
         run:      { label: 'Courir',           category: 'Déplacements' },
         aim:      { label: 'Viser',            category: 'Actions' },
@@ -43,7 +42,6 @@ const InputConfig = (function() {
         backward:  ['s'],
         left:      ['q', 'a'],
         right:     ['d', 'e'],
-        jump:      [' '],
         crouch:    ['control'],
         run:       ['shift'],
         aim:       ['v'],
@@ -70,7 +68,6 @@ const InputConfig = (function() {
         backward:  { type: 'axis', index: 1, direction: 1 },   // Left Stick Down
         left:      { type: 'axis', index: 0, direction: -1 },  // Left Stick Left
         right:     { type: 'axis', index: 0, direction: 1 },   // Left Stick Right
-        jump:      { type: 'button', index: 0 },               // Croix (X)
         crouch:    { type: 'button', index: 1 },               // Rond (O)
         run:       { type: 'button', index: 4 },               // L1
         aim:       { type: 'button', index: 6 },               // L2

@@ -59,6 +59,69 @@ lancer serveur local.txt
 
 # Raccourci local pour lancer le serveur de test (Windows)
 lancer-serveur.bat
+__lancer-serveur.bat
 
 # Annexes TFE — documents confidentiels, jamais versionnés
 TFE Annexes/
+
+# Vidéos lourdes — jouées via YouTube en ligne (IS_LOCAL=false)
+# La vidéo locale n'est nécessaire que pour le développement
+videos/Introduction complete OK.mp4
+videos/transition-nexus-bruxelles.mp4
+
+# Fichiers de travail TFE (Word, XML décompressé, scripts Python)
+TFE_unpacked/
+TFE_v5_unpacked/
+TFE_v6_unpacked/
+TFE_v7_unpacked/
+TFE_v8_2_unpacked/
+TFE_v9_unpacked/
+TFE_v9_contenu.md
+TFE_v10_4.5_contenu.md
+TFE_working_docs/
+unpacked_tfe_v9/
+unpacked_v10_4.2/
+biblio_unpacked/
+graphify-out/
+scene_data/old/
+scene_data/old2/
+scene_data/old 3/
+
+# Scripts de génération/patch TFE (Python/JS — travail local uniquement)
+*.py
+generate-tfe-base.js
+generate_liens_docx.py
+tfe_format_v*.py
+update_*.py
+inject_*.py
+patch_*.py
+replace_part1.py
+extract_tfe_to_md.py
+fix_colors_green_to_turquoise.py
+
+# Notes et brouillons de recherche (non publiés)
+TFE-Final-Texte sans annexes.txt
+TFE_RESISTANCE_BASE_v13- format texte.txt
+guffens_read.txt
+Google text to speech.md
+Manuel de références bibliographiques v2021.txt
+Résistance - Bibliographie nettoyée.md
+Usage et adoption de l'IA*.md
+benchmark_dispositifs_IA_BE.md
+recherche approfondie*.md
+biblio_rodin.md
+bibliographie_complete_v1.md
+Le protocole SELDON*.md
+Syllabus TFE.txt
+
+# Fichiers PSD (sources Photoshop — non déployés)
+**/*.psd
+
+# Fichiers audio sources lourds (non déployés)
+"AI Mythology - mini jeu/Vocal/*.pkf"
+"AI Mythology - mini jeu/sounds/*.wav"
+
+# Fichiers divers non déployés
+liens-tfe (2).html
+notebook-preview.html
+Sans titre 1.png

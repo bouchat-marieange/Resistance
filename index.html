@@ -150,6 +150,7 @@
         .profile-name { color: #00E5FF; font-family: monospace; font-size: 15px; font-weight: 600; }
         .profile-score { color: #A8C4D4; font-size: 12px; }
         .profile-date { color: #6A8CA0; font-size: 10px; }
+        .profile-room { color: #4A6A7E; font-size: 10px; margin-top: 2px; font-style: italic; }
 
         .empty-msg {
             text-align: center; color: #6A8CA0; font-size: 13px; padding: 24px 0;
@@ -181,9 +182,325 @@
             /* .game-title gérée par clamp() */
             .login-card { padding: 20px; }
         }
+
+        /* ── Panneau admin (Ctrl+Shift+Alt+P) ── */
+        #admin-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.88); z-index: 999999;
+            align-items: center; justify-content: center;
+            backdrop-filter: blur(6px);
+        }
+        #admin-overlay.visible { display: flex; }
+        .admin-panel {
+            background: rgba(10,12,20,0.98); border: 1px solid #ff4f4f;
+            border-radius: 16px; padding: 28px 32px;
+            width: 92%; max-width: 680px; max-height: 85vh;
+            display: flex; flex-direction: column; gap: 18px;
+            box-shadow: 0 0 40px rgba(255,79,79,0.25);
+        }
+        .admin-header {
+            display: flex; align-items: center; justify-content: space-between;
+            border-bottom: 1px solid rgba(255,79,79,0.3); padding-bottom: 14px;
+        }
+        .admin-title {
+            font-family: 'Bebas Neue', sans-serif; font-size: 22px;
+            color: #ff4f4f; letter-spacing: 3px;
+        }
+        .admin-badge {
+            font-size: 10px; background: rgba(255,79,79,0.15);
+            border: 1px solid rgba(255,79,79,0.4); color: #ff8888;
+            padding: 3px 10px; border-radius: 20px; letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .admin-profiles {
+            overflow-y: auto; max-height: 280px;
+            border: 1px solid rgba(255,255,255,0.08); border-radius: 8px;
+            background: rgba(0,0,0,0.3);
+        }
+        .admin-profile-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,0.06);
+            font-size: 12px;
+        }
+        .admin-profile-row:last-child { border-bottom: none; }
+        .admin-profile-name { color: #00E5FF; font-family: monospace; font-weight: 700; }
+        .admin-profile-meta { color: #6a8a9a; font-size: 11px; }
+        .admin-profile-score { color: #7ed6df; font-size: 11px; white-space: nowrap; }
+        .admin-empty { color: #555; font-size: 13px; text-align: center; padding: 20px; font-style: italic; }
+        .admin-stats {
+            font-size: 12px; color: #6a8a9a;
+            background: rgba(255,255,255,0.03); border-radius: 6px;
+            padding: 8px 14px; display: flex; gap: 20px;
+        }
+        .admin-stats span { color: #a0bece; }
+        .admin-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+        .admin-btn {
+            padding: 10px 20px; border-radius: 8px; font-size: 12px;
+            font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+            cursor: pointer; transition: all 0.2s; flex: 1; min-width: 140px;
+        }
+        .admin-btn-export {
+            background: rgba(0,229,255,0.1); border: 1px solid #00E5FF; color: #00E5FF;
+        }
+        .admin-btn-export:hover { background: rgba(0,229,255,0.2); }
+        .admin-btn-import {
+            background: rgba(126,214,223,0.1); border: 1px solid #7ed6df; color: #7ed6df;
+        }
+        .admin-btn-import:hover { background: rgba(126,214,223,0.22); }
+        .admin-btn-purge {
+            background: rgba(255,79,79,0.1); border: 1px solid #ff4f4f; color: #ff4f4f;
+        }
+        .admin-btn-purge:hover { background: rgba(255,79,79,0.25); }
+        .admin-import-zone {
+            display: none; background: rgba(126,214,223,0.07);
+            border: 1px solid rgba(126,214,223,0.35); border-radius: 8px;
+            padding: 14px 18px; font-size: 13px; color: #a0d8e0; line-height: 1.6;
+        }
+        .admin-import-zone.visible { display: block; }
+        .admin-import-feedback { margin-top: 8px; font-size: 12px; }
+        .admin-import-btns { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+        .admin-import-btns button {
+            padding: 8px 18px; border-radius: 6px; font-size: 12px;
+            font-weight: 700; letter-spacing: 1px; cursor: pointer; transition: all 0.2s;
+        }
+        .admin-btn-import-replace {
+            background: #7ed6df; border: 1px solid #7ed6df; color: #000;
+        }
+        .admin-btn-import-replace:hover { background: #aaeeff; }
+        .admin-btn-import-merge {
+            background: transparent; border: 1px solid #7ed6df; color: #7ed6df;
+        }
+        .admin-btn-import-merge:hover { background: rgba(126,214,223,0.15); }
+        .admin-btn-import-cancel {
+            background: transparent; border: 1px solid rgba(255,255,255,0.15); color: #888;
+        }
+        .admin-btn-import-cancel:hover { border-color: rgba(255,255,255,0.3); color: #ccc; }
+        .admin-btn-close {
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15);
+            color: #888;
+        }
+        .admin-btn-close:hover { border-color: rgba(255,255,255,0.3); color: #ccc; }
+        .admin-confirm-zone {
+            display: none; background: rgba(255,79,79,0.08);
+            border: 1px solid rgba(255,79,79,0.4); border-radius: 8px;
+            padding: 14px 18px; font-size: 13px; color: #ffaaaa; line-height: 1.6;
+        }
+        .admin-confirm-zone.visible { display: block; }
+        .admin-confirm-btns { display: flex; gap: 10px; margin-top: 12px; }
+        .admin-confirm-btns button {
+            padding: 8px 18px; border-radius: 6px; font-size: 12px;
+            font-weight: 700; letter-spacing: 1px; cursor: pointer; transition: all 0.2s;
+        }
+        .admin-btn-confirm-yes {
+            background: #ff4f4f; border: 1px solid #ff4f4f; color: #fff;
+        }
+        .admin-btn-confirm-yes:hover { background: #ff2222; }
+        .admin-btn-confirm-no {
+            background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #aaa;
+        }
+        .admin-btn-confirm-no:hover { border-color: rgba(255,255,255,0.4); color: #eee; }
+        .admin-shortcut-hint {
+            font-size: 10px; color: #333; text-align: center; letter-spacing: 1px;
+        }
+
+        /* ── Overlay vidéo intro ── */
+        #video-overlay {
+            display: none;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 99999;
+            align-items: center; justify-content: center;
+        }
+        #video-overlay.visible { display: flex; }
+        #intro-video {
+            width: 100%; height: 100%; object-fit: contain;
+        }
+        #pause-indicator {
+            display: none;
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 90px; color: rgba(255,255,255,0.75);
+            pointer-events: none;
+            text-shadow: 0 0 40px rgba(0,0,0,0.8);
+            animation: fadeOut 1.2s forwards;
+        }
+        @keyframes fadeOut {
+            0% { opacity: 1; }
+            60% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+        /* ── Écran de chargement vidéo — aligné sur les loading screens du jeu ── */
+        #video-loader {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            background: #1a1a1a; z-index: 2;
+            transition: opacity 0.6s ease;
+        }
+        #video-loader.hidden {
+            opacity: 0; pointer-events: none;
+        }
+        #video-loader .loading-title {
+            font-family: 'Bebas Neue', sans-serif;
+            color: #00E5FF;
+            font-size: clamp(48px, 8vw, 88px);
+            letter-spacing: .04em;
+            margin-bottom: 8px;
+        }
+        #video-loader .loading-subtitle {
+            color: #666;
+            font-size: 12px;
+            margin-bottom: 30px;
+        }
+        #video-loader .loading-bar-container {
+            width: 240px; height: 4px;
+            background: #333;
+            border-radius: 2px; overflow: hidden;
+        }
+        #video-loader .loading-bar {
+            width: 0%; height: 100%;
+            background: linear-gradient(90deg, #00E5FF, #00c9e0);
+            border-radius: 2px;
+            box-shadow: 0 0 8px rgba(0,229,255,0.6);
+            transition: width 0.4s ease;
+        }
+
+        /* YouTube player plein écran */
+        #yt-container { position: absolute; top: 0; left: 0; }
+        #yt-player, #yt-player iframe {
+            width: 100%; height: 100%;
+            border: none;
+        }
+
+        /* ── Bouton "Passer l'intro" ── */
+        #skip-intro-btn {
+            position: absolute; bottom: 28px; right: 32px;
+            background: rgba(0,0,0,0.45);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: rgba(255,255,255,0.55);
+            font-size: 12px; letter-spacing: 1.5px;
+            text-transform: uppercase;
+            padding: 7px 14px; border-radius: 6px;
+            cursor: pointer; z-index: 10;
+            transition: color 0.2s, border-color 0.2s, background 0.2s;
+            display: none;
+        }
+        #skip-intro-btn:hover {
+            color: rgba(255,255,255,0.9);
+            border-color: rgba(255,255,255,0.5);
+            background: rgba(0,0,0,0.65);
+        }
+
+        /* ── Modale de confirmation ── */
+        #skip-confirm {
+            display: none;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.72);
+            z-index: 20;
+            backdrop-filter: blur(4px);
+        }
+        #skip-confirm.visible { display: flex; }
+        .skip-dialog {
+            background: rgba(18,18,22,0.97);
+            border: 1px solid #1e3a4a;
+            border-radius: 16px;
+            padding: 36px 40px;
+            max-width: 480px; width: 90%;
+            text-align: center;
+        }
+        .skip-dialog-icon {
+            font-size: 36px; margin-bottom: 16px;
+        }
+        .skip-dialog-title {
+            font-family: 'Bebas Neue', sans-serif;
+            color: #00E5FF; font-size: 26px;
+            letter-spacing: 2px; margin-bottom: 14px;
+        }
+        .skip-dialog-text {
+            color: #9ab4c2; font-size: 13px;
+            line-height: 1.7; margin-bottom: 28px;
+        }
+        .skip-dialog-text strong { color: #d0e8f0; }
+        .skip-dialog-btns {
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        .btn-back-video {
+            padding: 13px; border-radius: 10px;
+            background: #00E5FF; color: #000;
+            border: none; font-size: 14px;
+            font-weight: 700; letter-spacing: 1.5px;
+            text-transform: uppercase; cursor: pointer;
+            transition: background 0.2s, transform 0.15s;
+        }
+        .btn-back-video:hover { background: #33eeff; transform: translateY(-1px); }
+        .btn-skip-anyway {
+            padding: 11px; border-radius: 10px;
+            background: transparent;
+            border: 1px solid #2a3a4a; color: #6a8a9a;
+            font-size: 12px; letter-spacing: 1px;
+            text-transform: uppercase; cursor: pointer;
+            transition: border-color 0.2s, color 0.2s;
+        }
+        .btn-skip-anyway:hover { border-color: #6a8a9a; color: #a0bece; }
     </style>
 </head>
 <body>
+
+<!-- Overlay vidéo intro -->
+<div id="video-overlay">
+
+    <!-- Version locale : fichier MP4 -->
+    <video id="intro-video" preload="auto" playsinline>
+        <source src="videos/Introduction%20complete%20OK.mp4" type="video/mp4">
+    </video>
+
+    <!-- Version en ligne : lecteur YouTube -->
+    <div id="yt-container" style="display:none; width:100%; height:100%;">
+        <div id="yt-player"></div>
+    </div>
+
+    <!-- Écran de chargement — visible jusqu'au premier frame de lecture -->
+    <div id="video-loader">
+        <div style="text-align:center; display:flex; flex-direction:column; align-items:center;">
+            <img src="images/lapin fond transpa.png" alt="Logo" style="width:140px; height:auto; margin-bottom:20px; filter:drop-shadow(0 4px 16px rgba(0,229,255,0.3));">
+            <div class="loading-title">Résistance</div>
+            <div class="loading-subtitle">Chargement en cours...</div>
+            <div class="loading-bar-container">
+                <div class="loading-bar" id="loader-bar"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bouton discret coin bas-droite -->
+    <button id="skip-intro-btn">Passer l'intro ›</button>
+
+    <!-- Modale de confirmation -->
+    <div id="skip-confirm">
+        <div class="skip-dialog">
+            <div class="skip-dialog-icon">⚠</div>
+            <div class="skip-dialog-title">Passer l'introduction ?</div>
+            <div class="skip-dialog-text">
+                Cette séquence est une <strong>mise en situation essentielle</strong> :
+                elle te présente <strong>Raya</strong>, le personnage que tu vas incarner,
+                et révèle des <strong>informations clés</strong> pour comprendre
+                l'univers et les enjeux qui t'attendent dans le jeu.
+                <br><br>
+                Tu risques de manquer des éléments importants pour la suite.
+            </div>
+            <div class="skip-dialog-btns">
+                <button class="btn-back-video" id="btn-back-video">
+                    ▶ Revenir à la vidéo
+                </button>
+                <button class="btn-skip-anyway" id="btn-skip-anyway">
+                    Passer quand même et aller directement au jeu
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="pause-indicator">⏸</div>
+</div>
 
 <canvas id="bg-canvas"></canvas>
 
@@ -350,10 +667,22 @@ function saveProfile(pseudo) {
             createdAt: new Date().toISOString(),
             lastLogin: new Date().toISOString(),
             totalScore: 0,
-            roomScores: {}
+            roomScores: {},
+            introWatched: false,  // true après que le joueur ait vu la vidéo intro
+            lastRoom: ''          // dernière page de jeu visitée
         });
     }
     localStorage.setItem('resistance_profiles', JSON.stringify(profiles));
+}
+
+function markIntroWatched(pseudo) {
+    var profiles = getAllProfiles();
+    var p = profiles.find(function(p) { return p.pseudo === pseudo; });
+    if (p) {
+        p.introWatched = true;
+        if (!p.lastRoom) p.lastRoom = 'test-blackbox.html';
+        localStorage.setItem('resistance_profiles', JSON.stringify(profiles));
+    }
 }
 
 function getProfile(pseudo) {
@@ -442,6 +771,16 @@ document.getElementById('show-recover').addEventListener('click', function(e) {
     renderProfilesList();
 });
 
+var ROOM_NAMES = {
+    'test-blackbox.html':        'Nexus — jeu de décodage',
+    'sas_securite.html':         'Sas de sécurité',
+    'la_villa.html':             'La Villa',
+    'bruxelles_dystopique.html': 'Bruxelles dystopique',
+    'cocoon_nexus.html':         'Nexus — Cocoon',
+    'hall_entree_nexus.html':    "Hall d'entrée du Nexus",
+    'salle_controle_nexus.html': 'Salle de contrôle du Nexus'
+};
+
 function renderProfilesList() {
     var profiles = getAllProfiles();
     var container = document.getElementById('profiles-list');
@@ -462,12 +801,19 @@ function renderProfilesList() {
             var d = new Date(p.lastLogin || p.createdAt);
             dateStr = d.toLocaleDateString('fr-FR') + ' ' + d.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
         } catch(e) {}
+
+        var roomLabel = p.lastRoom ? (ROOM_NAMES[p.lastRoom] || p.lastRoom) : '';
+        var roomLine = roomLabel
+            ? '<div class="profile-room">' + roomLabel + '</div>'
+            : '';
+
         return '<div class="profile-item" data-pseudo="' + p.pseudo + '">' +
             '<div>' +
                 '<div class="profile-name">' + p.pseudo + '</div>' +
                 '<div class="profile-date">Dernière session : ' + dateStr + '</div>' +
+                roomLine +
             '</div>' +
-            '<div class="profile-score">Score: ' + (p.totalScore || 0) + '</div>' +
+            '<div class="profile-score">Lucidité: ' + (p.lucidity && p.lucidity.global ? p.lucidity.global : 0) + '</div>' +
         '</div>';
     }).join('');
 
@@ -491,18 +837,165 @@ function startGame() {
     launchGame();
 }
 
-function launchGame() {
-    // Signaler à la page suivante de passer en plein écran dès son chargement
-    // (requestFullscreen ici serait annulé par la navigation — on passe le relais)
-    sessionStorage.setItem('goFullscreen', '1');
+// ── Détection local vs en ligne ──
+var IS_LOCAL = location.hostname === 'localhost'
+    || location.hostname === '127.0.0.1'
+    || location.protocol === 'file:';
 
-    // Animation de transition
-    document.body.style.transition = 'opacity 0.5s ease';
-    document.body.style.opacity = '0';
-    setTimeout(function() {
-        window.location.href = 'cocoon_nexus.html';
-    }, 500);
+var YT_VIDEO_ID = 'Gy-6JM6BHE0';
+var ytPlayer    = null;
+
+// ── API YouTube chargée uniquement en ligne ──
+if (!IS_LOCAL) {
+    var ytScript = document.createElement('script');
+    ytScript.src = 'https://www.youtube.com/iframe_api';
+    document.head.appendChild(ytScript);
 }
+
+// Callback automatique de l'API YouTube
+window.onYouTubeIframeAPIReady = function() {
+    ytPlayer = new YT.Player('yt-player', {
+        videoId: YT_VIDEO_ID,
+        playerVars: {
+            autoplay: 0, controls: 1, rel: 0,
+            modestbranding: 1, fs: 1, enablejsapi: 1
+        },
+        events: {
+            onReady: function() { hideLoader(); },
+            onStateChange: function(event) {
+                if (event.data === YT.PlayerState.ENDED) goToGame();
+            }
+        }
+    });
+};
+
+function hideLoader() {
+    var loader = document.getElementById('video-loader');
+    loader.classList.add('hidden');
+    setTimeout(function() { loader.style.display = 'none'; }, 650);
+}
+
+function goToGame() {
+    // Marquer l'intro comme vue et enregistrer la salle de départ
+    var active = getActiveProfile();
+    if (active) markIntroWatched(active.pseudo);
+    sessionStorage.setItem('goFullscreen', '1');
+    window.location.href = 'test-blackbox.html';
+}
+
+function doRequestFS(el) {
+    var fn = el.requestFullscreen || el.webkitRequestFullscreen
+        || el.mozRequestFullScreen || el.msRequestFullscreen;
+    if (fn) fn.call(el);
+}
+
+function playIntroVideo() {
+    var overlay = document.getElementById('video-overlay');
+    overlay.classList.add('visible');
+    doRequestFS(overlay);
+    if (IS_LOCAL) {
+        document.getElementById('intro-video').play();
+    } else {
+        document.getElementById('yt-container').style.display = 'block';
+        if (ytPlayer && ytPlayer.playVideo) ytPlayer.playVideo();
+    }
+}
+
+function launchGame() {
+    var profile = getActiveProfile();
+
+    // Joueur existant ayant déjà vu l'intro → reprendre sa progression
+    if (profile && profile.introWatched) {
+        sessionStorage.setItem('goFullscreen', '1');
+        window.location.href = profile.lastRoom || 'test-blackbox.html';
+        return;
+    }
+
+    // Nouveau joueur ou intro pas encore vue → lancer la vidéo
+    playIntroVideo();
+}
+
+// ── Barre de progression + masquage loader (local uniquement) ──
+(function() {
+    var video = document.getElementById('intro-video');
+    var bar   = document.getElementById('loader-bar');
+
+    video.addEventListener('progress', function() {
+        if (!video.buffered.length || !video.duration) return;
+        var pct = (video.buffered.end(video.buffered.length - 1) / video.duration) * 100;
+        bar.style.width = Math.min(pct, 100) + '%';
+    });
+    video.addEventListener('playing', hideLoader);
+    video.addEventListener('waiting', function() {
+        var loader = document.getElementById('video-loader');
+        loader.style.display = 'flex';
+        loader.classList.remove('hidden');
+    });
+})();
+
+// ── Bouton "Passer l'intro" et modale de confirmation ──
+(function() {
+    var skipBtn    = document.getElementById('skip-intro-btn');
+    var confirm    = document.getElementById('skip-confirm');
+    var btnBack    = document.getElementById('btn-back-video');
+    var btnSkip    = document.getElementById('btn-skip-anyway');
+    var wasPlaying = false;
+
+    // Afficher le bouton dès que la vidéo joue (après que le loader ait disparu)
+    document.getElementById('intro-video').addEventListener('playing', function() {
+        skipBtn.style.display = 'block';
+    });
+
+    // Clic sur "Passer l'intro ›" → pause + afficher la modale
+    skipBtn.addEventListener('click', function() {
+        var video = document.getElementById('intro-video');
+        wasPlaying = !video.paused;
+        if (wasPlaying) video.pause();
+        if (!IS_LOCAL && ytPlayer && ytPlayer.pauseVideo) ytPlayer.pauseVideo();
+        confirm.classList.add('visible');
+    });
+
+    // "Revenir à la vidéo" → fermer la modale + reprendre
+    btnBack.addEventListener('click', function() {
+        confirm.classList.remove('visible');
+        if (wasPlaying) {
+            var video = document.getElementById('intro-video');
+            if (IS_LOCAL) video.play();
+            else if (ytPlayer && ytPlayer.playVideo) ytPlayer.playVideo();
+        }
+    });
+
+    // "Passer quand même" → marquer l'intro vue + aller au jeu
+    btnSkip.addEventListener('click', function() {
+        var active = getActiveProfile();
+        if (active) markIntroWatched(active.pseudo);
+        goToGame();
+    });
+})();
+
+// ── Barre d'espace : pause/reprise (local uniquement — YouTube gère le sien) ──
+document.addEventListener('keydown', function(e) {
+    if (!IS_LOCAL) return;
+    if (e.code !== 'Space' && e.key !== ' ') return;
+    var overlay = document.getElementById('video-overlay');
+    if (!overlay.classList.contains('visible')) return;
+
+    e.preventDefault();
+    var video     = document.getElementById('intro-video');
+    var indicator = document.getElementById('pause-indicator');
+
+    if (video.paused) { video.play(); indicator.textContent = '▶'; }
+    else              { video.pause(); indicator.textContent = '⏸'; }
+
+    indicator.style.display = 'block';
+    indicator.style.animation = 'none';
+    void indicator.offsetWidth;
+    indicator.style.animation = 'fadeOut 1.2s forwards';
+    setTimeout(function() { indicator.style.display = 'none'; }, 1200);
+});
+
+// ── Fin de vidéo locale → jeu ──
+document.getElementById('intro-video').addEventListener('ended', goToGame);
 
 // Au chargement : préremplir si profil actif
 (function() {
@@ -517,5 +1010,314 @@ function launchGame() {
 <!-- GoatCounter analytics — privacy-friendly, no cookies -->
 <script data-goatcounter="https://bouchat.goatcounter.com/count"
         async src="//gc.zgo.at/count.js"></script>
+
+<!-- ══════════════════════════════════════════════════════════
+     PANNEAU ADMINISTRATION — Ctrl+Shift+Alt+P
+     Réservé développeur / animateur — ne figure pas dans
+     la configuration des contrôles du jeu.
+     ══════════════════════════════════════════════════════════ -->
+<div id="admin-overlay">
+    <div class="admin-panel">
+        <div class="admin-header">
+            <div class="admin-title">Administration</div>
+            <div class="admin-badge">Dev / Animateur</div>
+        </div>
+
+        <div class="admin-stats" id="admin-stats">
+            <div>Joueurs enregistrés : <span id="admin-count">0</span></div>
+            <div>Score total cumulé : <span id="admin-total-score">0</span></div>
+        </div>
+
+        <div class="admin-profiles" id="admin-profiles-list"></div>
+
+        <div class="admin-actions">
+            <button class="admin-btn admin-btn-export" id="admin-export-btn">
+                ⬇ Exporter JSON
+            </button>
+            <button class="admin-btn admin-btn-import" id="admin-import-btn">
+                ⬆ Restaurer JSON
+            </button>
+            <button class="admin-btn admin-btn-purge" id="admin-purge-btn">
+                ✕ Purger tous les comptes
+            </button>
+            <button class="admin-btn admin-btn-close" id="admin-close-btn">
+                Fermer
+            </button>
+        </div>
+
+        <!-- Input fichier caché — déclenché par le bouton Restaurer -->
+        <input type="file" id="admin-file-input" accept=".json" style="display:none;">
+
+        <!-- Zone de confirmation d'import — affichée après sélection du fichier -->
+        <div class="admin-import-zone" id="admin-import-zone">
+            <div id="admin-import-feedback"></div>
+            <div class="admin-import-btns">
+                <button class="admin-btn-import-replace" id="admin-import-replace">
+                    Remplacer tous les comptes
+                </button>
+                <button class="admin-btn-import-merge" id="admin-import-merge">
+                    Fusionner (garder les comptes existants)
+                </button>
+                <button class="admin-btn-import-cancel" id="admin-import-cancel">
+                    Annuler
+                </button>
+            </div>
+        </div>
+
+        <div class="admin-confirm-zone" id="admin-confirm-zone">
+            ⚠ Cette action est <strong>irréversible</strong>. Tous les profils joueurs,
+            scores et progressions seront supprimés du navigateur.<br>
+            Avez-vous bien exporté les données avant de continuer ?
+            <div class="admin-confirm-btns">
+                <button class="admin-btn-confirm-yes" id="admin-confirm-yes">
+                    Oui, purger maintenant
+                </button>
+                <button class="admin-btn-confirm-no" id="admin-confirm-no">
+                    Annuler
+                </button>
+            </div>
+        </div>
+
+        <div class="admin-shortcut-hint">Ctrl + Shift + Alt + P</div>
+    </div>
+</div>
+
+<script>
+// ── Panneau Administration ─────────────────────────────────────────────────
+(function() {
+    var overlay   = document.getElementById('admin-overlay');
+    var profilesEl= document.getElementById('admin-profiles-list');
+    var countEl   = document.getElementById('admin-count');
+    var totalEl   = document.getElementById('admin-total-score');
+    var confirmZone = document.getElementById('admin-confirm-zone');
+
+    // Combinaison secrète : Ctrl + Shift + Alt + P
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.shiftKey && e.altKey && e.key.toLowerCase() === 'p') {
+            e.preventDefault();
+            openAdminPanel();
+        }
+    });
+
+    function openAdminPanel() {
+        confirmZone.classList.remove('visible');
+        renderAdminProfiles();
+        overlay.classList.add('visible');
+    }
+
+    function closeAdminPanel() {
+        overlay.classList.remove('visible');
+        confirmZone.classList.remove('visible');
+    }
+
+    function renderAdminProfiles() {
+        var profiles = getAllProfiles();
+        countEl.textContent = profiles.length;
+        var totalScore = profiles.reduce(function(sum, p) {
+            return sum + (p.lucidity && p.lucidity.global ? p.lucidity.global : 0);
+        }, 0);
+        totalEl.textContent = totalScore;
+
+        if (profiles.length === 0) {
+            profilesEl.innerHTML = '<div class="admin-empty">Aucun profil enregistré.</div>';
+            return;
+        }
+
+        // Tri : plus récent en premier
+        profiles.sort(function(a, b) {
+            return new Date(b.lastLogin || b.createdAt) - new Date(a.lastLogin || a.createdAt);
+        });
+
+        profilesEl.innerHTML = profiles.map(function(p) {
+            var date = '';
+            try {
+                var d = new Date(p.lastLogin || p.createdAt);
+                date = d.toLocaleDateString('fr-FR') + ' ' + d.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+            } catch(e) {}
+            var room = p.lastRoom ? (ROOM_NAMES[p.lastRoom] || p.lastRoom) : '—';
+            var luc  = p.lucidity && p.lucidity.global ? p.lucidity.global : 0;
+            return '<div class="admin-profile-row">' +
+                '<div>' +
+                    '<div class="admin-profile-name">' + p.pseudo + '</div>' +
+                    '<div class="admin-profile-meta">' + date + ' · ' + room + '</div>' +
+                '</div>' +
+                '<div class="admin-profile-score">Lucidité : ' + luc + '</div>' +
+            '</div>';
+        }).join('');
+    }
+
+    // Export JSON
+    document.getElementById('admin-export-btn').addEventListener('click', function() {
+        var profiles = getAllProfiles();
+        var data = {
+            exportDate: new Date().toISOString(),
+            session: 'Résistance — export activité joueurs',
+            profileCount: profiles.length,
+            profiles: profiles
+        };
+        var blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+        var url  = URL.createObjectURL(blob);
+        var a    = document.createElement('a');
+        var ts   = new Date().toISOString().slice(0,16).replace('T','_').replace(':','-');
+        a.href     = url;
+        a.download = 'resistance_joueurs_' + ts + '.json';
+        a.click();
+        URL.revokeObjectURL(url);
+    });
+
+    // Purge — étape 1 : demande confirmation
+    document.getElementById('admin-purge-btn').addEventListener('click', function() {
+        confirmZone.classList.add('visible');
+    });
+
+    // Purge — étape 2 : confirmer
+    document.getElementById('admin-confirm-yes').addEventListener('click', function() {
+        // Supprimer profils
+        localStorage.removeItem('resistance_profiles');
+        localStorage.removeItem('resistance_active_pseudo');
+        // Supprimer configs input liées aux pseudos
+        var keysToRemove = [];
+        for (var i = 0; i < localStorage.length; i++) {
+            var k = localStorage.key(i);
+            if (k && k.startsWith('resistance-input-config')) keysToRemove.push(k);
+        }
+        keysToRemove.forEach(function(k) { localStorage.removeItem(k); });
+
+        confirmZone.classList.remove('visible');
+        renderAdminProfiles();
+
+        // Toast confirmation
+        var toast = document.createElement('div');
+        toast.textContent = '✓ Tous les comptes ont été purgés.';
+        toast.style.cssText = 'position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#ff4f4f;color:#fff;padding:12px 28px;border-radius:8px;font-weight:700;font-size:13px;z-index:9999999;letter-spacing:1px;';
+        document.body.appendChild(toast);
+        setTimeout(function() { toast.remove(); }, 3000);
+    });
+
+    // Purge — annuler
+    document.getElementById('admin-confirm-no').addEventListener('click', function() {
+        confirmZone.classList.remove('visible');
+    });
+
+    // ── Import / Restauration JSON ────────────────────────────────────────
+    var importZone    = document.getElementById('admin-import-zone');
+    var importFeedback= document.getElementById('admin-import-feedback');
+    var fileInput     = document.getElementById('admin-file-input');
+    var pendingProfiles = null; // profils lus depuis le fichier, en attente de confirmation
+
+    // Ouvrir le sélecteur de fichier
+    document.getElementById('admin-import-btn').addEventListener('click', function() {
+        confirmZone.classList.remove('visible');
+        importZone.classList.remove('visible');
+        pendingProfiles = null;
+        fileInput.value = '';
+        fileInput.click();
+    });
+
+    // Lecture du fichier sélectionné
+    fileInput.addEventListener('change', function() {
+        var file = fileInput.files[0];
+        if (!file) return;
+
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                var data = JSON.parse(e.target.result);
+
+                // Accepte le format export (avec "profiles") ou un tableau direct
+                var profiles = Array.isArray(data) ? data
+                    : (data.profiles && Array.isArray(data.profiles)) ? data.profiles
+                    : null;
+
+                if (!profiles) {
+                    importFeedback.innerHTML =
+                        '<span style="color:#ff8888;">⚠ Fichier invalide : aucune liste de profils trouvée.</span>';
+                    importZone.classList.add('visible');
+                    return;
+                }
+
+                // Vérification minimale : chaque entrée doit avoir un pseudo
+                var valid = profiles.filter(function(p) { return p && p.pseudo; });
+                if (valid.length === 0) {
+                    importFeedback.innerHTML =
+                        '<span style="color:#ff8888;">⚠ Aucun profil valide dans ce fichier.</span>';
+                    importZone.classList.add('visible');
+                    return;
+                }
+
+                pendingProfiles = valid;
+                var exportDate = data.exportDate
+                    ? ' (exporté le ' + new Date(data.exportDate).toLocaleString('fr-FR') + ')'
+                    : '';
+
+                importFeedback.innerHTML =
+                    '<strong style="color:#7ed6df;">' + valid.length + ' profil(s) trouvé(s)</strong>' +
+                    exportDate + '<br>' +
+                    'Choisissez comment restaurer ces données :' +
+                    '<ul style="margin:6px 0 0 16px; color:#88aacc;">' +
+                        '<li><b>Remplacer</b> — efface les comptes actuels et restaure le fichier</li>' +
+                        '<li><b>Fusionner</b> — ajoute les profils du fichier sans supprimer les actuels' +
+                            ' (en cas de doublon, le fichier a la priorité)</li>' +
+                    '</ul>';
+                importZone.classList.add('visible');
+
+            } catch(err) {
+                importFeedback.innerHTML =
+                    '<span style="color:#ff8888;">⚠ Erreur de lecture : fichier JSON corrompu.</span>';
+                importZone.classList.add('visible');
+            }
+        };
+        reader.readAsText(file);
+    });
+
+    function doImport(mode) {
+        if (!pendingProfiles) return;
+
+        if (mode === 'replace') {
+            localStorage.setItem('resistance_profiles', JSON.stringify(pendingProfiles));
+        } else {
+            // Fusion : profils existants + fichier (fichier prioritaire sur les doublons)
+            var existing  = getAllProfiles();
+            var merged    = existing.slice();
+            pendingProfiles.forEach(function(p) {
+                var idx = merged.findIndex(function(e) { return e.pseudo === p.pseudo; });
+                if (idx >= 0) merged[idx] = p; // doublon → le fichier écrase
+                else merged.push(p);
+            });
+            localStorage.setItem('resistance_profiles', JSON.stringify(merged));
+        }
+
+        importZone.classList.remove('visible');
+        pendingProfiles = null;
+        renderAdminProfiles();
+
+        var label = mode === 'replace' ? 'Comptes restaurés' : 'Comptes fusionnés';
+        var toast = document.createElement('div');
+        toast.textContent = '✓ ' + label + ' avec succès.';
+        toast.style.cssText = 'position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#7ed6df;color:#000;padding:12px 28px;border-radius:8px;font-weight:700;font-size:13px;z-index:9999999;letter-spacing:1px;';
+        document.body.appendChild(toast);
+        setTimeout(function() { toast.remove(); }, 3000);
+    }
+
+    document.getElementById('admin-import-replace').addEventListener('click', function() {
+        doImport('replace');
+    });
+    document.getElementById('admin-import-merge').addEventListener('click', function() {
+        doImport('merge');
+    });
+    document.getElementById('admin-import-cancel').addEventListener('click', function() {
+        importZone.classList.remove('visible');
+        pendingProfiles = null;
+    });
+
+    // Fermer
+    document.getElementById('admin-close-btn').addEventListener('click', closeAdminPanel);
+
+    // Clic hors panneau
+    overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) closeAdminPanel();
+    });
+})();
+</script>
 </body>
 </html>
