@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Résistance — Bruxelles Dystopique — Aperçus</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Epilogue:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #000;
+            color: #eee;
+            width: 100vw; height: 100vh;
+            overflow: hidden;
+            font-family: 'Epilogue', sans-serif;
+        }
+
+        /* ── Slides ── */
+        #slideshow {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+        }
+
+        .slide {
+            position: absolute;
+            inset: 0;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center center;
+            background-color: #000;
+            opacity: 0;
+            transition: opacity 0.7s ease;
+            pointer-events: none;
+        }
+        .slide.active  { opacity: 1; pointer-events: auto; }
+        .slide.prev    { opacity: 0; }
+
+        /* ── Gradient bas pour lisibilité des contrôles ── */
+        #bottom-gradient {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            height: 160px;
+            background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%);
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        /* ── Compteur en haut à droite ── */
+        #counter {
+            position: fixed;
+            top: 22px; right: 28px;
+            font-family: 'Epilogue', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: .1em;
+            color: rgba(255,255,255,0.5);
+            z-index: 20;
+        }
+
+        /* ── Titre en haut à gauche ── */
+        #slide-title {
+            position: fixed;
+            top: 20px; left: 28px;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 22px;
+            letter-spacing: .1em;
+            color: rgba(0,229,255,0.6);
+            z-index: 20;
+        }
+
+        /* ── Barre de progression ── */
+        #progress-bar-wrap {
+            position: fixed;
+            bottom: 88px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: min(480px, 85vw);
+            height: 3px;
+            background: rgba(255,255,255,0.12);
+            border-radius: 2px;
+            z-index: 20;
+            overflow: hidden;
+        }
+        #progress-bar {
+            height: 100%;
+            background: #00E5FF;
+            border-radius: 2px;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        /* ── Contrôles ── */
+        #controls {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 20;
+        }
+
+        .ctrl-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(10, 20, 30, 0.75);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 8px;
+            color: rgba(255,255,255,0.75);
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.15s;
+            font-family: 'Epilogue', sans-serif;
+            backdrop-filter: blur(6px);
+        }
+        .ctrl-btn:hover {
+            background: rgba(0,229,255,0.12);
+            border-color: rgba(0,229,255,0.5);
+            color: #00E5FF;
+            transform: translateY(-1px);
+        }
+        .ctrl-btn:active { transform: translateY(0); }
+
+        /* Icône SVG inline dans les boutons */
+        .ctrl-btn svg {
+            width: 18px; height: 18px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            flex-shrink: 0;
+        }
+
+        .btn-nav  { width: 44px; height: 44px; }
+        .btn-play { width: 54px; height: 54px; background: rgba(0,229,255,0.1); border-color: rgba(0,229,255,0.35); color: #00E5FF; }
+        .btn-play:hover { background: rgba(0,229,255,0.22); }
+
+        .btn-quit {
+            padding: 0 16px;
+            height: 44px;
+            gap: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+        }
+
+        /* ── Fin de diaporama ── */
+        #end-screen {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.88);
+            z-index: 30;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+        }
+        #end-screen.visible { display: flex; }
+        #end-screen .end-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: clamp(28px, 5vw, 52px);
+            letter-spacing: .06em;
+            color: #00E5FF;
+            text-align: center;
+        }
+        #end-screen .end-sub {
+            font-size: 14px;
+            color: rgba(255,255,255,0.5);
+            letter-spacing: .04em;
+            text-align: center;
+        }
+        .btn-end-back {
+            padding: 12px 28px;
+            font-family: 'Epilogue', sans-serif;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            color: #0a0a0a;
+            background: #00E5FF;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.15s;
+            margin-top: 8px;
+        }
+        .btn-end-back:hover { background: rgba(0,229,255,0.85); transform: translateY(-1px); }
+    </style>
+</head>
+<body>
+
+<div id="slideshow"></div>
+<div id="bottom-gradient"></div>
+
+<div id="slide-title">Bruxelles Dystopique — Aperçus</div>
+<div id="counter">1 / 48</div>
+
+<div id="progress-bar-wrap">
+    <div id="progress-bar"></div>
+</div>
+
+<div id="controls">
+    <!-- Précédent -->
+    <button class="ctrl-btn btn-nav" id="btn-prev" title="Image précédente">
+        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+
+    <!-- Play / Pause -->
+    <button class="ctrl-btn btn-play" id="btn-play" title="Lecture / Pause">
+        <!-- icône pause affichée quand en lecture -->
+        <svg id="icon-pause" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+        <svg id="icon-play"  viewBox="0 0 24 24" style="display:none"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+    </button>
+
+    <!-- Suivant -->
+    <button class="ctrl-btn btn-nav" id="btn-next" title="Image suivante">
+        <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+
+    <!-- Quitter -->
+    <button class="ctrl-btn btn-quit" id="btn-quit" title="Quitter le diaporama">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        Quitter
+    </button>
+</div>
+
+<!-- Écran de fin -->
+<div id="end-screen">
+    <div class="end-title">Bruxelles t'attend,<br>Raya.</div>
+    <div class="end-sub">48 images — aperçu de la traversée à venir</div>
+    <button class="btn-end-back" id="btn-end-back">← Retour</button>
+</div>
+
+<script>
+(function () {
+    var IMAGES = [
+        "images/apercu bruxelles dystopique/openart-gpt-image-2-edit-1_1780570729229_99c865ff.png",
+        "images/apercu bruxelles dystopique/openart-gpt-image-2-edit-1_1780570766803_60c5c4ae.png",
+        "images/apercu bruxelles dystopique/openart-gpt-image-2-edit-1_1780570815179_ae013846.png",
+        "images/apercu bruxelles dystopique/openart-gpt-image-2-edit-1_1780572071117_c8be4ece.png",
+        "images/apercu bruxelles dystopique/openart-gpt-image-2-edit-1_1780572073334_9dd30d39.png",
+        "images/apercu bruxelles dystopique/openart-gpt-image-2-edit-1_1780572079832_0e1dd7c4.png",
+        "images/apercu bruxelles dystopique/openart-gpt-image-2-edit-1_1780572081156_e71f40bd.png",
+        "images/apercu bruxelles dystopique/openart-gpt-image-2-edit-1_1780572090746_a797a993.png",
+        "images/apercu bruxelles dystopique/openart-gpt-image-2-edit-1_1780572092097_bf6b1c08.png",
+        "images/apercu bruxelles dystopique/openart-gpt-image-2-edit-1_1780572093334_2345f138.png",
+        "images/apercu bruxelles dystopique/openart-gpt-image-2-edit-1_1780572099763_f2d97b39.png",
+        "images/apercu bruxelles dystopique/openart-gpt-image-2-edit-1_1780572102802_219b9874.png",
+        "images/apercu bruxelles dystopique/openart-gpt-image-2-edit-1_1780572103205_974e71ba.png",
+        "images/apercu bruxelles dystopique/openart-gpt-image-2-edit-1_1780572111669_fbfe2549.png",
+        "images/apercu bruxelles dystopique/openart-gpt-image-2-edit-1_1780572489897_71f9fe44.png",
+        "images/apercu bruxelles dystopique/openart-gpt-image-2-edit-1_1780572494318_2042b98f.png",
+        "images/apercu bruxelles dystopique/openart-gpt-image-2-edit-1_1780572496063_d95d7d02.png",
+        "images/apercu bruxelles dystopique/openart-gpt-image-2-edit-1_1780572499582_fc30b908.png",
+        "images/apercu bruxelles dystopique/openart-gpt-image-2-edit-1_1780572499742_0a15fc96.png",
+        "images/apercu bruxelles dystopique/openart-gpt-image-2-edit-1_1780572507541_c41d6a11.png",
+        "images/apercu bruxelles dystopique/openart-gpt-image-2-edit-1_1780572515528_c6450f98.png",
+        "images/apercu bruxelles dystopique/openart-gpt-image-2-edit-1_1780572521943_a111dc44.png",
+        "images/apercu bruxelles dystopique/openart-gpt-image-2-edit-1_1780572540509_fd022256.png",
+        "images/apercu bruxelles dystopique/openart-gpt-image-2-edit-1_1780572546845_52b81d74.png",
+        "images/apercu bruxelles dystopique/openart-gpt-image-2-edit-1_1780572558012_03ed0ffe.png",
+        "images/apercu bruxelles dystopique/openart-gpt-image-2-edit-1_1780572558164_03008221.png",
+        "images/apercu bruxelles dystopique/openart-gpt-image-2-edit-1_1780572580049_1700379c.png",
+        "images/apercu bruxelles dystopique/openart-gpt-image-2-edit-1_1780572893048_f1a57d8d.png",
+        "images/apercu bruxelles dystopique/openart-gpt-image-2-edit-1_1780572917247_af42a11e.png",
+        "images/apercu bruxelles dystopique/openart-gpt-image-2-edit-1_1780572927316_8b49ac4b.png",
+        "images/apercu bruxelles dystopique/openart-gpt-image-2-edit-1_1780572929734_5e3e7750.png",
+        "images/apercu bruxelles dystopique/openart-gpt-image-2-edit-1_1780572945956_2218abb7.png",
+        "images/apercu bruxelles dystopique/openart-gpt-image-2-edit-1_1780572973446_1ad379ad.png",
+        "images/apercu bruxelles dystopique/openart-gpt-image-2-edit-1_1780572984066_fac9baa1.png",
+        "images/apercu bruxelles dystopique/openart-gpt-image-2-edit-1_1780573020928_7b1ce4c6.png",
+        "images/apercu bruxelles dystopique/openart-gpt-image-2-edit-1_1780573025674_364c45ec.png",
+        "images/apercu bruxelles dystopique/openart-gpt-image-2-edit-1_1780573041497_f9ef15d2.png",
+        "images/apercu bruxelles dystopique/openart-gpt-image-2-edit-1_1780573049076_96a9b097.png",
+        "images/apercu bruxelles dystopique/openart-gpt-image-2-edit-1_1780573063322_202e6bee.png",
+        "images/apercu bruxelles dystopique/openart-gpt-image-2-edit-1_1780573085528_2fe35b3f.png",
+        "images/apercu bruxelles dystopique/openart-gpt-image-2-edit-1_1780573098879_8b00f2a7.png",
+        "images/apercu bruxelles dystopique/openart-gpt-image-2-edit-1_1780573136774_3fa5233b.png",
+        "images/apercu bruxelles dystopique/openart-gpt-image-2-edit-1_1780573155320_72602bb4.png",
+        "images/apercu bruxelles dystopique/openart-gpt-image-2-edit-1_1780573155664_542a8bb1.png",
+        "images/apercu bruxelles dystopique/openart-gpt-image-2-edit-1_1780573175730_fa2bf500.png",
+        "images/apercu bruxelles dystopique/openart-gpt-image-2-edit-1_1780573211093_5921e69f.png",
+        "images/apercu bruxelles dystopique/openart-gpt-image-2-edit-1_1780573212583_7f6c73d9.png",
+        "images/apercu bruxelles dystopique/openart-gpt-image-2-edit-1_1780573219785_21d95e23.png"
+    ];
+
+    var TOTAL      = IMAGES.length;
+    var DELAY      = 4000; // ms par image
+    var current    = 0;
+    var isPlaying  = true;
+    var timer      = null;
+    var slides     = [];
+
+    var slideshow  = document.getElementById('slideshow');
+    var counter    = document.getElementById('counter');
+    var bar        = document.getElementById('progress-bar');
+    var btnPrev    = document.getElementById('btn-prev');
+    var btnNext    = document.getElementById('btn-next');
+    var btnPlay    = document.getElementById('btn-play');
+    var iconPause  = document.getElementById('icon-pause');
+    var iconPlay   = document.getElementById('icon-play');
+    var btnQuit    = document.getElementById('btn-quit');
+    var endScreen  = document.getElementById('end-screen');
+    var btnEndBack = document.getElementById('btn-end-back');
+
+    // Créer tous les éléments slide (chargement paresseux via backgroundImage)
+    IMAGES.forEach(function (src, i) {
+        var el = document.createElement('div');
+        el.className = 'slide';
+        slideshow.appendChild(el);
+        slides.push(el);
+    });
+
+    // Précharger les 3 premières images immédiatement, les autres à la demande
+    function preloadAround(idx) {
+        for (var offset = -1; offset <= 2; offset++) {
+            var i = idx + offset;
+            if (i >= 0 && i < TOTAL && !slides[i].style.backgroundImage) {
+                slides[i].style.backgroundImage = 'url("' + IMAGES[i] + '")';
+            }
+        }
+    }
+
+    function showSlide(idx) {
+        slides[current].classList.remove('active');
+        current = (idx + TOTAL) % TOTAL;
+        slides[current].classList.add('active');
+        counter.textContent = (current + 1) + ' / ' + TOTAL;
+        bar.style.width = ((current + 1) / TOTAL * 100) + '%';
+        preloadAround(current);
+    }
+
+    function startTimer() {
+        clearInterval(timer);
+        timer = setInterval(function () {
+            if (current >= TOTAL - 1) {
+                // Dernière image atteinte → stopper
+                clearInterval(timer);
+                isPlaying = false;
+                updatePlayBtn();
+                endScreen.classList.add('visible');
+            } else {
+                showSlide(current + 1);
+            }
+        }, DELAY);
+    }
+
+    function updatePlayBtn() {
+        iconPause.style.display = isPlaying ? '' : 'none';
+        iconPlay.style.display  = isPlaying ? 'none' : '';
+    }
+
+    function togglePlay() {
+        isPlaying = !isPlaying;
+        if (isPlaying) {
+            startTimer();
+        } else {
+            clearInterval(timer);
+        }
+        updatePlayBtn();
+    }
+
+    function goBack() {
+        window.location.href = 'bruxelles_dystopique.html';
+    }
+
+    // Init : afficher la première slide
+    preloadAround(0);
+    slides[0].classList.add('active');
+    startTimer();
+
+    // Événements
+    btnPrev.addEventListener('click', function () {
+        clearInterval(timer);
+        showSlide(current - 1);
+        if (isPlaying) startTimer();
+    });
+
+    btnNext.addEventListener('click', function () {
+        clearInterval(timer);
+        if (current >= TOTAL - 1) {
+            endScreen.classList.add('visible');
+            isPlaying = false;
+            updatePlayBtn();
+            return;
+        }
+        showSlide(current + 1);
+        if (isPlaying) startTimer();
+    });
+
+    btnPlay.addEventListener('click', togglePlay);
+    btnQuit.addEventListener('click', goBack);
+    btnEndBack.addEventListener('click', goBack);
+
+    // Raccourcis clavier
+    document.addEventListener('keydown', function (e) {
+        if (endScreen.classList.contains('visible')) return;
+        switch (e.key) {
+            case 'ArrowLeft':  btnPrev.click(); break;
+            case 'ArrowRight': btnNext.click(); break;
+            case ' ':
+                e.preventDefault();
+                togglePlay();
+                break;
+            case 'Escape': goBack(); break;
+        }
+    });
+})();
+</script>
+
+<!-- GoatCounter analytics — privacy-friendly, no cookies -->
+<script data-goatcounter="https://bouchat.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
