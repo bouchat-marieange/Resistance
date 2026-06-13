@@ -1319,33 +1319,49 @@ async function bootstrapFromFiles() {
             console.log('📦 Projet restauré dans IndexedDB (timestamp: ' + new Date(fileManifest.project.timestamp || 0).toLocaleTimeString() + ')');
         }
 
-        // ── Restaurer les blobs (textures murs/sol/plafond + GLB objets) ──────
-        // bootstrapFromFiles ne charge que le projet — les blobs vivent dans
-        // scene_data/blobs/{id}.json et doivent être mis dans STORE_BLOBS pour
-        // que restoreWall / restoreFloorPolygon / restoreCeilingPolygon / restoreImportedObject
-        // puissent les lire. Sans ça, toutes les textures disparaissent si l'IDB est vidée.
-        const blobIds = fileManifest.blobIds || [];
-        if (blobIds.length > 0) {
-            if (subtitle) subtitle.textContent = 'Restauration des textures (' + blobIds.length + ')...';
+        // ── Restaurer UNIQUEMENT les blobs de textures au démarrage ──────
+        // Les blobs GLB (modèles 3D) et audio sont lourds (jusqu'à 55 Mo) et chargés
+        // à la demande par les objets eux-mêmes. Les pré-charger tous au boot causerait
+        // plusieurs centaines de Mo de téléchargement inutile en ligne.
+        // Seules les textures (murs, sol, plafond) sont nécessaires immédiatement.
+        const project = fileManifest.project || {};
+        const _textureBlobSet = new Set();
+        function _collectTexBlobId(obj) {
+            if (!obj) return;
+            if (obj.textureBlobId) _textureBlobSet.add(obj.textureBlobId);
+            if (obj.textureInfo) Object.values(obj.textureInfo).forEach(function(ti) {
+                if (ti && ti.textureBlobId) _textureBlobSet.add(ti.textureBlobId);
+            });
+        }
+        (project.walls          || []).forEach(_collectTexBlobId);
+        (project.floorTiles     || []).forEach(_collectTexBlobId);
+        (project.ceilingTiles   || []).forEach(_collectTexBlobId);
+        (project.floorPolygons  || []).forEach(_collectTexBlobId);
+        (project.ceilingPolygons|| []).forEach(_collectTexBlobId);
+
+        const textureBlobIds = [..._textureBlobSet];
+        if (textureBlobIds.length > 0) {
+            if (subtitle) subtitle.textContent = 'Restauration des textures (' + textureBlobIds.length + ')...';
             let blobsOk = 0, blobsFail = 0;
-            await Promise.all(blobIds.map(async function(blobId) {
+            await Promise.all(textureBlobIds.map(async function(blobId) {
                 try {
-                    // Vérifier si le blob est déjà dans IDB (évite un re-fetch inutile)
                     const existing = await RoomEditorDB.get(RoomEditorDB.STORE_BLOBS, blobId);
                     if (existing) { blobsOk++; return; }
-
                     const resp = await fetch('scene_data/blobs/' + blobId + '.json?_=' + Date.now());
                     if (!resp.ok) { blobsFail++; return; }
                     const blobRecord = await resp.json();
                     await RoomEditorDB.put(RoomEditorDB.STORE_BLOBS, blobRecord);
                     blobsOk++;
                 } catch (e) {
-                    console.warn('⚠️ Blob ' + blobId + ' non restauré:', e);
+                    console.warn('⚠️ Blob texture ' + blobId + ' non restauré:', e);
                     blobsFail++;
                 }
             }));
-            console.log('🖼️ Blobs restaurés : ' + blobsOk + ' OK, ' + blobsFail + ' échec(s)');
+            console.log('🖼️ Textures restaurées : ' + blobsOk + ' OK, ' + blobsFail + ' échec(s)');
         }
+
+        // Les blobs GLB des objets importés (fileDataBlobId) sont chargés à la demande
+        // via _getCachedTexture / restoreImportedObject — pas besoin de les pré-charger ici.
 
         if (subtitle) subtitle.textContent = 'Construction de la scène...';
     } catch (e) {

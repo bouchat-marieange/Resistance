@@ -1818,7 +1818,7 @@ function updateControlsForMode() {
         controls.minPolarAngle = Math.PI * 0.15;
         controls.maxPolarAngle = Math.PI * 0.85;
         controls.enablePan = false;
-        controls.rotateSpeed = 0.4;
+        controls.rotateSpeed = -0.4; // Négatif : corrige l'inversion de l'axe horizontal en FPS
         controls.enableDamping = false;
         controls.mouseButtons = {
             LEFT: null,
