@@ -567,6 +567,37 @@ function init() {
         RIGHT: THREE.MOUSE.ROTATE
     };
 
+    // Rotation FPS souris : axes H et V contrôlés indépendamment
+    // (En mode jeu, enableRotate=false — ce handler remplace OrbitControls pour la rotation)
+    var _fpsDragging = false, _fpsPrevX = 0, _fpsPrevY = 0;
+    var _fpsMouseDir = new THREE.Vector3();
+    renderer.domElement.addEventListener('contextmenu', function(e) { e.preventDefault(); });
+    renderer.domElement.addEventListener('mousedown', function(e) {
+        if (interactionMode === 'game' && e.button === 2) {
+            _fpsDragging = true; _fpsPrevX = e.clientX; _fpsPrevY = e.clientY;
+        }
+    });
+    document.addEventListener('mouseup', function(e) { if (e.button === 2) _fpsDragging = false; });
+    renderer.domElement.addEventListener('mousemove', function(e) {
+        if (!_fpsDragging || interactionMode !== 'game') return;
+        var dx = e.clientX - _fpsPrevX, dy = e.clientY - _fpsPrevY;
+        _fpsPrevX = e.clientX; _fpsPrevY = e.clientY;
+        if (dx === 0 && dy === 0) return;
+        _fpsMouseDir.subVectors(controls.target, camera.position);
+        var dist = Math.max(_fpsMouseDir.length(), 0.001);
+        var theta = Math.atan2(_fpsMouseDir.x, _fpsMouseDir.z);
+        var phi   = Math.acos(Math.max(-1, Math.min(1, _fpsMouseDir.y / dist)));
+        var newTheta = theta - dx * 0.004;
+        var newPhi   = Math.max(0.3, Math.min(2.8, phi + dy * 0.004));
+        _fpsMouseDir.set(
+            dist * Math.sin(newPhi) * Math.sin(newTheta),
+            dist * Math.cos(newPhi),
+            dist * Math.sin(newPhi) * Math.cos(newTheta)
+        );
+        controls.target.copy(camera.position).add(_fpsMouseDir);
+        camera.lookAt(controls.target);
+    });
+
     // MODE JEU: Zoom molette actif (exploration) — OrbitControls gère le zoom
     // La molette est libre dans les deux modes (game et developer)
 
@@ -1812,13 +1843,13 @@ function updateControlsForMode() {
     if (interactionMode === 'game') {
         // Mode FPS : clic droit maintenu pour orienter le regard
         controls.enableZoom = true;
-        controls.enableRotate = true;
+        controls.enableRotate = false; // Rotation gérée par handler souris personnalisé (axes H/V indépendants)
         controls.minDistance = 0.001; // Garder très proche pour éviter que OrbitControls pousse la caméra en arrière
         controls.maxDistance = 20;
         controls.minPolarAngle = Math.PI * 0.15;
         controls.maxPolarAngle = Math.PI * 0.85;
         controls.enablePan = false;
-        controls.rotateSpeed = -0.4; // Négatif : corrige l'inversion de l'axe horizontal en FPS
+        controls.rotateSpeed = 0.4;
         controls.enableDamping = false;
         controls.mouseButtons = {
             LEFT: null,
