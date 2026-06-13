@@ -578,7 +578,9 @@ function init() {
         }
     });
     document.addEventListener('mouseup', function(e) { if (e.button === 2) _fpsDragging = false; });
-    renderer.domElement.addEventListener('mousemove', function(e) {
+    // mousemove sur document (pas renderer.domElement) : le navigateur envoie les
+    // events au niveau document quand on maintient le bouton droit enfoncé
+    document.addEventListener('mousemove', function(e) {
         if (!_fpsDragging || interactionMode !== 'game') return;
         var dx = e.clientX - _fpsPrevX, dy = e.clientY - _fpsPrevY;
         _fpsPrevX = e.clientX; _fpsPrevY = e.clientY;

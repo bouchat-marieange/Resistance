@@ -87,6 +87,16 @@ scene_data/old/
 scene_data/old2/
 scene_data/old 3/
 
+# Gros GLBs dans scene_data/blobs/ — trop lourds pour GitHub Pages (~181 MB)
+# Ces blobs existent en local dans IndexedDB, pas besoin de les servir en ligne
+scene_data/blobs/blob_kjfvtj.json
+scene_data/blobs/blob_pp538n.json
+scene_data/blobs/blob_57nnsq.json
+scene_data/blobs/blob_iuxvou.json
+scene_data/blobs/blob_108m2b.json
+scene_data/blobs/blob_j3dyrn.json
+scene_data/blobs/blob_dl5vch.json
+
 # Scripts de génération/patch TFE (Python/JS — travail local uniquement)
 *.py
 generate-tfe-base.js
