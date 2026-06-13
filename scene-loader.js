@@ -1339,9 +1339,14 @@ async function bootstrapFromFiles() {
         (project.floorPolygons  || []).forEach(_collectTexBlobId);
         (project.ceilingPolygons|| []).forEach(_collectTexBlobId);
 
+        // Ajouter les blobs audio (quelques Mo max — nécessaires pour les sons de jeu)
+        (project.audioTracks || []).forEach(function(a) {
+            if (a && a.blobId) _textureBlobSet.add(a.blobId);
+        });
+
         const textureBlobIds = [..._textureBlobSet];
         if (textureBlobIds.length > 0) {
-            if (subtitle) subtitle.textContent = 'Restauration des textures (' + textureBlobIds.length + ')...';
+            if (subtitle) subtitle.textContent = 'Restauration des textures et sons...';
             let blobsOk = 0, blobsFail = 0;
             await Promise.all(textureBlobIds.map(async function(blobId) {
                 try {
@@ -1353,15 +1358,15 @@ async function bootstrapFromFiles() {
                     await RoomEditorDB.put(RoomEditorDB.STORE_BLOBS, blobRecord);
                     blobsOk++;
                 } catch (e) {
-                    console.warn('⚠️ Blob texture ' + blobId + ' non restauré:', e);
+                    console.warn('⚠️ Blob ' + blobId + ' non restauré:', e);
                     blobsFail++;
                 }
             }));
-            console.log('🖼️ Textures restaurées : ' + blobsOk + ' OK, ' + blobsFail + ' échec(s)');
+            console.log('🖼️ Textures + sons restaurés : ' + blobsOk + ' OK, ' + blobsFail + ' échec(s)');
         }
 
         // Les blobs GLB des objets importés (fileDataBlobId) sont chargés à la demande
-        // via _getCachedTexture / restoreImportedObject — pas besoin de les pré-charger ici.
+        // via restoreImportedObject — pas besoin de les pré-charger ici.
 
         if (subtitle) subtitle.textContent = 'Construction de la scène...';
     } catch (e) {
