@@ -567,21 +567,21 @@ function init() {
         RIGHT: THREE.MOUSE.ROTATE
     };
 
-    // Rotation FPS souris : axes H et V contrôlés indépendamment
-    // (En mode jeu, enableRotate=false — ce handler remplace OrbitControls pour la rotation)
-    var _fpsDragging = false, _fpsPrevX = 0, _fpsPrevY = 0;
+    // Rotation FPS souris — Pointer Events + setPointerCapture
+    // setPointerCapture force le canvas à recevoir tous les events même hors zone,
+    // ce qui fonctionne sur local ET en ligne (HTTPS / GitHub Pages).
+    var _fpsPrevX = 0, _fpsPrevY = 0, _fpsCapturedId = null;
     var _fpsMouseDir = new THREE.Vector3();
     renderer.domElement.addEventListener('contextmenu', function(e) { e.preventDefault(); });
-    renderer.domElement.addEventListener('mousedown', function(e) {
-        if (interactionMode === 'game' && e.button === 2) {
-            _fpsDragging = true; _fpsPrevX = e.clientX; _fpsPrevY = e.clientY;
-        }
+    renderer.domElement.addEventListener('pointerdown', function(e) {
+        if (interactionMode !== 'game' || e.button !== 2) return;
+        e.preventDefault();
+        _fpsCapturedId = e.pointerId;
+        _fpsPrevX = e.clientX; _fpsPrevY = e.clientY;
+        try { renderer.domElement.setPointerCapture(e.pointerId); } catch(ex) {}
     });
-    document.addEventListener('mouseup', function(e) { if (e.button === 2) _fpsDragging = false; });
-    // mousemove sur document (pas renderer.domElement) : le navigateur envoie les
-    // events au niveau document quand on maintient le bouton droit enfoncé
-    document.addEventListener('mousemove', function(e) {
-        if (!_fpsDragging || interactionMode !== 'game') return;
+    renderer.domElement.addEventListener('pointermove', function(e) {
+        if (_fpsCapturedId === null || e.pointerId !== _fpsCapturedId || interactionMode !== 'game') return;
         var dx = e.clientX - _fpsPrevX, dy = e.clientY - _fpsPrevY;
         _fpsPrevX = e.clientX; _fpsPrevY = e.clientY;
         if (dx === 0 && dy === 0) return;
@@ -598,6 +598,12 @@ function init() {
         );
         controls.target.copy(camera.position).add(_fpsMouseDir);
         camera.lookAt(controls.target);
+    });
+    renderer.domElement.addEventListener('pointerup', function(e) {
+        if (e.button === 2 && _fpsCapturedId !== null) {
+            _fpsCapturedId = null;
+            try { renderer.domElement.releasePointerCapture(e.pointerId); } catch(ex) {}
+        }
     });
 
     // MODE JEU: Zoom molette actif (exploration) — OrbitControls gère le zoom
