@@ -144,7 +144,7 @@ function _createSharedMaterial(cachedEntry, options = {}) {
 
     return new THREE.MeshStandardMaterial({
         map: tex,
-        side: THREE.DoubleSide,
+        side: options.side !== undefined ? options.side : THREE.DoubleSide,
         roughness: options.roughness !== undefined ? options.roughness : 0.5,
         metalness: options.metalness !== undefined ? options.metalness : 0,
         polygonOffset: options.polygonOffset || false,
@@ -434,7 +434,7 @@ function createWallSegmentWithId(start, end, name, id) {
     const extendedLength = length + wallThickness;
     const geometry = new THREE.BoxGeometry(extendedLength, wallHeight, wallThickness);
     const material = new THREE.MeshStandardMaterial({
-        color: 0xcccccc, side: THREE.DoubleSide, roughness: 0.4, metalness: 0,
+        color: 0xcccccc, side: THREE.FrontSide, roughness: 0.4, metalness: 0, // PERF : murs vus de l'interieur
         polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1
     });
     const mesh = new THREE.Mesh(geometry, material);
@@ -460,7 +460,7 @@ function ensureMultiMaterial(wall) {
         const baseMat = wall.mesh.material;
         const defaultMat = new THREE.MeshStandardMaterial({
             color: baseMat.color ? baseMat.color.clone() : new THREE.Color(0xcccccc),
-            side: THREE.DoubleSide,
+            side: THREE.FrontSide, // PERF : murs vus de l'interieur uniquement
             roughness: baseMat.roughness !== undefined ? baseMat.roughness : 0.9,
             metalness: baseMat.metalness !== undefined ? baseMat.metalness : 0,
             polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1
@@ -897,6 +897,7 @@ async function restoreWallTextures(wall, textureInfoData) {
             const pof = (existingMat && existingMat.polygonOffsetFactor) || 1;
             const texMat = _createSharedMaterial(cached, {
                 wrapT, repeatX, repeatY,
+                side: THREE.FrontSide, // PERF : murs vus de l'interieur uniquement (BoxGeometry, normales OK)
                 polygonOffset: true, polygonOffsetFactor: pof, polygonOffsetUnits: pof
             });
             ensureMultiMaterial(wall);

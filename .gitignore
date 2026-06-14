@@ -128,3 +128,23 @@ Syllabus TFE.txt
 liens-tfe (2).html
 notebook-preview.html
 Sans titre 1.png
+
+# Modèles 3D originaux (non compressés) — on ne versionne QUE les versions *-compressed.glb
+# (les originaux sont trop lourds : jusqu'à 128 Mo)
+3D/objet/Alex-buste-comfyui.glb
+3D/objet/Arcade-pacman-copilot3D.glb
+3D/objet/arcade-low.glb
+3D/objet/ascenseur.glb
+3D/objet/bibliotheque.glb
+3D/objet/bureau-comfyui.glb
+3D/objet/bureau.glb
+3D/objet/canape-chesterfield.glb
+3D/objet/chien-robot-comfyui.glb
+3D/objet/meuble-vinyle.glb
+3D/objet/table-salon.glb
+3D/objet/tourne-disque.glb
+3D/perso/Alex-copilot.glb
+3D/perso/Alex-debout-meshy.glb
+3D/perso/Meshy_AI_model_Animation_Walking_withSkin.glb
+3D/perso/Raya-marche-en-rond.glb
+3D/perso/berger_allemand_couch*_coussin.glb

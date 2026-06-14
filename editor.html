@@ -611,14 +611,14 @@ function loadSasSecuriteObjects() {
             scl: { x: 1.182, y: 1.182, z: 1.182 }
         },
         {
-            url: '3D/objet/generateur.glb',
+            url: '3D/objet/generateur-compressed.glb', // PERF : 10.2 Mo -> 4.15 Mo
             name: 'Générateur',
             pos: { x: -18.795, y: 1.349, z: -22.631 },
             rot: { x: -Math.PI, y: 1.540, z: -Math.PI },
             scl: { x: 2.095, y: 2.095, z: 2.095 }
         },
         {
-            url: '3D/perso/berger-allemand-debout.glb',
+            url: '3D/perso/berger-allemand-compressed.glb', // PERF : 15.4 Mo -> 1.28 Mo
             name: 'Berger Allemand Debout',
             pos: { x: -2.158, y: 0.487, z: -6.462 },
             rot: { x: -Math.PI, y: 0.1494, z: -Math.PI },
@@ -634,7 +634,7 @@ function loadSasSecuriteObjects() {
             scl: { x: 0.00873, y: 0.00873, z: 0.00873 }
         },
         {
-            url: '3D/arcade-ai-mythology.glb',
+            url: '3D/objet/arcade-compressed.glb', // PERF : 40.3 Mo -> 0.35 Mo (decimation aggressive — verifier visuel)
             name: 'Borne Arcade AI Mythology',
             pos: { x: 0.5, y: 0.85, z: -7.5 },
             rot: { x: 0, y: THREE.MathUtils.degToRad(90), z: 0 },
@@ -653,8 +653,38 @@ function loadSasSecuriteObjects() {
             pos: { x: -4.687, y: 0.888, z: 1.203 },
             rot: { x: -Math.PI, y: 1.5612, z: -Math.PI },
             scl: { x: 0.577, y: 0.577, z: 0.577 }
+        },
+        {
+            url: '3D/objet/ascenseur-compressed.glb',
+            name: 'ascenseur',
+            pos: { x: -6.7568, y: 1.63889, z: -14.1798 },
+            rot: { x: -Math.PI, y: 1.5615, z: -Math.PI },
+            scl: { x: 1.6523, y: 1.5582, z: 1.2898 }
+        },
+        {
+            url: '3D/objet/canape-chesterfield-compressed.glb',
+            name: 'canape chersterfield 1',
+            pos: { x: 0.2172, y: 0.4610, z: 2.3185 },
+            rot: { x: 0, y: 1.5679, z: 0 },
+            scl: { x: 2.23, y: 2.23, z: 2.23 }
+        },
+        {
+            url: '3D/objet/canape-chesterfield-compressed.glb',
+            name: 'canape chesterfield 2',
+            pos: { x: -2.5978, y: 0.4312, z: 2.2804 },
+            rot: { x: 0, y: -1.5414, z: 0 },
+            scl: { x: 2.23, y: 2.23, z: 2.23 }
+        },
+        {
+            url: '3D/objet/table-salon-compressed.glb',
+            name: 'table salon',
+            pos: { x: -1.0917, y: 0.1926, z: 2.3694 },
+            rot: { x: 0, y: 0, z: 0 },
+            scl: { x: 1, y: 1, z: 1 }
         }
     ];
+    // Note : Raya et le chien qui marche ne sont PAS des permanents — ce sont des
+    // personnages importés via l'éditeur (conservés au nettoyage via l'exemption isCharacter).
 
     permanents.forEach(({ url, name, pos, rot, scl, altNames }) => {
         // Anti-doublon : déjà en scène, dans importedObjects, ou en cours de chargement depuis IndexedDB ?
@@ -788,7 +818,20 @@ function loadSasSecuriteObjects() {
         'lampe sur pied', 'Fauteuil rouge expo +', 'Cadre dessin',
         'Guitare classique', 'Générateur', 'Berger Allemand Debout',
         'Borne Arcade AI Mythology', 'Porte entrée', 'Tapis',
-        'ascenseur', 'bureau', 'meuble vinyls', 'tourne-disques'
+        'ascenseur', 'bureau', 'meuble vinyls', 'tourne-disques',
+        'canape chersterfield 1', 'canape chesterfield 2', 'table salon'
+        // NB : Raya et le chien (personnages) gardés via l'exemption isCharacter, pas listés ici.
+    ]);
+    // Fichiers GLB importés autorisés (par nom de fichier) — survivent au nettoyage
+    // quel que soit le nom d'objet auto (Objet_Importé_N / Personnage_N).
+    var _cleanupAllowedFiles = new Set([
+        'berger-couche-coussin-compressed.glb',
+        'Alex-debout-compressed.glb',
+        'Alex-copilot-compressed.glb',
+        'arcade-pacman-compressed.glb',
+        'bureau-comfyui-compressed.glb',
+        'chien-robot-compressed.glb',
+        'Alex-buste-compressed.glb'
     ]);
     var _cleanupCheckInterval = setInterval(function() {
         var pending = window._idbPendingObjects;
@@ -796,7 +839,12 @@ function loadSasSecuriteObjects() {
         clearInterval(_cleanupCheckInterval);
 
         var toRemove = importedObjects.filter(function(o) {
-            return o.userData.editorName && !_cleanupAllowed.has(o.userData.editorName);
+            var fileOk = o.userData.fileName &&
+                (o.userData.fileName.endsWith('-compressed.glb') || _cleanupAllowedFiles.has(o.userData.fileName));
+            return o.userData.editorName &&
+                !_cleanupAllowed.has(o.userData.editorName) &&
+                !fileOk &&
+                !o.userData.isCharacter;
         });
         toRemove.forEach(function(obj) {
             scene.remove(obj);

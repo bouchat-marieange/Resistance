@@ -1099,6 +1099,8 @@ function loadPermanentObjects() {
                 url,
                 function(gltf) {
                     const model = gltf.scene;
+                    // Personnage animé (skinned + animations) ? -> mixer + frustumCulled off
+                    const _isAnimated = gltf.animations && gltf.animations.length > 0;
 
                     // Appliquer les coordonnées par défaut
                     model.position.set(defaultPos.x, defaultPos.y, defaultPos.z);
@@ -1110,6 +1112,8 @@ function loadPermanentObjects() {
                         if (child.isMesh) {
                             child.castShadow = true;
                             child.receiveShadow = true;
+                            // SkinnedMesh : bounding sphere calculee au repos -> disparait si culling actif
+                            if (_isAnimated) child.frustumCulled = false;
                             if (child.material) {
                                 if (child.material.type === 'MeshBasicMaterial') {
                                     const oldMaterial = child.material;
@@ -1135,6 +1139,20 @@ function loadPermanentObjects() {
                     model.userData.isImported = true;
                     model.userData.fileName = url.split('/').pop();
                     // Note : pas de fileData (pas de btoa) — objets permanents rechargés depuis URL
+
+                    // Personnage animé : créer le mixer + lancer l'animation (ex : Raya marche en rond)
+                    // La boucle animate() met à jour les mixers de importedCharacters.
+                    if (_isAnimated) {
+                        model.userData.isCharacter = true;
+                        const _permMixer = new THREE.AnimationMixer(model);
+                        _permMixer.clipAction(gltf.animations[0]).play();
+                        model.userData.mixer = _permMixer;
+                        model.userData.animations = gltf.animations;
+                        if (typeof importedCharacters !== 'undefined' && !importedCharacters.includes(model)) {
+                            importedCharacters.push(model);
+                        }
+                        console.log('🎬 Permanent animé : ' + name + ' (' + gltf.animations[0].name + ', ' + gltf.animations[0].duration.toFixed(2) + 's)');
+                    }
 
                     // Appliquer les overrides localStorage si présents
                     _applyPermanentOverride(model, name);
@@ -1302,7 +1320,7 @@ function loadPermanentObjects() {
 
     // Générateur
     loadPermanentObject(
-        resolveURL('3D/objet/generateur.glb'),
+        resolveURL('3D/objet/generateur-compressed.glb'), // PERF : 10.2 Mo -> 4.15 Mo
         'Générateur',
         { x: -18.795, y: 1.349, z: -22.631 },
         { x: -Math.PI, y: 1.540, z: -Math.PI },
@@ -1311,7 +1329,7 @@ function loadPermanentObjects() {
 
     // Berger Allemand Debout (seul chien gardé)
     loadPermanentObject(
-        resolveURL('3D/perso/berger-allemand-debout.glb'),
+        resolveURL('3D/perso/berger-allemand-compressed.glb'), // PERF : 15.4 Mo -> 1.28 Mo
         'Berger Allemand Debout',
         { x: -2.158, y: 0.487, z: -6.462 },
         { x: -Math.PI, y: 0.1494, z: -Math.PI },
@@ -1343,7 +1361,7 @@ function loadPermanentObjects() {
 
     // Borne d'arcade AI Mythology (y relevé pour éviter de s'enfoncer dans le sol)
     loadPermanentObject(
-        resolveURL('3D/arcade-ai-mythology.glb'),
+        resolveURL('3D/objet/arcade-compressed.glb'), // PERF : 40.3 Mo -> 0.35 Mo (decimation aggressive — verifier visuel)
         'Borne Arcade AI Mythology',
         { x: 0.5, y: 0.85, z: -7.5 },
         { x: 0, y: THREE.MathUtils.degToRad(90), z: 0 },
@@ -1395,6 +1413,59 @@ function loadPermanentObjects() {
             console.log('🕹️ Zone arcade AI Mythology enregistrée + collision proxy');
         }
     );
+
+    // ── Coin vinyles : meuble + tourne-disque (fallback URL si blob IDB absent) ──
+    loadPermanentObject(
+        resolveURL('3D/objet/meuble-vinyle-compressed.glb'),
+        'meuble vinyls',
+        { x: -4.6512, y: 0, z: 1.2135 },
+        { x: -Math.PI, y: 1.5503, z: -Math.PI },
+        { x: 1, y: 1, z: 1 }
+    );
+    loadPermanentObject(
+        resolveURL('3D/objet/tourne-disque-compressed.glb'),
+        'tourne-disques',
+        { x: -4.6872, y: 0.88814, z: 1.2027 },
+        { x: -Math.PI, y: 1.5612, z: -Math.PI },
+        { x: 0.5774, y: 0.5774, z: 0.5774 }
+    );
+
+    // ── Ascenseur (fallback URL — version compressée) ──
+    loadPermanentObject(
+        resolveURL('3D/objet/ascenseur-compressed.glb'),
+        'ascenseur',
+        { x: -6.7568, y: 1.63889, z: -14.1798 },
+        { x: -Math.PI, y: 1.5615, z: -Math.PI },
+        { x: 1.6523, y: 1.5582, z: 1.2898 }
+    );
+
+    // ── Salon : 2 canapés chesterfield + table (versions compressées) ──
+    loadPermanentObject(
+        resolveURL('3D/objet/canape-chesterfield-compressed.glb'),
+        'canape chersterfield 1',
+        { x: 0.2172, y: 0.4610, z: 2.3185 },
+        { x: 0, y: 1.5679, z: 0 },
+        { x: 2.23, y: 2.23, z: 2.23 }
+    );
+    loadPermanentObject(
+        resolveURL('3D/objet/canape-chesterfield-compressed.glb'),
+        'canape chesterfield 2',
+        { x: -2.5978, y: 0.4312, z: 2.2804 },
+        { x: 0, y: -1.5414, z: 0 },
+        { x: 2.23, y: 2.23, z: 2.23 }
+    );
+    loadPermanentObject(
+        resolveURL('3D/objet/table-salon-compressed.glb'),
+        'table salon',
+        { x: -1.0917, y: 0.1926, z: 2.3694 },
+        { x: 0, y: 0, z: 0 },
+        { x: 1, y: 1, z: 1 }
+    );
+
+    // Note : Raya et le chien qui marche ne sont PAS chargés en permanent.
+    // Ce sont des personnages importés via l'éditeur (auto-calés au sol + dimensionnés),
+    // stockés dans IndexedDB et conservés au nettoyage grâce à l'exemption isCharacter.
+    // (Pour le site déployé, ils seront « bakés » en permanents une fois les placements figés.)
 
     // Tapis procédural — recréé ici car loadProjectFromIndexedDB purge importedObjects
     createRug();
@@ -2747,13 +2818,39 @@ setTimeout(async () => {
             // Coin vinyles
             'meuble vinyls',
             'tourne-disques',
+            // Salon
+            'canape chersterfield 1',
+            'canape chesterfield 2',
+            'table salon',
             // Objet procédural (pas de GLB — recréé par createRug())
             'Tapis'
+            // NB : Raya et le chien (personnages) NE sont PAS listés ici — ils sont gardés
+            // via l'exemption isCharacter. Les anciens fantômes 'personnage marcheur' /
+            // 'Raya marche en rond' (permanents échelle 1) sont ainsi nettoyés.
         ]);
-        // Supprimer de importedObjects + scene tout objet dont editorName n'est pas dans la liste
-        // (ex: Naby statique, Porte Industrielle, Berger Couché, Berger Assis)
+        // Fichiers GLB importés autorisés (par NOM DE FICHIER) — survivent au nettoyage
+        // quel que soit le nom d'objet auto attribué par l'éditeur (Objet_Importé_N / Personnage_N).
+        // → importer les versions "-compressed" de ces fichiers dans l'éditeur.
+        // Pour autoriser un nouvel objet importé : ajouter son nom de fichier ici.
+        const SCENE_ALLOWED_FILES = new Set([
+            'berger-couche-coussin-compressed.glb',
+            'Alex-debout-compressed.glb',
+            'Alex-copilot-compressed.glb',
+            'arcade-pacman-compressed.glb',
+            'bureau-comfyui-compressed.glb',
+            'chien-robot-compressed.glb',
+            'Alex-buste-compressed.glb'
+        ]);
+        // Supprimer de importedObjects + scene tout objet non autorisé.
+        // On GARDE : nom d'objet dans SCENE_ALLOWED, OU fichier "-compressed.glb" (tout objet
+        // compressé importé par l'utilisateur), OU dans SCENE_ALLOWED_FILES, OU personnage (isCharacter).
+        const _fileAllowed = o => o.userData.fileName &&
+            (o.userData.fileName.endsWith('-compressed.glb') || SCENE_ALLOWED_FILES.has(o.userData.fileName));
         const toRemove = importedObjects.filter(o =>
-            o.userData.editorName && !SCENE_ALLOWED.has(o.userData.editorName)
+            o.userData.editorName &&
+            !SCENE_ALLOWED.has(o.userData.editorName) &&
+            !_fileAllowed(o) &&
+            !o.userData.isCharacter
         );
         toRemove.forEach(obj => {
             scene.remove(obj);
