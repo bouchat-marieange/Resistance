@@ -111,7 +111,8 @@ var _textureCache = new Map();
 var _textureCacheStats = { hits: 0, misses: 0 };
 
 // Charge ou réutilise une texture depuis le cache
-async function _getCachedTexture(textureBlobId) {
+// fallbackUrl : URL de secours si le blob IDB est absent (ex. déploiement en ligne sans IDB)
+async function _getCachedTexture(textureBlobId, fallbackUrl) {
     // Déjà en cache ?
     if (_textureCache.has(textureBlobId)) {
         _textureCacheStats.hits++;
@@ -121,16 +122,28 @@ async function _getCachedTexture(textureBlobId) {
 
     // Charger depuis IndexedDB
     const blobRecord = await RoomEditorDB.get(RoomEditorDB.STORE_BLOBS, textureBlobId);
-    if (!blobRecord || !blobRecord.data) return null;
+    if (blobRecord && blobRecord.data) {
+        const tex = await new Promise((resolve, reject) => {
+            new THREE.TextureLoader().load(blobRecord.data, resolve, undefined, reject);
+        });
+        tex.colorSpace = THREE.SRGBColorSpace;
+        _textureCache.set(textureBlobId, { texture: tex, dataURL: blobRecord.data });
+        return { texture: tex, dataURL: blobRecord.data };
+    }
 
-    const tex = await new Promise((resolve, reject) => {
-        new THREE.TextureLoader().load(blobRecord.data, resolve, undefined, reject);
-    });
-    tex.colorSpace = THREE.SRGBColorSpace;
+    // Fallback URL si blob absent de l'IDB (déploiement GitHub Pages)
+    if (fallbackUrl) {
+        return await new Promise((resolve) => {
+            new THREE.TextureLoader().load(
+                fallbackUrl,
+                tex => { tex.colorSpace = THREE.SRGBColorSpace; resolve({ texture: tex, dataURL: fallbackUrl }); },
+                undefined,
+                () => resolve(null)
+            );
+        });
+    }
 
-    // Stocker dans le cache (texture de base, les clones auront leur propre repeat/wrap)
-    _textureCache.set(textureBlobId, { texture: tex, dataURL: blobRecord.data });
-    return { texture: tex, dataURL: blobRecord.data };
+    return null;
 }
 
 // Crée un matériau qui partage la texture (clone pour repeat/wrap indépendants)
@@ -865,7 +878,8 @@ async function restoreWallTextures(wall, textureInfoData) {
         const info = textureInfoData[faceIdx];
         if (!info || !info.textureBlobId) continue;
         try {
-            const cached = await _getCachedTexture(info.textureBlobId);
+            const _fallbackUrl = info.fileName ? 'images/textures/' + info.fileName : null;
+            const cached = await _getCachedTexture(info.textureBlobId, _fallbackUrl);
             if (!cached) continue;
 
             let faceWidth, faceHeight;
