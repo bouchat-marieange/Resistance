@@ -46,6 +46,7 @@
             background: #333;
             border-radius: 2px;
             overflow: hidden;
+            position: relative;
         }
         .loading-bar {
             width: 0%;
@@ -53,15 +54,25 @@
             background: linear-gradient(90deg, #00E5FF, #00c9e0);
             border-radius: 2px;
             box-shadow: 0 0 8px rgba(0,229,255, 0.6);
-            animation: loading-progress 2.5s ease-out forwards;
+            /* La largeur est pilotée par JS (progression réelle + trickle) */
+            transition: width 0.5s cubic-bezier(0.25, 0.8, 0.4, 1);
         }
-        @keyframes loading-progress {
-            0% { width: 0%; }
-            20% { width: 15%; }
-            40% { width: 35%; }
-            60% { width: 55%; }
-            80% { width: 72%; }
-            100% { width: 88%; }
+        /* Reflet lumineux qui balaie la barre en boucle :
+           garantit un mouvement visible en permanence pour que le joueur
+           comprenne que le chargement se poursuit (et n'est pas bloqué). */
+        .loading-bar-container::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 90px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.55), transparent);
+            animation: loading-shimmer 1.3s ease-in-out infinite;
+        }
+        @keyframes loading-shimmer {
+            0%   { transform: translateX(-100%); }
+            100% { transform: translateX(340%); }
         }
     </style>
 
@@ -187,6 +198,52 @@
         </div>
     </div>
 </div>
+
+<script>
+/* ========== PILOTAGE DE LA BARRE DE CHARGEMENT ==========
+   Problème résolu : l'ancienne barre se remplissait en 2,5 s (animation CSS fixe)
+   puis stagnait pendant tout le vrai chargement → impression de blocage.
+
+   Nouveau comportement :
+   - Progression « trickle » asymptotique : la barre avance toujours un peu vers
+     une cible, de plus en plus lentement → jamais figée, répartie sur la durée.
+   - Des jalons réels (window.setLoadingTarget) sont posés aux étapes de chargement.
+   - Le reflet CSS qui balaie la barre (loading-shimmer) tourne en boucle en plus.
+   - window.completeLoading() termine à 100 % quand le jeu est prêt. */
+(function() {
+    var bar = document.getElementById('loading-bar');
+    var current = 0;     // pourcentage affiché
+    var target = 10;     // plafond mou vers lequel on tend
+    var done = false;
+
+    function apply() { if (bar) bar.style.width = current.toFixed(1) + '%'; }
+
+    var interval = setInterval(function() {
+        if (done) return;
+        // On ne dépasse jamais 95 % tant que le jeu n'est pas réellement prêt
+        var ceiling = Math.min(95, Math.max(target, 8));
+        if (current < ceiling) {
+            // Pas qui diminue à l'approche du plafond → progression continue mais douce
+            var step = Math.max(0.18, (ceiling - current) * 0.045);
+            current = Math.min(ceiling, current + step);
+            apply();
+        }
+    }, 90);
+
+    // Pose un jalon de progression réel (ne fait jamais reculer la barre)
+    window.setLoadingTarget = function(pct) { target = Math.max(target, pct); };
+
+    // Termine le chargement : barre à 100 %
+    window.completeLoading = function() {
+        done = true;
+        clearInterval(interval);
+        current = 100;
+        apply();
+    };
+
+    apply();
+})();
+</script>
 
 <!-- Icône info -->
 <div id="info-icon" class="ui-icon" title="Informations">
@@ -2584,23 +2641,33 @@ if (typeof NotebookManager !== 'undefined') {
  * sans charger l'éditeur. Fonctions fournies par scene-loader.js.
  */
 setTimeout(async () => {
-    // Timeout de sécurité : masquer le loading screen au bout de 15s max
+    // Timeout de sécurité : masquer le loading screen au bout de 60s max
+    // (première visite = téléchargement des modèles 3D dans l'IDB, peut prendre 30-45s)
     const safetyTimeout = setTimeout(() => {
         console.warn('⏱️ Timeout de sécurité — masquage du loading screen');
         hideLoadingScreen();
-    }, 15000);
+    }, 60000);
 
     try {
         currentRoomName = 'sas_securite';
 
         // Bootstrap: charger les données de scène depuis fichiers/IndexedDB
         await bootstrapFromFiles();
+        if (typeof setLoadingTarget === 'function') setLoadingTarget(40);  // données + textures/audio chargées
         // Reconstruire la scène (murs, objets, lumières, zones)
+        // Attendre que init() ait créé la scene (window.onload peut être plus lent que ce setTimeout si le CDN est lent)
+        if (typeof scene === 'undefined' || !scene) {
+            await new Promise(resolve => {
+                const t = setInterval(() => { if (typeof scene !== 'undefined' && scene) { clearInterval(t); resolve(); } }, 50);
+            });
+        }
         await loadProjectOnStartup();
+        if (typeof setLoadingTarget === 'function') setLoadingTarget(68);  // scène (murs, sol, objets importés) reconstruite
 
         // Charger les objets permanents (dont la porte d'entrée)
         // Anti-doublon intégré : les objets déjà en scène (depuis IDB) sont ignorés
         loadPermanentObjects();
+        if (typeof setLoadingTarget === 'function') setLoadingTarget(82);  // objets permanents lancés
 
         // Charger Naby
         try {
@@ -2608,6 +2675,7 @@ setTimeout(async () => {
         } catch (e) {
             console.warn("Échec chargement nabydance.glb:", e);
         }
+        if (typeof setLoadingTarget === 'function') setLoadingTarget(93);  // personnage chargé
 
         // Invalider le cache de collision après chargement complet de la scène
         invalidateCollisionCache();
@@ -2650,18 +2718,17 @@ setTimeout(async () => {
         // IMPORTANT: ces noms doivent correspondre EXACTEMENT aux editorName dans IndexedDB
         // (les mêmes que dans loadPermanentObject() + les objets procéduraux comme Tapis)
         const SCENE_ALLOWED = new Set([
-            // Objets permanents — noms EXACTS depuis IndexedDB (projet.importedObjects.editorName)
-            'lampe sur pied',           // loadPermanentObject 'Lampe sur Pied' → IDB 'lampe sur pied'
-            'Fauteuil rouge expo +',    // loadPermanentObject 'Fauteuil Rouge Expo' → IDB 'Fauteuil rouge expo +'
-            'Cadre dessin',             // loadPermanentObject 'Cadre Dessin' → IDB 'Cadre dessin'
-            'Guitare classique',        // loadPermanentObject 'Guitare Classique' → IDB 'Guitare classique'
-            'Générateur',
+            // Objets GLB actifs (project.json → importedObjects)
+            'lampe sur pied',
+            'Fauteuil rouge expo +',
+            'Cadre dessin',
+            'Guitare classique',
             'Berger Allemand Debout',
             'Borne Arcade AI Mythology',
-            'Porte entrée',             // porte industrielle derrière le joueur → bruxelles_dystopique.html
-            // Objets ajoutés via l'éditeur
             'ascenseur',
-            'bureau',
+            // Objets permanents (loadPermanentObject) — doivent survivre au nettoyage
+            'Porte entrée',
+            'Générateur',
             // Objet procédural (pas de GLB — recréé par createRug())
             'Tapis'
         ]);
@@ -2693,6 +2760,132 @@ setTimeout(async () => {
 }, 500);
 
 
+</script>
+
+<!-- ══════════════════════════════════════════════════════════
+     MUSIC PLAYER OVERLAY — affiché au clic sur un objet musique
+     ══════════════════════════════════════════════════════════ -->
+<div id="music-player-overlay" style="display:none; position:fixed; z-index:990; transform:translateX(-50%); pointer-events:auto;">
+  <div style="background:rgba(8,16,30,0.93); border:1px solid #00E5FF; border-radius:14px; padding:10px 16px; display:flex; align-items:center; gap:12px; backdrop-filter:blur(10px); box-shadow:0 0 24px rgba(0,229,255,0.18); min-width:200px;">
+    <!-- Icône note -->
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00E5FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+      <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+    </svg>
+    <!-- Play / Pause -->
+    <button id="music-playpause-btn" title="Play / Pause" style="background:none; border:none; cursor:pointer; padding:0; display:flex; align-items:center;">
+      <svg id="music-icon-play" width="22" height="22" viewBox="0 0 24 24" fill="#00E5FF" stroke="none">
+        <polygon points="5,3 19,12 5,21"/>
+      </svg>
+      <svg id="music-icon-pause" width="22" height="22" viewBox="0 0 24 24" fill="#00E5FF" stroke="none" style="display:none;">
+        <rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>
+      </svg>
+    </button>
+    <!-- Stop -->
+    <button id="music-stop-btn" title="Stop" style="background:none; border:none; cursor:pointer; padding:0; display:flex; align-items:center;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="#ff4466" stroke="none">
+        <rect x="4" y="4" width="16" height="16" rx="2"/>
+      </svg>
+    </button>
+    <!-- Volume -->
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" style="flex-shrink:0;">
+      <polygon points="11,5 6,9 2,9 2,15 6,15 11,19"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+    </svg>
+    <input id="music-volume-slider" type="range" min="0" max="1" step="0.02" value="0.8"
+      style="width:80px; accent-color:#00E5FF; cursor:pointer;">
+  </div>
+</div>
+
+<script>
+(function() {
+    var _musicAudio = null;
+    var _musicPlaying = false;
+
+    window.triggerMusicInteraction = async function(zone) {
+        var src = zone.actionValue;
+        if (!src) return;
+
+        // Arrêter la musique précédente si déjà en cours
+        if (_musicAudio) { _musicAudio.pause(); _musicAudio.src = ''; _musicAudio = null; }
+
+        // Résoudre la source : blob IDB → fallback scene_data/ → URL directe
+        var audioSrc = src;
+        if (src.startsWith('blob_')) {
+            try {
+                var record = await RoomEditorDB.get(RoomEditorDB.STORE_BLOBS, src);
+                if (record && record.data) {
+                    audioSrc = record.data;
+                } else {
+                    // Fallback : charger depuis scene_data/blobs/
+                    var resp = await fetch('scene_data/blobs/' + src + '.json?_=' + Date.now());
+                    if (resp.ok) {
+                        var blobRecord = await resp.json();
+                        audioSrc = blobRecord.data;
+                        // Stocker en IDB pour la prochaine fois
+                        try { await RoomEditorDB.put(RoomEditorDB.STORE_BLOBS, blobRecord); } catch(e) {}
+                    } else {
+                        console.warn('Music blob introuvable:', src); return;
+                    }
+                }
+            } catch(e) { console.warn('Music blob erreur:', src, e); return; }
+        }
+
+        _musicAudio = new Audio(audioSrc);
+        _musicAudio.volume = parseFloat(document.getElementById('music-volume-slider').value);
+        _musicAudio.loop = true;
+        _musicAudio.play().catch(function(e) { console.warn('Lecture audio bloquée:', e); });
+        _musicPlaying = true;
+
+        // Positionner l'overlay au-dessus de l'objet (projection 3D → écran)
+        var overlay = document.getElementById('music-player-overlay');
+        var x = window.innerWidth / 2, y = window.innerHeight / 2 - 80;
+        if (zone.meshGroup && typeof camera !== 'undefined') {
+            var wp = zone.meshGroup.position.clone();
+            wp.y += 0.6;
+            wp.project(camera);
+            x = (wp.x + 1) / 2 * window.innerWidth;
+            y = (-wp.y + 1) / 2 * window.innerHeight - 20;
+            x = Math.max(120, Math.min(window.innerWidth - 120, x));
+            y = Math.max(60, Math.min(window.innerHeight - 80, y));
+        }
+        overlay.style.left = x + 'px';
+        overlay.style.top  = y + 'px';
+        overlay.style.display = 'block';
+
+        // Sync icônes play/pause
+        document.getElementById('music-icon-play').style.display = 'none';
+        document.getElementById('music-icon-pause').style.display = '';
+    };
+
+    // Play / Pause
+    document.getElementById('music-playpause-btn').onclick = function() {
+        if (!_musicAudio) return;
+        if (_musicPlaying) {
+            _musicAudio.pause();
+            _musicPlaying = false;
+            document.getElementById('music-icon-play').style.display = '';
+            document.getElementById('music-icon-pause').style.display = 'none';
+        } else {
+            _musicAudio.play();
+            _musicPlaying = true;
+            document.getElementById('music-icon-play').style.display = 'none';
+            document.getElementById('music-icon-pause').style.display = '';
+        }
+    };
+
+    // Stop — arrête la musique et ferme l'overlay
+    document.getElementById('music-stop-btn').onclick = function() {
+        if (_musicAudio) { _musicAudio.pause(); _musicAudio.src = ''; _musicAudio = null; }
+        _musicPlaying = false;
+        document.getElementById('music-player-overlay').style.display = 'none';
+        document.getElementById('music-icon-play').style.display = '';
+        document.getElementById('music-icon-pause').style.display = 'none';
+    };
+
+    // Volume
+    document.getElementById('music-volume-slider').oninput = function() {
+        if (_musicAudio) _musicAudio.volume = parseFloat(this.value);
+    };
+})();
 </script>
 
 <!-- GoatCounter analytics — privacy-friendly, no cookies -->

@@ -327,6 +327,9 @@ function initEditor() {
             case 'lightbox-text':
                 actionValue = (document.getElementById('zone-lightbox-text') || {}).value || '';
                 break;
+            case 'music':
+                actionValue = (document.getElementById('zone-music-value') || {}).value || '';
+                break;
             default:
                 actionValue = (document.getElementById('zone-action-value') || {}).value.trim();
                 break;
@@ -350,6 +353,7 @@ function initEditor() {
         document.getElementById('zone-image-field').style.display = 'none';
         document.getElementById('zone-text-field').style.display = 'none';
         document.getElementById('zone-mechanical-config').style.display = 'none';
+        document.getElementById('zone-music-field').style.display = 'none';
         // Show appropriate fields
         if (type === 'link' || type === 'teleport') {
             document.getElementById('zone-action-value-field').style.display = 'block';
@@ -364,6 +368,8 @@ function initEditor() {
             document.getElementById('zone-image-field').style.display = 'block';
         } else if (type === 'lightbox-text') {
             document.getElementById('zone-text-field').style.display = 'block';
+        } else if (type === 'music') {
+            document.getElementById('zone-music-field').style.display = 'block';
         } else if (type === 'turn-button' || type === 'lever' || type === 'fader') {
             document.getElementById('zone-mechanical-config').style.display = 'block';
         }
@@ -391,6 +397,8 @@ function initEditor() {
         document.getElementById('zone-lightbox-text').oninput = autoSyncZoneFields;
     if (document.getElementById('zone-video-end-url'))
         document.getElementById('zone-video-end-url').oninput = autoSyncZoneFields;
+    if (document.getElementById('zone-music-value'))
+        document.getElementById('zone-music-value').oninput = autoSyncZoneFields;
 
     // Mechanical config sliders
     document.getElementById('zone-mech-speed').oninput = (e) => {

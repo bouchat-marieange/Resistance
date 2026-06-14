@@ -776,9 +776,8 @@ class SceneEditor {
         }
 
         const url = URL.createObjectURL(file);
-        const loader = new THREE.GLTFLoader();
 
-        loader.load(
+        sharedGLTFLoader.load(
             url,
             (gltf) => {
                 this.importedObjectCounter++;

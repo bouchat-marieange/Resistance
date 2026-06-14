@@ -42,8 +42,8 @@ function initEditorObjectsListeners() {
         // Créer un URL depuis le fichier local
         const url = URL.createObjectURL(file);
 
-        // Charger le modèle avec GLTFLoader
-        const loader = new THREE.GLTFLoader();
+        // Charger le modèle avec GLTFLoader (sharedGLTFLoader a DRACOLoader configuré)
+        const loader = (typeof sharedGLTFLoader !== 'undefined') ? sharedGLTFLoader : new THREE.GLTFLoader();
         loader.load(
             url,
             // Succès
@@ -230,7 +230,7 @@ function initEditorObjectsListeners() {
         const fileDataBase64 = readerEvent.target.result;
         const url = URL.createObjectURL(file);
 
-        const loader = new THREE.GLTFLoader();
+        const loader = (typeof sharedGLTFLoader !== 'undefined') ? sharedGLTFLoader : new THREE.GLTFLoader();
         loader.load(
             url,
             function(gltf) {

@@ -399,8 +399,13 @@ function measureCharacterByBones(model) {
 function hideLoadingScreen() {
     const loadingScreen = document.getElementById('loading-screen');
     if (!loadingScreen) return;
-    const bar = document.getElementById('loading-bar');
-    if (bar) { bar.style.animation = 'none'; bar.style.width = '100%'; }
+    // Terminer la progression à 100 % (arrête le trickle, fixe la barre pleine)
+    if (typeof window.completeLoading === 'function') {
+        window.completeLoading();
+    } else {
+        const bar = document.getElementById('loading-bar');
+        if (bar) { bar.style.animation = 'none'; bar.style.width = '100%'; }
+    }
     setTimeout(() => {
         loadingScreen.classList.add('fade-out');
         setTimeout(() => {
@@ -1344,6 +1349,9 @@ async function bootstrapFromFiles() {
             if (a && a.blobId) _textureBlobSet.add(a.blobId);
         });
 
+        // Les blobs GLB des objets sont chargés à la demande par restoreImportedObject
+        // (leurs fichiers JSON sont dans scene_data/blobs/ — fallback URL automatique)
+
         const textureBlobIds = [..._textureBlobSet];
         if (textureBlobIds.length > 0) {
             if (subtitle) subtitle.textContent = 'Restauration des textures et sons...';
@@ -2143,6 +2151,11 @@ function executeZoneAction(zone) {
             // Ouvrir le panneau de dialogue avec le personnage (actionValue = nom du personnage)
             if (typeof DialogueManager !== 'undefined' && zone.actionValue) {
                 DialogueManager.start(zone.actionValue);
+            }
+            break;
+        case 'music':
+            if (zone.actionValue && typeof triggerMusicInteraction === 'function') {
+                triggerMusicInteraction(zone);
             }
             break;
         default:
