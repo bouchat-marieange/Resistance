@@ -1173,10 +1173,19 @@ function restoreLightsFromData(lightsData) {
             default: light = new THREE.PointLight(data.color, data.intensity, 50);
         }
         light.position.set(data.position.x, data.position.y, data.position.z);
-        light.castShadow = true;
-        light.shadow.bias = -0.002;
-        light.shadow.normalBias = 0.02;
-        if (light.shadow.mapSize) { light.shadow.mapSize.width = 1024; light.shadow.mapSize.height = 1024; }
+        // --- PERF : ombres optimisees ---
+        // Une PointLight projette une ombre CUBIQUE = 6 rendus de la scene par lumiere
+        // et par frame. Avec 6 PointLights (x6 faces) = 36 passes d'ombre/frame sur ~5M
+        // triangles -> cause principale du lag. On desactive leurs ombres (comme l'editeur
+        // le fait deja). Les Spot/Directional gardent l'ombre (1 passe) mais en map 512.
+        if (light.isPointLight) {
+            light.castShadow = false;
+        } else {
+            light.castShadow = true;
+            light.shadow.bias = -0.002;
+            light.shadow.normalBias = 0.02;
+            if (light.shadow.mapSize) { light.shadow.mapSize.width = 512; light.shadow.mapSize.height = 512; }
+        }
         light.userData.id = `custom-light-${lightIdCounter++}`;
         light.userData.type = data.type;
         light.userData.name = data.name || `Lumière ${lightIdCounter}`;
