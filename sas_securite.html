@@ -1462,10 +1462,39 @@ function loadPermanentObjects() {
         { x: 1, y: 1, z: 1 }
     );
 
-    // Note : Raya et le chien qui marche ne sont PAS chargés en permanent.
-    // Ce sont des personnages importés via l'éditeur (auto-calés au sol + dimensionnés),
-    // stockés dans IndexedDB et conservés au nettoyage grâce à l'exemption isCharacter.
-    // (Pour le site déployé, ils seront « bakés » en permanents une fois les placements figés.)
+    // ── Bureau (coin ordinateur) ──
+    loadPermanentObject(
+        resolveURL('3D/objet/bureau-compressed.glb'),
+        'bureau',
+        { x: -4.026413817357325, y: 0.5060929076152247, z: -8.206956281954799 },
+        { x: 0, y: -1.5403901301767253, z: 0 },
+        { x: 1.8033439777964964, y: 1.8033439777964964, z: 1.8033439777964964 }
+    );
+
+    // ── Bibliothèque ──
+    loadPermanentObject(
+        resolveURL('3D/objet/bibliotheque-compressed.glb'),
+        'Bibliothèque',
+        { x: -1.36, y: 1.62, z: 4.72 },
+        { x: -Math.PI, y: -5.121780228008738e-05, z: -Math.PI },
+        { x: 3.5, y: 3.16, z: 3.16 }
+    );
+
+    // ── Personnages animés ──
+    loadPermanentObject(
+        resolveURL('3D/perso/Raya-marche-en-rond-compressed.glb'),
+        'Raya marche en rond',
+        { x: -8.955451257352925, y: 0.06, z: -1.7768033270822956 },
+        { x: 0, y: 0, z: 0 },
+        { x: 1, y: 1, z: 1 }
+    );
+    loadPermanentObject(
+        resolveURL('3D/perso/Meshy-walking-compressed.glb'),
+        'Berger allemande marche',
+        { x: -7.584577324943626, y: 0.010210318245277138, z: 2.171100558770921 },
+        { x: Math.PI, y: -0.7223505256576521, z: Math.PI },
+        { x: 410.2634597009405, y: 410.2634597009405, z: 410.2634597009405 }
+    );
 
     // Tapis procédural — recréé ici car loadProjectFromIndexedDB purge importedObjects
     createRug();
@@ -2822,11 +2851,14 @@ setTimeout(async () => {
             'canape chersterfield 1',
             'canape chesterfield 2',
             'table salon',
+            // Coin bureau + bibliothèque
+            'bureau',
+            'Bibliothèque',
+            // Personnages animés permanents (isCharacter=true → aussi exempts du filtre)
+            'Raya marche en rond',
+            'Berger allemande marche',
             // Objet procédural (pas de GLB — recréé par createRug())
             'Tapis'
-            // NB : Raya et le chien (personnages) NE sont PAS listés ici — ils sont gardés
-            // via l'exemption isCharacter. Les anciens fantômes 'personnage marcheur' /
-            // 'Raya marche en rond' (permanents échelle 1) sont ainsi nettoyés.
         ]);
         // Fichiers GLB importés autorisés (par NOM DE FICHIER) — survivent au nettoyage
         // quel que soit le nom d'objet auto attribué par l'éditeur (Objet_Importé_N / Personnage_N).
