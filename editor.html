@@ -639,6 +639,20 @@ function loadSasSecuriteObjects() {
             pos: { x: 0.5, y: 0.85, z: -7.5 },
             rot: { x: 0, y: THREE.MathUtils.degToRad(90), z: 0 },
             scl: { x: 1.0, y: 1.0, z: 1.0 }
+        },
+        {
+            url: '3D/objet/meuble-vinyle-compressed.glb',
+            name: 'meuble vinyls',
+            pos: { x: -4.651, y: 0, z: 1.214 },
+            rot: { x: -Math.PI, y: 1.5503, z: -Math.PI },
+            scl: { x: 1.0, y: 1.0, z: 1.0 }
+        },
+        {
+            url: '3D/objet/tourne-disque-compressed.glb',
+            name: 'tourne-disques',
+            pos: { x: -4.687, y: 0.888, z: 1.203 },
+            rot: { x: -Math.PI, y: 1.5612, z: -Math.PI },
+            scl: { x: 0.577, y: 0.577, z: 0.577 }
         }
     ];
 
@@ -774,7 +788,7 @@ function loadSasSecuriteObjects() {
         'lampe sur pied', 'Fauteuil rouge expo +', 'Cadre dessin',
         'Guitare classique', 'Générateur', 'Berger Allemand Debout',
         'Borne Arcade AI Mythology', 'Porte entrée', 'Tapis',
-        'ascenseur', 'bureau'
+        'ascenseur', 'bureau', 'meuble vinyls', 'tourne-disques'
     ]);
     var _cleanupCheckInterval = setInterval(function() {
         var pending = window._idbPendingObjects;

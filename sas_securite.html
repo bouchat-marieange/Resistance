@@ -1497,6 +1497,21 @@ function onPointerDown(event) {
         // Utiliser le système de crosshair : interagir avec la cible visée
         if (_crosshairTargetZone) {
             executeZoneAction(_crosshairTargetZone);
+        } else {
+            // Fallback : clic direct sur un objet ayant une zone d'interaction
+            // (utile si le viseur central n'est pas exactement posé sur le mesh)
+            for (const zone of interactionZones) {
+                if (!zone.actionValue) continue;
+                if (zone.surfaceMode !== 'object' || !zone.objectRef) continue;
+                if (getZoneDistance(zone, camera.position) >= 2.5) continue;
+                const _fbObj = typeof findObjectByRef === 'function' && findObjectByRef(zone.objectRef);
+                if (!_fbObj) continue;
+                const _fbMeshes = [];
+                _fbObj.traverse(c => { if (c.isMesh) _fbMeshes.push(c); });
+                if (_fbMeshes.length === 0) continue;
+                const _fbHits = raycaster.intersectObjects(_fbMeshes, false);
+                if (_fbHits.length > 0) { executeZoneAction(zone); break; }
+            }
         }
         // Hold: commencer le tracking
         const now = performance.now();
@@ -2729,6 +2744,9 @@ setTimeout(async () => {
             // Objets permanents (loadPermanentObject) — doivent survivre au nettoyage
             'Porte entrée',
             'Générateur',
+            // Coin vinyles
+            'meuble vinyls',
+            'tourne-disques',
             // Objet procédural (pas de GLB — recréé par createRug())
             'Tapis'
         ]);

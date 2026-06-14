@@ -1592,10 +1592,12 @@ function updateZoneLabel(zone) {
         zone.labelSprite.material.dispose();
     }
 
-    // Surface mode prefix
+    // Surface mode prefix — remplacé par actionType si plus parlant
     const sm = zone.surfaceMode || 'floor';
     let prefix = '';
-    if (sm === 'ceiling') prefix = '(Plafond) ';
+    if (zone.actionType === 'music') prefix = '(♪ Musique) ';
+    else if (zone.actionType === 'video') prefix = '(Vidéo) ';
+    else if (sm === 'ceiling') prefix = '(Plafond) ';
     else if (sm === 'wall') prefix = '(Mur) ';
     else if (sm === 'object') prefix = '(Objet) ';
     else if (sm === 'character') prefix = '(Perso) ';
