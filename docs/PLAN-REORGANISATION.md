@@ -77,7 +77,7 @@ Resistance/
 - [x] AI Mythology : précharger les images des boutons animés dans des objets `Image` au lieu de re-swapper `src` en boucle (rafales de requêtes annulées constatées).
 - [x] `3D/arcade-ai-mythology.glb` (42 Mo, versionné, non utilisé par le jeu qui charge `arcade-compressed.glb`) → sortir du repo.
 - [x] `scene-loader.js` : ajouter 2-3 tentatives avec délai croissant sur le fetch des blobs (échecs transitoires constatés en local sous 19 requêtes parallèles), ou limiter la concurrence à 4-6 téléchargements simultanés.
-- [ ] Nettoyage git : supprimer les 8 worktrees `.claude/worktrees/*` (1,8 Go) et les branches `claude/*` obsolètes ; supprimer les branches locales mergées (`clean-start`, `optim-speed`, `feature/*`, `tfe-optimization-sprint` si mergées) ; `git gc --aggressive` (le `.git` fait 3 Go).
+- [x] Nettoyage git : supprimer les 8 worktrees `.claude/worktrees/*` (1,8 Go) et les branches `claude/*` obsolètes ; supprimer les branches locales mergées (`clean-start`, `optim-speed`, `feature/*`, `tfe-optimization-sprint` si mergées) ; `git gc --aggressive` (le `.git` fait 3 Go).
 
 ### Phase 3 — Déduplication du code des pages (~2-3 jours)
 Objectif : le même code copié-collé dans 6+ pages devient 4 modules `game/core/`.
