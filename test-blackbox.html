@@ -2786,7 +2786,7 @@ function showSuccess() {
       window.NotebookManager.addItem(
         'carte_nexus',
         'Carte du Nexus',
-        'icones/map-pin.svg'
+        'icones/pin.svg'
       );
       // Réinitialiser le compteur d'essais (succès = on repart à 0)
       try { localStorage.removeItem('resistance_bb_attempts'); } catch(_) {}
@@ -3441,7 +3441,18 @@ window.addEventListener('beforeunload', () => {
 
     if (IS_LOCAL) {
       var video = document.getElementById('transition-video');
-      video.play();
+      // Vidéo de transition absente en local (fichier gitignoré) → ne pas rester
+      // bloqué sur l'écran de chargement : passer directement à Bruxelles.
+      if (video.error || video.networkState === HTMLMediaElement.NETWORK_NO_SOURCE) {
+        goToBruxelles();
+        return;
+      }
+      var playPromise = video.play();
+      if (playPromise && playPromise.catch) playPromise.catch(goToBruxelles);
+      // Filet de sécurité : si rien n'est lisible après 6 s, continuer sans la vidéo
+      setTimeout(function() {
+        if (video.readyState === 0) goToBruxelles();
+      }, 6000);
     } else if (YT_TRANSITION_ID) {
       document.getElementById('transition-yt-container').style.display = 'block';
       if (ytPlayer && ytPlayer.playVideo) ytPlayer.playVideo();

@@ -27,7 +27,7 @@ Résistance/
     └── editor.css                 # Styles du panneau éditeur
 ```
 
-> `editor.js` (à la racine) est une version legacy de la classe `SceneEditor` conservée pour compatibilité. Il n'est **pas** utilisé par `editor.html`.
+> L'ancien `editor.js` (racine) — version legacy inutilisée de `SceneEditor` — a été supprimé le 06/07/2026 (récupérable via l'historique git si besoin).
 
 ---
 

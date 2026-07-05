@@ -25,8 +25,9 @@ Comment un jeu sérieux peut-il sensibiliser la Gen Z aux enjeux de l'IA en comb
 ## Stack technique
 - Three.js r128, Cannon.js, vanilla JS, **pas de bundler**, GitHub Pages
 - Pipeline assets : Meshy / ComfyUI (objets 3D), Mixamo (rigging), vidéo IA (dialogues personnages)
-- Branche de travail : `editor-autonome`
-- Un éditeur 3D maison existe (voir `editor.html`, `editor.js`, `EDITOR_README.md`)
+- Branche de travail : `dev` (synchronisée sur `main` pour GitHub Pages)
+- Un éditeur 3D maison existe (voir `editor.html`, modules `editor/`, `docs/EDITOR_README.md`)
+- Plan de réorganisation en cours : `docs/PLAN-REORGANISATION.md` (phases 2-5 restantes)
 
 ## Les 12 personnages et leurs enjeux IA
 Voir tableau détaillé : `~/.claude/projects/C--Users-marie-Desktop-Resistance/memory/characters_ia_issues.md`

@@ -29,7 +29,7 @@
  *   {
  *     characterId: 'naby',
  *     characterName: 'Naby',
- *     portrait: 'assets/portraits/naby.png',  // optionnel
+ *     portrait: 'images/Portraits/Portrait Naby.jpg',  // optionnel
  *     nodes: {
  *       'intro': {
  *         speaker: 'naby' | 'raya',
