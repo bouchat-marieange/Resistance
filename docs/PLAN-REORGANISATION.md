@@ -58,25 +58,25 @@ Resistance/
 ## Phases
 
 ### Phase 0 — Sécuriser AVANT tout (URGENT, avant LUDOVIA 10/07)
-- [ ] Committer les réparations de l'audit du 5/07 (project.json/version.json remis en place, 3 blobs audio restaurés, la_villa/room_model restaurés) sur `dev`, merger dans `main`, pousser.
-- [ ] Taguer `v-ludovia` (état stable de référence).
+- [x] Committer les réparations de l'audit du 5/07 (project.json/version.json remis en place, 3 blobs audio restaurés, la_villa/room_model restaurés) sur `dev`, merger dans `main`, pousser.
+- [x] Taguer `v-ludovia` (état stable de référence).
 - [ ] **Aucun refactor avant le 10/07.** Toutes les phases suivantes = après la deadline, sur une branche `refactor/architecture`.
 
 ### Phase 1 — Corrections & nettoyage sans risque (~1 h)
-- [ ] Fix soft-lock : dans `test-blackbox.html`, `exitNexus()` → fallback `goToBruxelles()` si la vidéo de transition est absente (événement `error` / `readyState`).
-- [ ] Fix portrait par défaut : `game/dialogue-manager.js` → `images/Portraits/Portrait Naby.jpg` au lieu de `assets/portraits/naby.png`.
-- [ ] Fix icône carnet : remplacer `icones/map-pin.svg` par `icones/pin.svg` (existe) dans `test-blackbox.html`.
-- [ ] Supprimer le double `<script game/score-manager.js>` dans `room_model.html`, `cocoon_nexus.html`, `hall_entree_nexus.html`, `salle_controle_nexus.html`.
-- [ ] Supprimer `editor.js` (racine, mort). Mettre à jour la mention dans `CLAUDE.md` et `EDITOR_README.md`.
-- [ ] Créer `docs/` et y déplacer `EDITOR_README.md`, `GUIDE-COMPRESSION-3D.md` (README.md et CLAUDE.md restent à la racine).
-- [ ] Supprimer `desktop.ini` (déjà gitignoré).
+- [x] Fix soft-lock : dans `test-blackbox.html`, `exitNexus()` → fallback `goToBruxelles()` si la vidéo de transition est absente (événement `error` / `readyState`).
+- [x] Fix portrait par défaut : `game/dialogue-manager.js` → `images/Portraits/Portrait Naby.jpg` au lieu de `assets/portraits/naby.png`.
+- [x] Fix icône carnet : remplacer `icones/map-pin.svg` par `icones/pin.svg` (existe) dans `test-blackbox.html`.
+- [x] Supprimer le double `<script game/score-manager.js>` dans `room_model.html`, `cocoon_nexus.html`, `hall_entree_nexus.html`, `salle_controle_nexus.html`.
+- [x] Supprimer `editor.js` (racine, mort). Mettre à jour la mention dans `CLAUDE.md` et `EDITOR_README.md`.
+- [x] Créer `docs/` et y déplacer `EDITOR_README.md`, `GUIDE-COMPRESSION-3D.md` (README.md et CLAUDE.md restent à la racine).
+- [x] Supprimer `desktop.ini` (déjà gitignoré).
 
 ### Phase 2 — Poids & performances (~1 journée, gain massif)
-- [ ] `images/apercu bruxelles dystopique` : 48 PNG × ~13 Mo = 464 Mo → WebP qualité 80, max 1920 px ≈ 15-20 Mo. Mettre à jour les 48 `src` de `bruxelles_diaporama.html` (script sed simple).
-- [ ] AI Mythology : basculer les 19 voix de cartes `.wav` → `.mp3` (les mp3 existent déjà ; seul Oracle-7 l'utilise). Vérifier le mapping nom par nom (2 wav référencés n'ont pas de mp3 au nom identique : « Medbot-X Natural » et « Tutor-IA »). Les `.wav` remplacés partent aux archives hors repo.
-- [ ] AI Mythology : précharger les images des boutons animés dans des objets `Image` au lieu de re-swapper `src` en boucle (rafales de requêtes annulées constatées).
-- [ ] `3D/arcade-ai-mythology.glb` (42 Mo, versionné, non utilisé par le jeu qui charge `arcade-compressed.glb`) → sortir du repo.
-- [ ] `scene-loader.js` : ajouter 2-3 tentatives avec délai croissant sur le fetch des blobs (échecs transitoires constatés en local sous 19 requêtes parallèles), ou limiter la concurrence à 4-6 téléchargements simultanés.
+- [x] `images/apercu bruxelles dystopique` : 48 PNG × ~13 Mo = 464 Mo → WebP qualité 80, max 1920 px ≈ 15-20 Mo. Mettre à jour les 48 `src` de `bruxelles_diaporama.html` (script sed simple).
+- [x] AI Mythology : basculer les 19 voix de cartes `.wav` → `.mp3` (les mp3 existent déjà ; seul Oracle-7 l'utilise). Vérifier le mapping nom par nom (2 wav référencés n'ont pas de mp3 au nom identique : « Medbot-X Natural » et « Tutor-IA »). Les `.wav` remplacés partent aux archives hors repo.
+- [x] AI Mythology : précharger les images des boutons animés dans des objets `Image` au lieu de re-swapper `src` en boucle (rafales de requêtes annulées constatées).
+- [x] `3D/arcade-ai-mythology.glb` (42 Mo, versionné, non utilisé par le jeu qui charge `arcade-compressed.glb`) → sortir du repo.
+- [x] `scene-loader.js` : ajouter 2-3 tentatives avec délai croissant sur le fetch des blobs (échecs transitoires constatés en local sous 19 requêtes parallèles), ou limiter la concurrence à 4-6 téléchargements simultanés.
 - [ ] Nettoyage git : supprimer les 8 worktrees `.claude/worktrees/*` (1,8 Go) et les branches `claude/*` obsolètes ; supprimer les branches locales mergées (`clean-start`, `optim-speed`, `feature/*`, `tfe-optimization-sprint` si mergées) ; `git gc --aggressive` (le `.git` fait 3 Go).
 
 ### Phase 3 — Déduplication du code des pages (~2-3 jours)
