@@ -187,15 +187,9 @@
 
 </div>
 
-<script>
-(function() {
-    var pseudo = localStorage.getItem('resistance_active_pseudo');
-    if (!pseudo) return;
-    var profiles = JSON.parse(localStorage.getItem('resistance_profiles') || '[]');
-    var p = profiles.find(function(x) { return x.pseudo === pseudo; });
-    if (p) { p.lastRoom = 'la_villa.html'; localStorage.setItem('resistance_profiles', JSON.stringify(profiles)); }
-})();
-</script>
+<script src="game/core/env.js"></script>
+<script src="game/core/profiles.js"></script>
+<script src="game/core/page-boot.js"></script>
 
 <script>
 /* ── Animation particules (identique à l'écran de démarrage) ── */

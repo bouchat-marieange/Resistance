@@ -557,6 +557,9 @@
     </div>
 </div>
 
+<script src="game/core/env.js"></script>
+<script src="game/core/profiles.js"></script>
+<script src="game/core/video-gate.js"></script>
 <script>
 /**
  * ============================================
@@ -647,57 +650,16 @@ function generateDystopianPseudo() {
 
 /**
  * ============================================
- * GESTION DES PROFILS (localStorage)
+ * GESTION DES PROFILS — délègue à game/core/profiles.js
+ * (les noms historiques restent pour le panneau admin plus bas)
  * ============================================
  */
-function getAllProfiles() {
-    try {
-        return JSON.parse(localStorage.getItem('resistance_profiles') || '[]');
-    } catch(e) { return []; }
-}
-
-function saveProfile(pseudo) {
-    var profiles = getAllProfiles();
-    var existing = profiles.find(function(p) { return p.pseudo === pseudo; });
-    if (existing) {
-        existing.lastLogin = new Date().toISOString();
-    } else {
-        profiles.push({
-            pseudo: pseudo,
-            createdAt: new Date().toISOString(),
-            lastLogin: new Date().toISOString(),
-            totalScore: 0,
-            roomScores: {},
-            introWatched: false,  // true après que le joueur ait vu la vidéo intro
-            lastRoom: ''          // dernière page de jeu visitée
-        });
-    }
-    localStorage.setItem('resistance_profiles', JSON.stringify(profiles));
-}
-
-function markIntroWatched(pseudo) {
-    var profiles = getAllProfiles();
-    var p = profiles.find(function(p) { return p.pseudo === pseudo; });
-    if (p) {
-        p.introWatched = true;
-        if (!p.lastRoom) p.lastRoom = 'test-blackbox.html';
-        localStorage.setItem('resistance_profiles', JSON.stringify(profiles));
-    }
-}
-
-function getProfile(pseudo) {
-    var profiles = getAllProfiles();
-    return profiles.find(function(p) { return p.pseudo === pseudo; }) || null;
-}
-
-function setActiveProfile(pseudo) {
-    localStorage.setItem('resistance_active_pseudo', pseudo);
-}
-
-function getActiveProfile() {
-    var pseudo = localStorage.getItem('resistance_active_pseudo');
-    return pseudo ? getProfile(pseudo) : null;
-}
+function getAllProfiles()          { return ResProfiles.getAll(); }
+function saveProfile(pseudo)       { ResProfiles.save(pseudo); }
+function markIntroWatched(pseudo)  { ResProfiles.markIntroWatched(pseudo); }
+function getProfile(pseudo)        { return ResProfiles.get(pseudo); }
+function setActiveProfile(pseudo)  { ResProfiles.setActive(pseudo); }
+function getActiveProfile()        { return ResProfiles.getActive(); }
 
 /**
  * ============================================
@@ -795,36 +757,52 @@ function renderProfilesList() {
         return new Date(b.lastLogin || b.createdAt) - new Date(a.lastLogin || a.createdAt);
     });
 
-    container.innerHTML = profiles.map(function(p) {
+    // Construction DOM (jamais d'innerHTML avec le pseudo : un pseudo
+    // contenant du HTML ne doit pas pouvoir injecter de script)
+    container.innerHTML = '';
+    profiles.forEach(function(p) {
         var dateStr = '';
         try {
             var d = new Date(p.lastLogin || p.createdAt);
             dateStr = d.toLocaleDateString('fr-FR') + ' ' + d.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
         } catch(e) {}
 
+        var item = document.createElement('div');
+        item.className = 'profile-item';
+
+        var info = document.createElement('div');
+        var name = document.createElement('div');
+        name.className = 'profile-name';
+        name.textContent = p.pseudo;
+        var date = document.createElement('div');
+        date.className = 'profile-date';
+        date.textContent = 'Dernière session : ' + dateStr;
+        info.appendChild(name);
+        info.appendChild(date);
+
         var roomLabel = p.lastRoom ? (ROOM_NAMES[p.lastRoom] || p.lastRoom) : '';
-        var roomLine = roomLabel
-            ? '<div class="profile-room">' + roomLabel + '</div>'
-            : '';
+        if (roomLabel) {
+            var room = document.createElement('div');
+            room.className = 'profile-room';
+            room.textContent = roomLabel;
+            info.appendChild(room);
+        }
 
-        return '<div class="profile-item" data-pseudo="' + p.pseudo + '">' +
-            '<div>' +
-                '<div class="profile-name">' + p.pseudo + '</div>' +
-                '<div class="profile-date">Dernière session : ' + dateStr + '</div>' +
-                roomLine +
-            '</div>' +
-            '<div class="profile-score">Lucidité: ' + (p.lucidity && p.lucidity.global ? p.lucidity.global : 0) + '</div>' +
-        '</div>';
-    }).join('');
+        var score = document.createElement('div');
+        score.className = 'profile-score';
+        score.textContent = 'Lucidité: ' + (p.lucidity && p.lucidity.global ? p.lucidity.global : 0);
 
-    // Click sur un profil
-    container.querySelectorAll('.profile-item').forEach(function(item) {
+        item.appendChild(info);
+        item.appendChild(score);
+
+        // Click sur un profil
         item.addEventListener('click', function() {
-            var pseudo = item.dataset.pseudo;
-            setActiveProfile(pseudo);
-            saveProfile(pseudo); // Met à jour lastLogin
+            setActiveProfile(p.pseudo);
+            saveProfile(p.pseudo); // Met à jour lastLogin
             launchGame();
         });
+
+        container.appendChild(item);
     });
 }
 
@@ -837,20 +815,13 @@ function startGame() {
     launchGame();
 }
 
-// ── Détection local vs en ligne ──
-var IS_LOCAL = location.hostname === 'localhost'
-    || location.hostname === '127.0.0.1'
-    || location.protocol === 'file:';
+// ── Détection local vs en ligne : IS_LOCAL fourni par game/core/env.js ──
 
 var YT_VIDEO_ID = 'K_rcQXRQAwM';
 var ytPlayer    = null;
 
 // ── API YouTube chargée uniquement en ligne ──
-if (!IS_LOCAL) {
-    var ytScript = document.createElement('script');
-    ytScript.src = 'https://www.youtube.com/iframe_api';
-    document.head.appendChild(ytScript);
-}
+if (!IS_LOCAL) ResVideoGate.loadYouTubeAPI();
 
 // Callback automatique de l'API YouTube
 window.onYouTubeIframeAPIReady = function() {
@@ -886,11 +857,8 @@ function goToGame() {
     window.location.href = 'test-blackbox.html';
 }
 
-function doRequestFS(el) {
-    var fn = el.requestFullscreen || el.webkitRequestFullscreen
-        || el.mozRequestFullScreen || el.msRequestFullscreen;
-    if (fn) fn.call(el);
-}
+// Plein écran : primitive partagée game/core/video-gate.js
+function doRequestFS(el) { ResVideoGate.requestFullscreen(el); }
 
 function playIntroVideo() {
     var overlay = document.getElementById('video-overlay');
@@ -908,9 +876,11 @@ function launchGame() {
     var profile = getActiveProfile();
 
     // Joueur existant ayant déjà vu l'intro → reprendre sa progression
+    // (lastRoom validé contre la liste blanche : un localStorage altéré
+    // ne peut pas rediriger vers une URL arbitraire)
     if (profile && profile.introWatched) {
         sessionStorage.setItem('goFullscreen', '1');
-        window.location.href = profile.lastRoom || 'test-blackbox.html';
+        window.location.href = ResProfiles.sanitizeLastRoom(profile.lastRoom);
         return;
     }
 
@@ -1131,7 +1101,9 @@ document.getElementById('intro-video').addEventListener('ended', goToGame);
             return new Date(b.lastLogin || b.createdAt) - new Date(a.lastLogin || a.createdAt);
         });
 
-        profilesEl.innerHTML = profiles.map(function(p) {
+        // Construction DOM — jamais d'innerHTML avec le pseudo (anti-injection)
+        profilesEl.innerHTML = '';
+        profiles.forEach(function(p) {
             var date = '';
             try {
                 var d = new Date(p.lastLogin || p.createdAt);
@@ -1139,14 +1111,25 @@ document.getElementById('intro-video').addEventListener('ended', goToGame);
             } catch(e) {}
             var room = p.lastRoom ? (ROOM_NAMES[p.lastRoom] || p.lastRoom) : '—';
             var luc  = p.lucidity && p.lucidity.global ? p.lucidity.global : 0;
-            return '<div class="admin-profile-row">' +
-                '<div>' +
-                    '<div class="admin-profile-name">' + p.pseudo + '</div>' +
-                    '<div class="admin-profile-meta">' + date + ' · ' + room + '</div>' +
-                '</div>' +
-                '<div class="admin-profile-score">Lucidité : ' + luc + '</div>' +
-            '</div>';
-        }).join('');
+
+            var row  = document.createElement('div');
+            row.className = 'admin-profile-row';
+            var info = document.createElement('div');
+            var name = document.createElement('div');
+            name.className = 'admin-profile-name';
+            name.textContent = p.pseudo;
+            var meta = document.createElement('div');
+            meta.className = 'admin-profile-meta';
+            meta.textContent = date + ' · ' + room;
+            info.appendChild(name);
+            info.appendChild(meta);
+            var score = document.createElement('div');
+            score.className = 'admin-profile-score';
+            score.textContent = 'Lucidité : ' + luc;
+            row.appendChild(info);
+            row.appendChild(score);
+            profilesEl.appendChild(row);
+        });
     }
 
     // Export JSON

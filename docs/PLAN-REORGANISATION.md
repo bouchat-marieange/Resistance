@@ -81,12 +81,12 @@ Resistance/
 
 ### Phase 3 — Déduplication du code des pages (~2-3 jours)
 Objectif : le même code copié-collé dans 6+ pages devient 4 modules `game/core/`.
-- [ ] `game/core/profiles.js` : extraire `getAllProfiles / saveProfile / getActiveProfile / setActiveProfile / markIntroWatched` (aujourd'hui dans index.html, + variantes lastRoom dans chaque page de jeu). En profiter pour **échapper le pseudo** (textContent, jamais innerHTML) et valider `lastRoom` contre une liste blanche de pages.
-- [ ] `game/core/env.js` : `IS_LOCAL`, `resolveURL` (dupliqués dans index, blackbox, sas, editor).
-- [ ] `game/core/video-gate.js` : logique overlay vidéo locale/YouTube + bouton skip + fullscreen (dupliquée index/blackbox, bientôt nécessaire pour les 12 vidéos personnages).
-- [ ] `game/core/page-boot.js` : enregistrement lastRoom + icône réglages + overlay « pseudo » commun aux 4 pages Nexus WIP (leurs ~100 lignes identiques chacune).
-- [ ] Extraire le JS inline de `sas_securite.html` → `game/pages/sas-securite.js` et celui de `test-blackbox.html` → `game/pages/blackbox.js` (extraction brute d'abord, sans réécriture — le HTML passe de 144 Ko à ~30 Ko et le JS devient diffable/versionnable proprement).
-- [ ] Même opération pour le CSS inline volumineux → `game/pages/*.css`.
+- [x] `game/core/profiles.js` : extraire `getAllProfiles / saveProfile / getActiveProfile / setActiveProfile / markIntroWatched` (aujourd'hui dans index.html, + variantes lastRoom dans chaque page de jeu). En profiter pour **échapper le pseudo** (textContent, jamais innerHTML) et valider `lastRoom` contre une liste blanche de pages.
+- [x] `game/core/env.js` *(fait — resolveURL laissé dans sas-securite.js, seule page qui l'utilise)* : `IS_LOCAL`, `resolveURL` (dupliqués dans index, blackbox, sas, editor).
+- [x] `game/core/video-gate.js` *(primitives plein écran + chargeur API YouTube ; l'unification complète des overlays se fera avec les 12 vidéos personnages)* : logique overlay vidéo locale/YouTube + bouton skip + fullscreen (dupliquée index/blackbox, bientôt nécessaire pour les 12 vidéos personnages).
+- [x] `game/core/page-boot.js` : enregistrement lastRoom + icône réglages + overlay « pseudo » commun aux 4 pages Nexus WIP (leurs ~100 lignes identiques chacune).
+- [x] Extraire le JS inline de `sas_securite.html` → `game/pages/sas-securite.js` et celui de `test-blackbox.html` → `game/pages/blackbox.js` (extraction brute d'abord, sans réécriture — le HTML passe de 144 Ko à ~30 Ko et le JS devient diffable/versionnable proprement).
+- [x] Même opération pour le CSS *(blackbox.css 55 Ko ; les styles de sas_securite sont petits et restent inline)* inline volumineux → `game/pages/*.css`.
 
 ### Phase 4 — Découpage du moteur scene-loader.js (~2-3 jours, le plus délicat)
 - [ ] Scinder `scene-loader.js` (114 Ko) en 5 modules `game/engine/` (voir arbre) chargés dans l'ordre par les pages, pattern identique à `editor/`.
