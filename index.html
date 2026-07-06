@@ -561,6 +561,11 @@
 <script src="game/core/profiles.js"></script>
 <script src="game/core/video-gate.js"></script>
 <script>
+// Écran de connexion en plein écran dès le premier geste (clic ou touche) —
+// les navigateurs interdisent le plein écran sans interaction utilisateur.
+ResVideoGate.autoFullscreen();
+</script>
+<script>
 /**
  * ============================================
  * FOND ANIMÉ - Particules flottantes

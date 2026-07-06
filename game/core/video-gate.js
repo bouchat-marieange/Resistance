@@ -32,8 +32,43 @@ var ResVideoGate = (function() {
         document.head.appendChild(s);
     }
 
+    /**
+     * Plein écran automatique d'une page (généralisation du mécanisme
+     * qui n'existait que dans cocoon_nexus.html) :
+     *  1. tentative immédiate — fonctionne sur Chrome quand la navigation
+     *     vient d'un clic (l'activation utilisateur est encore valide) ;
+     *  2. sinon, plein écran au premier geste (clic ou touche) — les
+     *     navigateurs interdisent le plein écran sans geste utilisateur.
+     * Ne force jamais : si le joueur quitte volontairement (Échap),
+     * on ne le réimpose pas.
+     */
+    function autoFullscreen() {
+        try { sessionStorage.removeItem('goFullscreen'); } catch (e) {} // drapeau historique consommé
+
+        var el = document.documentElement;
+        function tenter() {
+            var fn = el.requestFullscreen || el.webkitRequestFullscreen
+                || el.mozRequestFullScreen || el.msRequestFullscreen;
+            if (!fn) return null;
+            try { return fn.call(el); } catch (e) { return null; }
+        }
+        function auPremierGeste() {
+            document.removeEventListener('pointerdown', auPremierGeste, true);
+            document.removeEventListener('keydown', auPremierGeste, true);
+            if (!document.fullscreenElement) tenter();
+        }
+        function armer() {
+            document.addEventListener('pointerdown', auPremierGeste, true);
+            document.addEventListener('keydown', auPremierGeste, true);
+        }
+        var p = tenter();
+        if (p && p.catch) p.catch(armer);
+        else if (!document.fullscreenElement) armer();
+    }
+
     return {
         requestFullscreen: requestFullscreen,
-        loadYouTubeAPI: loadYouTubeAPI
+        loadYouTubeAPI: loadYouTubeAPI,
+        autoFullscreen: autoFullscreen
     };
 })();

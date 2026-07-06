@@ -11,4 +11,6 @@
 
 (function() {
     if (window.ResProfiles) ResProfiles.rememberCurrentRoom();
+    // Plein écran automatique (tentative immédiate, sinon premier geste)
+    if (window.ResVideoGate) ResVideoGate.autoFullscreen();
 })();

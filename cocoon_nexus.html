@@ -12,36 +12,6 @@
             if (t) document.title = 'Résistance - ' + t;
         })();
     </script>
-    <script>
-        // Plein écran automatique si demandé par la page de démarrage
-        (function() {
-            if (sessionStorage.getItem('goFullscreen') !== '1') return;
-            sessionStorage.removeItem('goFullscreen');
-
-            function requestFS() {
-                var el = document.documentElement;
-                var p = el.requestFullscreen       ? el.requestFullscreen()
-                      : el.webkitRequestFullscreen ? el.webkitRequestFullscreen()
-                      : el.mozRequestFullScreen    ? el.mozRequestFullScreen()
-                      : el.msRequestFullscreen     ? el.msRequestFullscreen()
-                      : null;
-                return p;
-            }
-
-            // Tentative immédiate — fonctionne sur Chrome si la navigation
-            // vient d'un clic (activation transitoire préservée)
-            var attempt = requestFS();
-            if (attempt && attempt.catch) {
-                attempt.catch(function() {
-                    // Fallback : plein écran au premier clic sur la page
-                    document.addEventListener('click', function fsOnClick() {
-                        requestFS();
-                        document.removeEventListener('click', fsOnClick);
-                    }, { once: true });
-                });
-            }
-        })();
-    </script>
 
     <!-- Tailwind/DaisyUI et éditeur chargés uniquement via editor.html -->
 
@@ -231,6 +201,7 @@
 </div>
 <script src="game/core/env.js"></script>
 <script src="game/core/profiles.js"></script>
+<script src="game/core/video-gate.js"></script>
 <script src="game/core/page-boot.js"></script>
 <script src="game/debug-logger.js"></script>
 <script src="game/score-manager.js"></script>
