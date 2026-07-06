@@ -313,7 +313,7 @@ function initEditorObjectsListeners() {
                 // En mode éditeur : on initialise le mixer et on évalue la frame 0
                 // (pose idle naturelle) mais on met l'action en pause pour pouvoir
                 // positionner/rotater/scaler le personnage sans qu'il bouge.
-                // L'animation reprend automatiquement en mode jeu via scene-loader.js.
+                // L'animation reprend automatiquement en mode jeu via le moteur game/engine/ (ex scene-loader.js).
                 let charMixer = null;
                 if (gltf.animations && gltf.animations.length > 0) {
                     charMixer = new THREE.AnimationMixer(model);
