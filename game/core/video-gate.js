@@ -42,8 +42,61 @@ var ResVideoGate = (function() {
      * Ne force jamais : si le joueur quitte volontairement (Échap),
      * on ne le réimpose pas.
      */
+    /** Petit message éphémère en bas de l'écran (indication Échap). */
+    function _toast(message) {
+        var t = document.createElement('div');
+        t.textContent = message;
+        t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);' +
+            'background:rgba(10,14,18,.85);color:#cfeef5;border:1px solid rgba(0,229,255,.35);' +
+            'border-radius:8px;padding:8px 18px;font:600 12px/1.4 "Segoe UI",sans-serif;' +
+            'letter-spacing:.05em;z-index:2147483647;pointer-events:none;opacity:0;transition:opacity .4s;';
+        (document.body || document.documentElement).appendChild(t);
+        requestAnimationFrame(function() { t.style.opacity = '1'; });
+        setTimeout(function() { t.style.opacity = '0'; setTimeout(function() { t.remove(); }, 500); }, 3500);
+    }
+
+    /**
+     * Pastille discrète en haut au centre : bascule plein écran.
+     * Presque invisible (opacité 0.25), se révèle au survol.
+     * À l'entrée en plein écran, un toast rappelle « Échap pour quitter ».
+     */
+    function _injecterBoutonFS() {
+        if (document.getElementById('res-fs-btn')) return;
+        var btn = document.createElement('button');
+        btn.id = 'res-fs-btn';
+        btn.type = 'button';
+        btn.title = 'Basculer le plein écran (Échap pour quitter)';
+        btn.style.cssText = 'position:fixed;top:6px;left:50%;transform:translateX(-50%);' +
+            'z-index:2147483647;background:rgba(10,14,18,.55);color:#9fdce8;' +
+            'border:1px solid rgba(0,229,255,.35);border-radius:14px;padding:3px 12px;' +
+            'font:600 11px/1.4 "Segoe UI",sans-serif;letter-spacing:.06em;cursor:pointer;' +
+            'opacity:.25;transition:opacity .2s;';
+        btn.addEventListener('mouseenter', function() { btn.style.opacity = '0.95'; });
+        btn.addEventListener('mouseleave', function() { btn.style.opacity = '0.25'; });
+        btn.addEventListener('click', function() {
+            if (document.fullscreenElement) {
+                if (document.exitFullscreen) document.exitFullscreen();
+            } else {
+                requestFullscreen(document.documentElement);
+            }
+        });
+        function majLibelle() {
+            btn.textContent = document.fullscreenElement ? '✕ Quitter le plein écran' : '⛶ Plein écran';
+        }
+        document.addEventListener('fullscreenchange', function() {
+            majLibelle();
+            if (document.fullscreenElement) _toast('Plein écran — touche Échap pour quitter');
+        });
+        majLibelle();
+        (document.body || document.documentElement).appendChild(btn);
+    }
+
     function autoFullscreen() {
         try { sessionStorage.removeItem('goFullscreen'); } catch (e) {} // drapeau historique consommé
+
+        // Bouton de bascule + indication de sortie, sur toutes les pages joueur
+        if (document.body) _injecterBoutonFS();
+        else document.addEventListener('DOMContentLoaded', _injecterBoutonFS);
 
         var el = document.documentElement;
         function tenter() {
