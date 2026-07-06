@@ -96,7 +96,7 @@
       justify-content: center;
       gap: 16px;
       padding: 14px 18px 18px;
-      background: url('images/nexus/background-jeu-nexus-web.png') center/cover;
+      background: url('../../images/nexus/background-jeu-nexus-web.png') center/cover;
     }
 
     /* ===================== CARDS ===================== */
@@ -1078,7 +1078,7 @@
       align-items: center;
       justify-content: center;
       gap: 12px;
-      background: url('images/nexus/background-jeu-nexus-web.png') center/cover;
+      background: url('../../images/nexus/background-jeu-nexus-web.png') center/cover;
       padding: 14px 20px 12px;
     }
     #phase-intro.active { display: flex; }
