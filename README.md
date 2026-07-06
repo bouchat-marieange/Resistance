@@ -26,7 +26,7 @@ cocoon_nexus.html           → Décor du Nexus
 hall_entree_nexus.html      → Hall d'entrée Nexus
 salle_controle_nexus.html   → Salle de contrôle Nexus
 bruxelles_dystopique.html   → Séquence d'introduction
-AI Mythology - mini jeu/    → Mini-jeu arcade intégré
+ai-mythology/               → Mini-jeu arcade intégré (AI Mythology)
 scene_data/                 → Données de scène (JSON)
 3D/                         → Assets 3D (GLB)
 audios/ / videos/ / images/ → Assets médias

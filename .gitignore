@@ -36,10 +36,10 @@ theintellisphere_*.gif
 social_theintellisphere_*.mp4
 
 # Dossiers de travail non déployés
-AI Mythology - mini jeu/start screen/Nouveau dossier/
-AI Mythology - mini jeu/start screen/ok pour gen vidéo/
-AI Mythology - mini jeu/start screen/video start/
-AI Mythology - mini jeu/Cartes/Nouveau dossier/
+ai-mythology/start screen/Nouveau dossier/
+ai-mythology/start screen/ok pour gen vidéo/
+ai-mythology/start screen/video start/
+ai-mythology/Cartes/Nouveau dossier/
 images/Images jeu Nexus/
 # videos/dos.mp4 — maintenant versionné (video Naby dans le sas_securite)
 audios/Mouvement/Pas rapides sur beton.wav
@@ -121,8 +121,8 @@ Syllabus TFE.txt
 **/*.psd
 
 # Fichiers audio sources lourds (non déployés)
-"AI Mythology - mini jeu/Vocal/*.pkf"
-"AI Mythology - mini jeu/sounds/*.wav"
+"ai-mythology/Vocal/*.pkf"
+"ai-mythology/sounds/*.wav"
 
 # Fichiers divers non déployés
 liens-tfe (2).html
@@ -150,16 +150,16 @@ Sans titre 1.png
 3D/perso/berger_allemand_couch*_coussin.glb
 
 # Fichiers de travail AI Mythology — non nécessaires au runtime (audit 07/2026)
-AI Mythology - mini jeu/UI Hud/Ecran *.png
-AI Mythology - mini jeu/UI Hud/position UI HUD.png
-AI Mythology - mini jeu/perso/Calque 5.png
-AI Mythology - mini jeu/perso/Compile + Gen-X.png
-AI Mythology - mini jeu/perso/Compile - basic copie.png
-AI Mythology - mini jeu/perso/Gen-X - basic.png
-AI Mythology - mini jeu/perso/Oracle-7 - basic.png
-AI Mythology - mini jeu/sounds/Sound Effect by IfYouEnjoyLikeIt from Pixabay-cup-filling-197474.mp3
-AI Mythology - mini jeu/sounds/Sound Effect by Spin Opel from Pixabay-filling-the-bathtub-411685.mp3
-AI Mythology - mini jeu/sounds/Sound Effect by freesound_community from Pixabay-filling-water-bottle-77422.mp3
-AI Mythology - mini jeu/sounds/Sound Effect by freesound_community from Pixabay-filling_can1-87180.mp3
-AI Mythology - mini jeu/sounds/remplissage cuve.wav
+ai-mythology/UI Hud/Ecran *.png
+ai-mythology/UI Hud/position UI HUD.png
+ai-mythology/perso/Calque 5.png
+ai-mythology/perso/Compile + Gen-X.png
+ai-mythology/perso/Compile - basic copie.png
+ai-mythology/perso/Gen-X - basic.png
+ai-mythology/perso/Oracle-7 - basic.png
+ai-mythology/sounds/Sound Effect by IfYouEnjoyLikeIt from Pixabay-cup-filling-197474.mp3
+ai-mythology/sounds/Sound Effect by Spin Opel from Pixabay-filling-the-bathtub-411685.mp3
+ai-mythology/sounds/Sound Effect by freesound_community from Pixabay-filling-water-bottle-77422.mp3
+ai-mythology/sounds/Sound Effect by freesound_community from Pixabay-filling_can1-87180.mp3
+ai-mythology/sounds/remplissage cuve.wav
 _wav_a_supprimer.txt

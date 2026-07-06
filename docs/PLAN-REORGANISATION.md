@@ -96,10 +96,10 @@ Objectif : le même code copié-collé dans 6+ pages devient 4 modules `game/cor
 
 ### Phase 5 — Renommage « AI Mythology - mini jeu » → `ai-mythology/` (optionnel, ~1 h)
 URL propre sans espaces/accents. Points à mettre à jour (liste exhaustive vérifiée) :
-- [ ] `sas_securite.html` : `actionValue: './AI Mythology - mini jeu/index.html'` (zone borne arcade, recréée à chaque chargement — l'IDB des joueurs existants se corrige donc toute seule).
-- [ ] `scene_data/project.json` : même chaîne dans la zone exportée.
-- [ ] `ai-mythology/index.html` : les 3 retours `../sas_securite.html?spawn=arcade` (inchangés) — rien à faire côté retour.
-- [ ] Re-tester l'aller-retour sas ↔ arcade.
+- [x] `sas_securite.html` : `actionValue: './AI Mythology - mini jeu/index.html'` (zone borne arcade, recréée à chaque chargement — l'IDB des joueurs existants se corrige donc toute seule).
+- [x] `scene_data/project.json` : même chaîne dans la zone exportée.
+- [x] `ai-mythology/index.html` : les 3 retours `../sas_securite.html?spawn=arcade` (inchangés) — rien à faire côté retour.
+- [x] Re-tester l'aller-retour sas ↔ arcade.
 
 ### Règles pour la suite (nouvelles créations)
 1. Nouveaux fichiers : kebab-case, sans espaces ni accents (`salle-cartographie.html`, pas `Salle Cartographie.html`).
