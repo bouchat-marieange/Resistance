@@ -763,7 +763,7 @@ function executeUndo(action) {
         case 'floorplan':
             // Annuler une action de plan 2D (mur, pièce, fusion, rotation...) :
             // restaure l'instantané complet capturé juste avant cette action
-            // (pont unifié — voir editor-floorplan.js, section historique)
+            // (pont unifié — voir editor/floorplan/floorplan-history.js)
             restoreFloorPlanState(data);
             break;
 

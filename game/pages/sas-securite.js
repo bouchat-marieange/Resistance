@@ -298,7 +298,8 @@ function init() {
     createRug();
 
     // Initialiser la grille du plan (invisible au départ)
-    // Note: createFloorPlanGrid est définie dans editor-floorplan.js, chargé dynamiquement après init()
+    // Note: createFloorPlanGrid est définie dans editor/floorplan/floorplan-core.js
+    // (uniquement chargé par l'éditeur, pas par cette page de jeu — d'où la garde ci-dessous)
     if (typeof createFloorPlanGrid === 'function') {
         createFloorPlanGrid();
         if (floorPlanGrid) {

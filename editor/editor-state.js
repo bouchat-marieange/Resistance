@@ -165,7 +165,8 @@ var roomRounding = (typeof roomRounding !== 'undefined') ? roomRounding : 0;
 // Note (E0) : l'ancien historique séparé du plan 2D (floorPlanHistory /
 // floorPlanHistoryIndex / MAX_FLOOR_PLAN_HISTORY) a été retiré — le plan 2D
 // pousse désormais ses actions sur globalHistory (ci-dessus), voir
-// editor-floorplan.js (saveFloorPlanState) et editor-objects.js (executeUndo/Redo).
+// editor/floorplan/floorplan-history.js (saveFloorPlanState) et
+// editor-objects.js (executeUndo/Redo).
 
 var lightIdCounter = (typeof lightIdCounter !== 'undefined') ? lightIdCounter : 0;
 var initialCameraSettings = (typeof initialCameraSettings !== 'undefined') ? initialCameraSettings : {

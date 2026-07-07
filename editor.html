@@ -220,7 +220,20 @@
 <script src="editor/editor-camera-lights.js"></script>
 <script src="editor/editor-audio.js"></script>
 <script src="editor/editor-save.js"></script>
-<script src="editor/editor-floorplan.js"></script>
+<!-- Plan 2D : anciennement editor-floorplan.js (8618 lignes), scindé en
+     10 modules (E0-bis, 07/2026) — même méthode que game/engine/ (Phase 4).
+     L'ordre n'affecte pas le comportement (aucun code exécuté au chargement
+     dans ces fichiers), gardé lisible par grande fonction. -->
+<script src="editor/floorplan/floorplan-core.js"></script>
+<script src="editor/floorplan/floorplan-tools-basic.js"></script>
+<script src="editor/floorplan/floorplan-zones.js"></script>
+<script src="editor/floorplan/floorplan-texture.js"></script>
+<script src="editor/floorplan/floorplan-walls-mitered.js"></script>
+<script src="editor/floorplan/floorplan-walls-merge.js"></script>
+<script src="editor/floorplan/floorplan-history.js"></script>
+<script src="editor/floorplan/floorplan-walls-core.js"></script>
+<script src="editor/floorplan/floorplan-rooms.js"></script>
+<script src="editor/floorplan/floorplan-import.js"></script>
 
 <script>
 /**

@@ -2,7 +2,7 @@
 
 ## Vue d'ensemble
 
-L'éditeur 3D de Résistance est un **outil autonome** (`editor.html`), entièrement séparé des pages de jeu. Il permet de composer, placer et configurer les objets, lumières et éléments de gameplay de chaque pièce du bunker, puis de sauvegarder ces configurations dans le navigateur. Les pages de jeu récupèrent ensuite ces données via `scene-loader.js` au moment du chargement — sans jamais embarquer le code de l'éditeur.
+L'éditeur 3D de Résistance est un **outil autonome** (`editor.html`), entièrement séparé des pages de jeu. Il permet de composer, placer et configurer les objets, lumières et éléments de gameplay de chaque pièce du bunker, puis de sauvegarder ces configurations dans le navigateur. Les pages de jeu récupèrent ensuite ces données via les modules `game/engine/` au moment du chargement — sans jamais embarquer le code de l'éditeur.
 
 Cette séparation est délibérée : elle évite de faire peser plusieurs centaines de kilooctets de code d'édition sur chaque page de jeu, et maintient une frontière nette entre l'outil de création et l'expérience jouée.
 
@@ -13,18 +13,29 @@ Cette séparation est délibérée : elle évite de faire peser plusieurs centai
 ```
 Résistance/
 ├── editor.html                    # Application éditeur autonome
-├── scene-loader.js                # Chargeur léger côté jeu (remplace les scripts éditeur)
+├── game/engine/                   # Chargeur léger côté jeu (remplace les scripts éditeur)
 │
 └── editor/                        # Modules de l'éditeur
     ├── editor-state.js            # Variables d'état globales partagées
-    ├── editor-core.js             # Gizmos (TransformControls), sélection, undo/redo
-    ├── editor-objects.js          # Import GLB/GLTF, gestion des objets, sélection multiple
+    ├── editor-core.js             # Gizmos (TransformControls), sélection
+    ├── editor-objects.js          # Import GLB/GLTF, gestion des objets, historique undo/redo unifié
     ├── editor-camera-lights.js    # Caméra (position, FOV) et sources lumineuses
     ├── editor-audio.js            # Système de pistes audio (4 catégories)
     ├── editor-save.js             # Sauvegarde/chargement IndexedDB + localStorage, réglages visuels
-    ├── editor-floorplan.js        # Vue de dessus, plan de pièce, création de murs
     ├── editor-panel.html          # Interface du panneau (chargé dynamiquement dans editor.html)
-    └── editor.css                 # Styles du panneau éditeur
+    ├── editor.css                 # Styles du panneau éditeur
+    │
+    └── floorplan/                 # Plan de pièce — scindé en 10 modules (E0-bis, 07/2026)
+        ├── floorplan-core.js          # Vue de dessus, grille, snapping, outils de base
+        ├── floorplan-tools-basic.js   # Outil Mesure + outil Spawn (position de départ)
+        ├── floorplan-zones.js         # Zones d'interaction (lien/vidéo/image/texte/défi)
+        ├── floorplan-texture.js       # Application de texture par face (mur/sol/plafond)
+        ├── floorplan-walls-mitered.js # Biseaux et jonctions de murs (mitered walls)
+        ├── floorplan-walls-merge.js   # Sélection multiple, fusion, mur oblique, création Sims
+        ├── floorplan-history.js       # Historique undo/redo unifié du plan 2D (pont vers editor-objects.js)
+        ├── floorplan-walls-core.js    # Primitives de création murs/pièces, aperçus, découpe
+        ├── floorplan-rooms.js         # Pièces à forme libre (union/soustraction booléenne)
+        └── floorplan-import.js        # Import de plan depuis un fichier SVG
 ```
 
 > L'ancien `editor.js` (racine) — version legacy inutilisée de `SceneEditor` — a été supprimé le 06/07/2026 (récupérable via l'historique git si besoin).
