@@ -162,10 +162,10 @@ var selectedRooms = (typeof selectedRooms !== 'undefined') ? selectedRooms : [];
 var roomIdCounter = (typeof roomIdCounter !== 'undefined') ? roomIdCounter : 0;
 var roomRounding = (typeof roomRounding !== 'undefined') ? roomRounding : 0;
 
-// Historique pour Undo/Redo des murs (floor-plan)
-var floorPlanHistory = (typeof floorPlanHistory !== 'undefined') ? floorPlanHistory : [];
-var floorPlanHistoryIndex = (typeof floorPlanHistoryIndex !== 'undefined') ? floorPlanHistoryIndex : -1;
-var MAX_FLOOR_PLAN_HISTORY = (typeof MAX_FLOOR_PLAN_HISTORY !== 'undefined') ? MAX_FLOOR_PLAN_HISTORY : 10;
+// Note (E0) : l'ancien historique séparé du plan 2D (floorPlanHistory /
+// floorPlanHistoryIndex / MAX_FLOOR_PLAN_HISTORY) a été retiré — le plan 2D
+// pousse désormais ses actions sur globalHistory (ci-dessus), voir
+// editor-floorplan.js (saveFloorPlanState) et editor-objects.js (executeUndo/Redo).
 
 var lightIdCounter = (typeof lightIdCounter !== 'undefined') ? lightIdCounter : 0;
 var initialCameraSettings = (typeof initialCameraSettings !== 'undefined') ? initialCameraSettings : {

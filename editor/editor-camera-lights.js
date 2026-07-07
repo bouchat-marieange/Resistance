@@ -416,10 +416,10 @@ function switchEditorMode(mode) {
         hideLightGizmo();
         hideAllLightHelpers();
 
-        // Initialiser l'historique si c'est la première fois
-        if (floorPlanHistory.length === 0) {
-            saveFloorPlanState('init', {});
-        }
+        // Garantir une référence "avant" pour l'historique unifié (capture
+        // silencieuse de l'état déjà présent — murs chargés depuis un fichier,
+        // par exemple — sans créer d'entrée d'annulation)
+        ensureFloorPlanBaseline();
 
         // Initialiser l'outil par défaut
         setFloorPlanTool('draw-wall');

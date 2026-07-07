@@ -6578,24 +6578,47 @@ function finishWallDrawing() {
 }
 
 // ==================== HISTORIQUE UNDO/REDO POUR FLOOR PLAN ====================
+//
+// Pont vers l'historique UNIFIÉ (globalHistory / recordAction / undo / redo,
+// définis dans editor-objects.js). Avant cette refonte (E0), le plan 2D avait
+// sa propre pile séparée (floorPlanHistory/floorPlanHistoryIndex) dont les
+// fonctions undoFloorPlanAction()/redoFloorPlanAction() n'étaient câblées à
+// AUCUN raccourci clavier : Ctrl+Z ne pouvait donc jamais annuler un mur ou
+// une pièce. Désormais, chaque action de plan 2D pousse une entrée de type
+// 'floorplan' sur la MÊME pile que les objets/lumières/textures : Ctrl+Z
+// annule la dernière action réalisée, tout domaine confondu, dans l'ordre
+// chronologique réel.
 
-// Sauvegarder l'état actuel dans l'historique
-function saveFloorPlanState(actionType, data) {
-    // Supprimer les états "futurs" si on est au milieu de l'historique
-    if (floorPlanHistoryIndex < floorPlanHistory.length - 1) {
-        floorPlanHistory = floorPlanHistory.slice(0, floorPlanHistoryIndex + 1);
-    }
+// Référence "avant action" : capturée paresseusement (première utilisation),
+// puis maintenue à jour à chaque action ET à chaque undo/redo (restoreFloorPlanState).
+var _floorPlanBaselineSnapshot = null;
+var _floorPlanBaselineReady = false;
 
-    // Créer une copie de l'état actuel
-    const state = {
-        type: actionType, // 'add-wall', 'delete-wall', 'add-room', 'delete-room', etc.
-        data: data,
-        walls: JSON.parse(JSON.stringify(floorPlanWalls.map(w => ({
-            start: w.start,
-            end: w.end,
-            id: w.id || 0,
-            isRoomWall: w.isRoomWall || false
-        })))),
+// Capture l'état courant des murs/pièces (même format qu'avant la refonte,
+// + prise en charge des murs FUSIONNÉS : ils n'ont pas de start/end simple,
+// seulement une géométrie personnalisée — sérialisée comme le fait déjà
+// l'export de salle, voir editor-save.js).
+function captureFloorPlanSnapshot() {
+    return {
+        walls: JSON.parse(JSON.stringify(floorPlanWalls.map(w => {
+            if (w.isMerged) {
+                const poly = w.roomPolygon || (w.mesh.userData && w.mesh.userData.roomPolygon);
+                return {
+                    isMerged: true,
+                    name: w.name || `Mur fusionné n°${w.id || 0}`,
+                    id: w.id || 0,
+                    geometryJSON: w.mesh.geometry.toJSON(),
+                    sourceWallCount: (w.mesh.userData && w.mesh.userData.sourceWallCount) || 0,
+                    roomPolygon: (poly && poly.length >= 3) ? poly.map(p => ({ x: p.x, z: p.z })) : null
+                };
+            }
+            return {
+                start: w.start,
+                end: w.end,
+                id: w.id || 0,
+                isRoomWall: w.isRoomWall || false
+            };
+        }))),
         rooms: JSON.parse(JSON.stringify(floorPlanRooms.map(r => ({
             id: r.id,
             bounds: r.bounds,
@@ -6605,48 +6628,28 @@ function saveFloorPlanState(actionType, data) {
         })))),
         lastEndPoint: lastWallEndPoint ? { ...lastWallEndPoint } : null
     };
-
-    floorPlanHistory.push(state);
-
-    // Limiter la taille de l'historique
-    if (floorPlanHistory.length > MAX_FLOOR_PLAN_HISTORY) {
-        floorPlanHistory.shift();
-    } else {
-        floorPlanHistoryIndex++;
-    }
-
-    console.log(`📝 État sauvegardé (${actionType}). Historique: ${floorPlanHistoryIndex + 1}/${floorPlanHistory.length}`);
 }
 
-// Annuler la dernière action
-function undoFloorPlanAction() {
-    if (floorPlanHistoryIndex <= 0) {
-        console.log('⚠️ Rien à annuler');
-        return;
+// Garantit qu'une référence "avant" existe, en capturant l'état déjà présent
+// à l'écran (murs chargés depuis un fichier, par exemple) — SANS créer
+// d'entrée d'annulation : il n'y a rien de sensé à "annuler" avant ce point.
+function ensureFloorPlanBaseline() {
+    if (!_floorPlanBaselineReady) {
+        _floorPlanBaselineSnapshot = captureFloorPlanSnapshot();
+        _floorPlanBaselineReady = true;
     }
-
-    floorPlanHistoryIndex--;
-    const state = floorPlanHistory[floorPlanHistoryIndex];
-
-    restoreFloorPlanState(state);
-    console.log(`↶ Annuler. Historique: ${floorPlanHistoryIndex + 1}/${floorPlanHistory.length}`);
 }
 
-// Rétablir l'action annulée
-function redoFloorPlanAction() {
-    if (floorPlanHistoryIndex >= floorPlanHistory.length - 1) {
-        console.log('⚠️ Rien à rétablir');
-        return;
-    }
-
-    floorPlanHistoryIndex++;
-    const state = floorPlanHistory[floorPlanHistoryIndex];
-
-    restoreFloorPlanState(state);
-    console.log(`↷ Rétablir. Historique: ${floorPlanHistoryIndex + 1}/${floorPlanHistory.length}`);
+// Enregistre l'état courant (après une action de plan 2D) dans l'historique unifié.
+function saveFloorPlanState(actionType, data) {
+    ensureFloorPlanBaseline();
+    const after = captureFloorPlanSnapshot();
+    recordAction('floorplan', _floorPlanBaselineSnapshot, after, actionType);
+    _floorPlanBaselineSnapshot = after;
+    console.log(`📝 Action plan 2D enregistrée dans l'historique unifié: ${actionType}`);
 }
 
-// Restaurer un état depuis l'historique
+// Restaurer un état (appelé par executeUndo/executeRedo dans editor-objects.js)
 function restoreFloorPlanState(state) {
     // Supprimer tous les murs actuels
     floorPlanWalls.forEach(wall => {
@@ -6670,6 +6673,45 @@ function restoreFloorPlanState(state) {
 
     // Recréer les murs depuis l'état sauvegardé
     state.walls.forEach(w => {
+        // Murs fusionnés : reconstruire depuis geometryJSON (même logique que
+        // le chargement d'une salle sauvegardée — voir editor-save.js)
+        if (w.isMerged && w.geometryJSON) {
+            try {
+                const loader = new THREE.BufferGeometryLoader();
+                const geo = loader.parse(w.geometryJSON);
+                let maxMatIdx = 0;
+                if (geo.groups) geo.groups.forEach(g => { maxMatIdx = Math.max(maxMatIdx, g.materialIndex); });
+                const materials = [];
+                for (let i = 0; i <= maxMatIdx; i++) {
+                    const sourceWallIdx = Math.floor(i / 6);
+                    const pof = 1 + sourceWallIdx * 0.3;
+                    materials.push(new THREE.MeshStandardMaterial({
+                        color: 0xcccccc, side: THREE.DoubleSide, roughness: 0.4, metalness: 0,
+                        polygonOffset: true, polygonOffsetFactor: pof, polygonOffsetUnits: pof
+                    }));
+                }
+                const mesh = new THREE.Mesh(geo, materials);
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+                mesh.userData.type = 'merged-wall';
+                mesh.userData.editorName = w.name;
+                mesh.userData.isMerged = true;
+                mesh.userData.isEnvironment = true;
+                mesh.userData.wallId = w.id;
+                mesh.userData.sourceWallCount = w.sourceWallCount || 0;
+                scene.add(mesh);
+                const mergedWallObj = { start: null, end: null, mesh: mesh, name: w.name, id: w.id, isMerged: true };
+                if (w.roomPolygon && w.roomPolygon.length >= 3) {
+                    mergedWallObj.roomPolygon = w.roomPolygon;
+                    mesh.userData.roomPolygon = w.roomPolygon;
+                }
+                floorPlanWalls.push(mergedWallObj);
+                addWallToObjectList(mergedWallObj);
+            } catch (e) {
+                console.warn(`⚠️ Erreur restauration mur fusionné "${w.name}" (undo/redo):`, e);
+            }
+            return;
+        }
         if (w.start && w.end) {
             let wall;
             if (w.id) {
@@ -6736,6 +6778,11 @@ function restoreFloorPlanState(state) {
 
     // Restaurer le dernier point de fin
     lastWallEndPoint = state.lastEndPoint ? { ...state.lastEndPoint } : null;
+
+    // L'état restauré devient la nouvelle référence "avant" pour la prochaine
+    // action, qu'elle vienne d'un nouvel undo/redo ou d'une édition normale.
+    _floorPlanBaselineSnapshot = state;
+    _floorPlanBaselineReady = true;
 
     console.log(`✅ État restauré: ${state.walls.length} murs, ${(state.rooms || []).length} pièces`);
 }

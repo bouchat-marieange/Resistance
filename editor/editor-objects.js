@@ -760,37 +760,11 @@ function executeUndo(action) {
             }
             break;
 
-        case 'create-wall':
-            // Annuler la création d'un mur
-            if (data.wall && data.wall.mesh) {
-                scene.remove(data.wall.mesh);
-                const idx = floorPlanWalls.indexOf(data.wall);
-                if (idx > -1) floorPlanWalls.splice(idx, 1);
-            }
-            break;
-
-        case 'delete-wall':
-            // Annuler la suppression d'un mur = restaurer
-            if (data.wall && data.wall.mesh) {
-                scene.add(data.wall.mesh);
-                floorPlanWalls.push(data.wall);
-            }
-            break;
-
-        case 'create-room':
-            // Annuler la création d'une pièce = supprimer les 4 murs
-            if (data.walls && data.walls.length) {
-                data.walls.forEach(wall => {
-                    if (wall.mesh) scene.remove(wall.mesh);
-                    const idx = floorPlanWalls.indexOf(wall);
-                    if (idx > -1) floorPlanWalls.splice(idx, 1);
-                });
-            }
-            if (data.room && data.room.mesh) {
-                scene.remove(data.room.mesh);
-                const idx = floorPlanRooms.indexOf(data.room);
-                if (idx > -1) floorPlanRooms.splice(idx, 1);
-            }
+        case 'floorplan':
+            // Annuler une action de plan 2D (mur, pièce, fusion, rotation...) :
+            // restaure l'instantané complet capturé juste avant cette action
+            // (pont unifié — voir editor-floorplan.js, section historique)
+            restoreFloorPlanState(data);
             break;
 
         case 'texture-wall':
@@ -866,32 +840,10 @@ function executeRedo(action) {
             }
             break;
 
-        case 'create-wall':
-            if (data.wall && data.wall.mesh) {
-                scene.add(data.wall.mesh);
-                floorPlanWalls.push(data.wall);
-            }
-            break;
-
-        case 'delete-wall':
-            if (data.wall && data.wall.mesh) {
-                scene.remove(data.wall.mesh);
-                const idx = floorPlanWalls.indexOf(data.wall);
-                if (idx > -1) floorPlanWalls.splice(idx, 1);
-            }
-            break;
-
-        case 'create-room':
-            if (data.walls && data.walls.length) {
-                data.walls.forEach(wall => {
-                    if (wall.mesh) scene.add(wall.mesh);
-                    floorPlanWalls.push(wall);
-                });
-            }
-            if (data.room && data.room.mesh) {
-                scene.add(data.room.mesh);
-                floorPlanRooms.push(data.room);
-            }
+        case 'floorplan':
+            // Rétablir une action de plan 2D : restaure l'instantané capturé
+            // juste après cette action (pont unifié)
+            restoreFloorPlanState(data);
             break;
 
         case 'texture-wall':
