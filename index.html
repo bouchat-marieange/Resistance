@@ -561,9 +561,10 @@
 <script src="game/core/profiles.js"></script>
 <script src="game/core/video-gate.js"></script>
 <script>
-// Écran de connexion en plein écran dès le premier geste (clic ou touche) —
-// les navigateurs interdisent le plein écran sans interaction utilisateur.
-ResVideoGate.autoFullscreen();
+// Invitation au plein écran F11 avant la connexion : contrairement à l'API
+// Fullscreen JS (liée au document, elle « saute » à chaque navigation),
+// F11 met la fenêtre du navigateur en plein écran pour toute la partie.
+ResVideoGate.fullscreenInvite();
 </script>
 <script>
 /**
@@ -858,17 +859,14 @@ function goToGame() {
     // Marquer l'intro comme vue et enregistrer la salle de départ
     var active = getActiveProfile();
     if (active) markIntroWatched(active.pseudo);
-    sessionStorage.setItem('goFullscreen', '1');
     window.location.href = 'test-blackbox.html';
 }
-
-// Plein écran : primitive partagée game/core/video-gate.js
-function doRequestFS(el) { ResVideoGate.requestFullscreen(el); }
 
 function playIntroVideo() {
     var overlay = document.getElementById('video-overlay');
     overlay.classList.add('visible');
-    doRequestFS(overlay);
+    // Pas de requestFullscreen ici : l'overlay remplit la fenêtre, et si le
+    // joueur a suivi l'invitation F11 la fenêtre est déjà en plein écran.
     if (IS_LOCAL) {
         document.getElementById('intro-video').play();
     } else {
@@ -884,7 +882,6 @@ function launchGame() {
     // (lastRoom validé contre la liste blanche : un localStorage altéré
     // ne peut pas rediriger vers une URL arbitraire)
     if (profile && profile.introWatched) {
-        sessionStorage.setItem('goFullscreen', '1');
         window.location.href = ResProfiles.sanitizeLastRoom(profile.lastRoom);
         return;
     }

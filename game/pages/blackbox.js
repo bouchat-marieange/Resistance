@@ -1376,13 +1376,12 @@ window.addEventListener('beforeunload', () => {
     window.location.href = 'bruxelles_dystopique.html';
   }
 
-  function doRequestFS(el) { ResVideoGate.requestFullscreen(el); }
-
   // Remplace la fonction exitNexus définie plus haut
   window.exitNexus = function() {
     var overlay = document.getElementById('transition-overlay');
     overlay.classList.add('visible');
-    doRequestFS(overlay);
+    // Pas de requestFullscreen : l'overlay remplit la fenêtre, et le plein
+    // écran F11 (proposé à la connexion) persiste de toute façon.
 
     if (IS_LOCAL) {
       var video = document.getElementById('transition-video');

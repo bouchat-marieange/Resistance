@@ -32,96 +32,94 @@ var ResVideoGate = (function() {
         document.head.appendChild(s);
     }
 
-    /**
-     * Plein écran automatique d'une page (généralisation du mécanisme
-     * qui n'existait que dans cocoon_nexus.html) :
-     *  1. tentative immédiate — fonctionne sur Chrome quand la navigation
-     *     vient d'un clic (l'activation utilisateur est encore valide) ;
-     *  2. sinon, plein écran au premier geste (clic ou touche) — les
-     *     navigateurs interdisent le plein écran sans geste utilisateur.
-     * Ne force jamais : si le joueur quitte volontairement (Échap),
-     * on ne le réimpose pas.
-     */
-    /** Petit message éphémère en bas de l'écran (indication Échap). */
-    function _toast(message) {
-        var t = document.createElement('div');
-        t.textContent = message;
-        t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);' +
-            'background:rgba(10,14,18,.85);color:#cfeef5;border:1px solid rgba(0,229,255,.35);' +
-            'border-radius:8px;padding:8px 18px;font:600 12px/1.4 "Segoe UI",sans-serif;' +
-            'letter-spacing:.05em;z-index:2147483647;pointer-events:none;opacity:0;transition:opacity .4s;';
-        (document.body || document.documentElement).appendChild(t);
-        requestAnimationFrame(function() { t.style.opacity = '1'; });
-        setTimeout(function() { t.style.opacity = '0'; setTimeout(function() { t.remove(); }, 500); }, 3500);
+    /** La fenêtre occupe-t-elle tout l'écran (plein écran F11 ou API) ? */
+    function _fenetrePleinEcran() {
+        return window.innerWidth >= screen.width - 2
+            && window.innerHeight >= screen.height - 2;
     }
 
     /**
-     * Pastille discrète en haut au centre : bascule plein écran.
-     * Presque invisible (opacité 0.25), se révèle au survol.
-     * À l'entrée en plein écran, un toast rappelle « Échap pour quitter ».
+     * Invitation au plein écran F11, affichée AVANT la connexion.
+     *
+     * Pourquoi F11 et pas l'API Fullscreen JavaScript : l'API est liée au
+     * document — chaque navigation entre pages fait sortir du plein écran
+     * (effet de « saut » anti-immersif constaté en jeu). F11 met la FENÊTRE
+     * du navigateur en plein écran : il survit à toutes les navigations.
+     * Seul l'utilisateur peut le déclencher, d'où cette invitation.
+     *
+     * Comportement :
+     *  - déjà en plein écran, ou déjà proposée cette session → ne s'affiche pas ;
+     *  - dès que la fenêtre passe en plein écran (F11 détecté via resize),
+     *    message de confirmation puis fermeture automatique ;
+     *  - lien discret « Continuer sans plein écran » pour passer outre.
      */
-    function _injecterBoutonFS() {
-        if (document.getElementById('res-fs-btn')) return;
-        var btn = document.createElement('button');
-        btn.id = 'res-fs-btn';
-        btn.type = 'button';
-        btn.title = 'Basculer le plein écran (Échap pour quitter)';
-        btn.style.cssText = 'position:fixed;top:6px;left:50%;transform:translateX(-50%);' +
-            'z-index:2147483647;background:rgba(10,14,18,.55);color:#9fdce8;' +
-            'border:1px solid rgba(0,229,255,.35);border-radius:14px;padding:3px 12px;' +
-            'font:600 11px/1.4 "Segoe UI",sans-serif;letter-spacing:.06em;cursor:pointer;' +
-            'opacity:.25;transition:opacity .2s;';
-        btn.addEventListener('mouseenter', function() { btn.style.opacity = '0.95'; });
-        btn.addEventListener('mouseleave', function() { btn.style.opacity = '0.25'; });
-        btn.addEventListener('click', function() {
-            if (document.fullscreenElement) {
-                if (document.exitFullscreen) document.exitFullscreen();
-            } else {
-                requestFullscreen(document.documentElement);
-            }
-        });
-        function majLibelle() {
-            btn.textContent = document.fullscreenElement ? '✕ Quitter le plein écran' : '⛶ Plein écran';
-        }
-        document.addEventListener('fullscreenchange', function() {
-            majLibelle();
-            if (document.fullscreenElement) _toast('Plein écran — touche Échap pour quitter');
-        });
-        majLibelle();
-        (document.body || document.documentElement).appendChild(btn);
-    }
+    function fullscreenInvite() {
+        var CLE_SESSION = 'resistance_fs_invite_vue';
+        try {
+            if (sessionStorage.getItem(CLE_SESSION) === '1') return;
+        } catch (e) {}
+        if (_fenetrePleinEcran()) return; // déjà en plein écran (F11 actif)
 
-    function autoFullscreen() {
-        try { sessionStorage.removeItem('goFullscreen'); } catch (e) {} // drapeau historique consommé
+        function marquerVue() {
+            try { sessionStorage.setItem(CLE_SESSION, '1'); } catch (e) {}
+        }
 
-        // Bouton de bascule + indication de sortie, sur toutes les pages joueur
-        if (document.body) _injecterBoutonFS();
-        else document.addEventListener('DOMContentLoaded', _injecterBoutonFS);
+        var estMac = /Mac/i.test(navigator.platform || navigator.userAgent);
+        var touche = estMac ? '⌃⌘F' : 'F11';
+        var sousTouche = estMac ? '(ou le bouton vert de la fenêtre)' : '(ou Fn + F11 selon le clavier)';
 
-        var el = document.documentElement;
-        function tenter() {
-            var fn = el.requestFullscreen || el.webkitRequestFullscreen
-                || el.mozRequestFullScreen || el.msRequestFullscreen;
-            if (!fn) return null;
-            try { return fn.call(el); } catch (e) { return null; }
+        var overlay = document.createElement('div');
+        overlay.id = 'res-fs-invite';
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:2147483647;display:flex;' +
+            'align-items:center;justify-content:center;background:rgba(5,8,12,.92);' +
+            'backdrop-filter:blur(4px);opacity:0;transition:opacity .35s;';
+        overlay.innerHTML =
+            '<div style="text-align:center;max-width:520px;padding:40px 36px;' +
+                'border:1px solid rgba(0,229,255,.3);border-radius:14px;background:rgba(10,16,22,.85);">' +
+            '  <div style="font-family:\'Bebas Neue\',sans-serif;font-size:30px;letter-spacing:.12em;color:#00E5FF;">Plein écran recommandé</div>' +
+            '  <p style="margin:14px 0 22px;font:400 14px/1.7 \'Segoe UI\',sans-serif;color:rgba(255,255,255,.85);">' +
+            '    Pour une immersion totale, passe en plein écran <strong>avant de commencer</strong> :<br>il sera conservé pendant tout le jeu.</p>' +
+            '  <div id="res-fs-touche" style="display:inline-block;padding:12px 26px;border:2px solid #00E5FF;border-radius:10px;' +
+            '      font:700 26px/1 \'JetBrains Mono\',Consolas,monospace;color:#fff;letter-spacing:.08em;' +
+            '      box-shadow:0 0 18px rgba(0,229,255,.35);">' + touche + '</div>' +
+            '  <div style="margin-top:10px;font:400 12px/1.5 \'Segoe UI\',sans-serif;color:rgba(255,255,255,.5);">' + sousTouche + '</div>' +
+            '  <div id="res-fs-etat" style="margin-top:20px;min-height:20px;font:600 13px/1.5 \'Segoe UI\',sans-serif;color:#7CFC9B;"></div>' +
+            '  <button id="res-fs-skip" type="button" style="margin-top:14px;background:none;border:none;cursor:pointer;' +
+            '      font:400 12px/1.5 \'Segoe UI\',sans-serif;color:rgba(255,255,255,.45);text-decoration:underline;">' +
+            '    Continuer sans plein écran</button>' +
+            '</div>';
+
+        function fermer() {
+            overlay.style.opacity = '0';
+            setTimeout(function() { overlay.remove(); }, 400);
+            window.removeEventListener('resize', surResize);
         }
-        function auPremierGeste() {
-            document.removeEventListener('pointerdown', auPremierGeste, true);
-            document.removeEventListener('keydown', auPremierGeste, true);
-            if (!document.fullscreenElement) tenter();
+
+        function surResize() {
+            if (!_fenetrePleinEcran()) return;
+            marquerVue();
+            var etat = document.getElementById('res-fs-etat');
+            if (etat) etat.textContent = '✓ Plein écran activé — bon jeu !';
+            setTimeout(fermer, 900);
         }
-        function armer() {
-            document.addEventListener('pointerdown', auPremierGeste, true);
-            document.addEventListener('keydown', auPremierGeste, true);
+
+        window.addEventListener('resize', surResize);
+
+        function brancher() {
+            (document.body || document.documentElement).appendChild(overlay);
+            requestAnimationFrame(function() { overlay.style.opacity = '1'; });
+            overlay.querySelector('#res-fs-skip').addEventListener('click', function() {
+                marquerVue();
+                fermer();
+            });
         }
-        var p = tenter();
-        if (p && p.catch) p.catch(armer);
-        else if (!document.fullscreenElement) armer();
+        if (document.body) brancher();
+        else document.addEventListener('DOMContentLoaded', brancher);
     }
 
     return {
         requestFullscreen: requestFullscreen,
         loadYouTubeAPI: loadYouTubeAPI,
-        autoFullscreen: autoFullscreen
+        fullscreenInvite: fullscreenInvite
     };
 })();
