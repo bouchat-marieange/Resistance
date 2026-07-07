@@ -248,17 +248,17 @@ body { font-family: 'Epilogue', system-ui, sans-serif; background: var(--bg-0); 
 .status .hint { color: var(--txt-1); }
 .status .coords { font-family: 'JetBrains Mono'; font-size: 10.5px; color: var(--txt-2); }
 .status .coords b { color: var(--txt-1); font-weight: 500; }
-.mockbadge { position: fixed; top: 8px; left: 50%; transform: translateX(-50%); z-index: 50; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--acc); background: var(--acc-soft); border: 1px solid var(--acc-line); padding: 3px 12px; border-radius: 999px; pointer-events: none; }
+.mockchip { font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--acc); background: var(--acc-soft); border: 1px solid var(--acc-line); padding: 3px 9px; border-radius: 999px; white-space: nowrap; flex-shrink: 0; }
 </style>
 </head>
 <body>
-<div class="mockbadge">Maquette statique — E2 · v2</div>
 <div class="app" id="app">
 
   <!-- ===== TOPBAR ===== -->
   <div class="topbar">
     <div class="brand"><span class="logo">◈</span><span class="name">Résistance</span><span class="sub">Éditeur</span></div>
     <div class="room-pill"><span class="dot"></span> Pièce&nbsp;: <b>sas_securite</b></div>
+    <span class="mockchip">Maquette</span>
     <div class="spacer"></div>
     <button class="tbtn icon-only" id="zen-btn" title="Masquer les panneaux · scène plein écran"><span class="ic">⛶</span></button>
     <div class="divider"></div>
@@ -399,6 +399,17 @@ body { font-family: 'Epilogue', system-ui, sans-serif; background: var(--bg-0); 
               <span class="lacts"><span class="la" title="Éteinte">🌑</span><span class="la" title="Position verrouillée">🔒</span><span class="la danger" title="Supprimer">🗑</span></span>
             </div>
           </div>
+          <div class="sect-title">Lumière sélectionnée — Ambiante</div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+            <span style="font-size:11px;color:var(--txt-1);width:66px;flex-shrink:0">Couleur</span>
+            <button style="display:flex;align-items:center;gap:8px;flex:1;height:32px;padding:0 10px;border-radius:7px;background:var(--bg-2);border:1px solid var(--line);color:var(--txt-0);cursor:pointer;font:inherit;font-size:11px" title="Choisir la couleur de la lumière">
+              <span style="width:18px;height:18px;border-radius:4px;background:oklch(0.9 0.06 90);border:1px solid var(--line-2)"></span>
+              <span style="font-family:'JetBrains Mono';font-size:11px;color:var(--txt-1)">#FFF3D6</span>
+              <span style="margin-left:auto;color:var(--txt-2)">▾</span>
+            </button>
+          </div>
+          <div class="field"><div class="fl"><span>Intensité</span><span class="fv">1.2</span></div><input class="range" type="range" value="60"></div>
+          <p class="caption" style="margin:2px 0 0">Une lumière ponctuelle ou un spot ajoutent ici la distance, l'angle et la pénombre.</p>
           <div class="sect-title">Ambiances</div>
           <div class="presets">
             <div class="preset"><span class="orb" style="background:radial-gradient(circle,oklch(0.4 0.05 250),oklch(0.2 0.02 250))"></span> Bunker sombre</div>
@@ -407,14 +418,25 @@ body { font-family: 'Epilogue', system-ui, sans-serif; background: var(--bg-0); 
           <div class="field" style="margin-top:12px"><div class="fl"><span>Intensité ambiante</span><span class="fv">0.42</span></div><input class="range" type="range" value="42"></div>
         </div>
 
-        <!-- 4 SONORISER -->
+        <!-- 4 SONORISER : deux familles de sons -->
         <div class="lib-step" data-i="4" hidden>
-          <p class="caption" style="margin-bottom:10px">Le paysage sonore de la salle. Une piste par catégorie, déclenchée au chargement, au clic ou au déplacement.</p>
-          <div class="arow"><span class="acat">Musique</span><span class="atrack">La chanson du Nexus</span><span class="atrig">chargement</span></div>
-          <div class="arow"><span class="acat">Ambiance</span><span class="atrack">Salle des machines</span><span class="atrig">clic</span></div>
-          <div class="arow"><span class="acat">Bruitage</span><span class="atrack">Respiration chien</span><span class="atrig">clic</span></div>
-          <div class="arow"><span class="acat">Mouvement</span><span class="atrack">Pas sur béton</span><span class="atrig">marche</span></div>
-          <div class="dropzone" style="margin-top:14px"><span class="plus">＋</span> Ajouter une piste audio</div>
+          <div class="sect-title">Sons automatiques · mixeur global</div>
+          <p class="caption" style="margin:-4px 0 11px">Ambiance de la salle, jouée toute seule. En jeu, le joueur n'agit dessus que via l'icône volume en haut à gauche (Dialogues · Musique · Bruitages).</p>
+          <div class="arow"><span class="acat">Musique</span><span class="atrack">Musique de fond</span><span class="atrig">chargement</span></div>
+          <div class="arow"><span class="acat">Ambiance</span><span class="atrack">Salle des machines</span><span class="atrig">chargement</span></div>
+          <div class="arow"><span class="acat">Bruitage</span><span class="atrack">Respiration chien</span><span class="atrig">boucle</span></div>
+          <div class="arow"><span class="acat">Pas · marche</span><span class="atrack">Pas sur béton</span><span class="atrig">marche</span></div>
+          <div class="arow"><span class="acat">Pas · course</span><span class="atrack">Course sur béton</span><span class="atrig">course</span></div>
+          <div class="dropzone" style="margin:12px 0 4px"><span class="plus">＋</span> Ajouter un son automatique</div>
+
+          <div class="sect-title">Sons déclenchés · avec lecteur</div>
+          <p class="caption" style="margin:-4px 0 11px">Attachés à un objet. Au clic, un petit lecteur apparaît en jeu : le joueur peut mettre en pause, arrêter et régler le volume de ce son individuellement.</p>
+          <div class="arow">
+            <span class="acat">Objet</span>
+            <span class="atrack">La chanson du Nexus<small style="display:block;font-size:9px;color:var(--txt-2);text-transform:none;letter-spacing:0">clic sur Tourne-disque</small></span>
+            <span style="display:flex;gap:5px;align-items:center;color:var(--acc);font-size:12px" title="Un lecteur (lecture / pause / stop / volume) s'affiche en jeu">▶⏸⏹</span>
+          </div>
+          <div class="dropzone" style="margin-top:12px"><span class="plus">＋</span> Ajouter un son déclenché (lecteur)</div>
         </div>
 
         <!-- 5 INTERAGIR -->
@@ -516,7 +538,7 @@ const steps = [
   { t:'Habiller',   cap:"Textures des murs, sol et plafond : de base ou importées, en tuiles ou en panneau.", hint:"Clique une face pour y appliquer la texture sélectionnée" },
   { t:'Peupler',    cap:"Place des objets et des personnages dans la scène. Glisse un élément du catalogue vers le viewport.", hint:"Glisse un objet dans la scène · clic droit pour les options" },
   { t:'Éclairer',   cap:"Sources (ambiante, directionnelle, ponctuelle, spot), liste des lumières, presets.", hint:"Verrouille, allume/éteins ou supprime une lumière depuis la liste" },
-  { t:'Sonoriser',  cap:"Le paysage sonore : musiques, ambiances, bruitages et sons de déplacement.", hint:"Associe une piste à un objet ou à une action du joueur" },
+  { t:'Sonoriser',  cap:"Deux familles de sons : ceux qui jouent tout seuls (contrôle par le mixeur global) et ceux qu'on déclenche en cliquant un objet (petit lecteur individuel).", hint:"Un son automatique pour la salle, ou un son à lecteur attaché à un objet" },
   { t:'Interagir',  cap:"Zones cliquables porteuses de contenu : liens, vidéos, images, textes, défis.", hint:"Dessine une zone sur le sol ou sur un mur" },
   { t:'Tester',     cap:"Joue ta salle, vérifie-la, publie-la.", hint:"« Jouer ici » lance le mode jeu sans quitter l'éditeur" },
 ];
