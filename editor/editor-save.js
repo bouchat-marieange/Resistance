@@ -636,7 +636,7 @@ async function generateSceneDataDownload() {
 })();
 
 // Migration narrative TFE (18/04/2026) : room_1 → sas_securite, room_2 → la_villa
-// Doit etre executee cote editeur aussi car editor.html ne charge pas scene-loader.js.
+// Doit etre executee cote editeur aussi car editor.html ne charge pas le moteur game/engine/ (ex scene-loader.js).
 (function migrateTFENarrativeKeysLS_editor() {
     const renames = [
         ['room_1', 'sas_securite'],
@@ -722,7 +722,7 @@ async function loadProjectOnStartup() {
     const idbTimestamp = (idbData && idbData.timestamp) || 0;
 
     if (idbData && idbData.version === 2) {
-        // IndexedDB v2 est toujours autoritaire (même logique que scene-loader.js)
+        // IndexedDB v2 est toujours autoritaire (même logique que game/engine/)
         // On ne vérifie plus le timestamp localStorage : l'IDB contient les textures et blobs.
         console.log(`📂 Chargement depuis IndexedDB (timestamp: ${new Date(idbTimestamp).toLocaleString()})`);
         await loadProjectFromIndexedDB(idbData);
@@ -2340,7 +2340,7 @@ function loadObjectFromURL(url, data) {
             if (data.customGamma      !== undefined) model.userData.customGamma      = data.customGamma;
             if (data.customOpacity    !== undefined) model.userData.customOpacity    = data.customOpacity;
 
-            // Appliquer customRoughness aux matériaux (même logique que scene-loader.js)
+            // Appliquer customRoughness aux matériaux (même logique que game/engine/)
             if (data.customRoughness !== undefined) {
                 model.traverse(function(child) {
                     if (child.isMesh && child.material && child.material.roughness !== undefined) {

@@ -89,17 +89,17 @@ Objectif : le même code copié-collé dans 6+ pages devient 4 modules `game/cor
 - [x] Même opération pour le CSS *(blackbox.css 55 Ko ; les styles de sas_securite sont petits et restent inline)* inline volumineux → `game/pages/*.css`.
 
 ### Phase 4 — Découpage du moteur scene-loader.js (~2-3 jours, le plus délicat)
-- [ ] Scinder `scene-loader.js` (114 Ko) en 5 modules `game/engine/` (voir arbre) chargés dans l'ordre par les pages, pattern identique à `editor/`.
-- [ ] Règle : découpage **mécanique** par sections existantes du fichier, pas de renommage de fonctions/globales dans un premier temps (les pages et l'éditeur partagent ces globales).
+- [x] Scinder `scene-loader.js` (114 Ko) en modules `game/engine/` chargés dans l'ordre par les pages, pattern identique à `editor/`. *(Fait en 7 modules — les sections réelles donnaient un découpage plus fin que les 5 prévus : state, db, build, audio, restore, bootstrap, player.)*
+- [x] Règle : découpage **mécanique** par sections existantes du fichier, pas de renommage de fonctions/globales dans un premier temps (les pages et l'éditeur partagent ces globales).
 - [ ] Namespace progressif ensuite : `window.RES = { db, engine, profiles, ... }` pour sortir du « tout global ».
-- [ ] Test complet obligatoire : sas + room_model + cocoon + éditeur (ouverture, édition, export scene_data, rechargement IDB vierge).
+- [x] Test complet obligatoire : sas + room_model + cocoon + éditeur (ouverture, édition, export scene_data, rechargement IDB vierge).
 
 ### Phase 5 — Renommage « AI Mythology - mini jeu » → `ai-mythology/` (optionnel, ~1 h)
 URL propre sans espaces/accents. Points à mettre à jour (liste exhaustive vérifiée) :
-- [ ] `sas_securite.html` : `actionValue: './AI Mythology - mini jeu/index.html'` (zone borne arcade, recréée à chaque chargement — l'IDB des joueurs existants se corrige donc toute seule).
-- [ ] `scene_data/project.json` : même chaîne dans la zone exportée.
-- [ ] `ai-mythology/index.html` : les 3 retours `../sas_securite.html?spawn=arcade` (inchangés) — rien à faire côté retour.
-- [ ] Re-tester l'aller-retour sas ↔ arcade.
+- [x] `sas_securite.html` : `actionValue: './AI Mythology - mini jeu/index.html'` (zone borne arcade, recréée à chaque chargement — l'IDB des joueurs existants se corrige donc toute seule).
+- [x] `scene_data/project.json` : même chaîne dans la zone exportée.
+- [x] `ai-mythology/index.html` : les 3 retours `../sas_securite.html?spawn=arcade` (inchangés) — rien à faire côté retour.
+- [x] Re-tester l'aller-retour sas ↔ arcade.
 
 ### Règles pour la suite (nouvelles créations)
 1. Nouveaux fichiers : kebab-case, sans espaces ni accents (`salle-cartographie.html`, pas `Salle Cartographie.html`).

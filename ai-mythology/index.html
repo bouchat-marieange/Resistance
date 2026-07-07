@@ -5563,7 +5563,7 @@ function returnToSas() {
    MODE DÉMO — ?demo=autoUnlock&score=55
    Affiche directement le message de déverrouillage automatique
    (3 essais sous 70%) dans le cadre du jeu, sans jouer.
-   Usage : AI Mythology - mini jeu/index.html?demo=autoUnlock
+   Usage : ai-mythology/index.html?demo=autoUnlock
 ════════════════════════════════════════════════════════════ */
 (function() {
   const params = new URLSearchParams(window.location.search);
@@ -5637,6 +5637,12 @@ function returnToSas() {
 </script>
 
 <!-- GoatCounter analytics — privacy-friendly, no cookies -->
+<!-- Plein écran automatique (parcours joueur) -->
+<script src="../game/core/env.js"></script>
+<script src="../game/core/profiles.js"></script>
+<script src="../game/core/video-gate.js"></script>
+<script src="../game/core/page-boot.js"></script>
+
 <script data-goatcounter="https://bouchat.goatcounter.com/count"
         async src="//gc.zgo.at/count.js"></script>
 </body>

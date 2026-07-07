@@ -11,4 +11,8 @@
 
 (function() {
     if (window.ResProfiles) ResProfiles.rememberCurrentRoom();
+    // Plein écran : plus d'automatisme ici — l'API Fullscreen JS étant liée
+    // au document, elle « sautait » à chaque navigation. Le joueur est invité
+    // à passer en F11 (plein écran fenêtre, persistant) sur l'écran de
+    // connexion via ResVideoGate.fullscreenInvite().
 })();

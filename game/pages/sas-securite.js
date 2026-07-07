@@ -962,7 +962,7 @@ function loadPermanentObjects() {
                 surfaceMode: 'object',
                 objectRef: { editorName: 'Borne Arcade AI Mythology' },
                 actionType: 'link',
-                actionValue: './AI Mythology - mini jeu/index.html',
+                actionValue: './ai-mythology/index.html',
                 customName: 'Jouer — AI Mythology',
                 triggerType: 'click',
                 bounds: {
