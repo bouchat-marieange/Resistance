@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Résistance — Éditeur (maquette E2)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Epilogue:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* Neutres teintés vers le hue turquoise (~205°) — jamais de noir pur */
+  --bg-0: oklch(0.155 0.012 230);   /* fond le plus profond (viewport) */
+  --bg-1: oklch(0.185 0.013 230);   /* panneaux */
+  --bg-2: oklch(0.225 0.014 230);   /* champs, surfaces surélevées */
+  --bg-3: oklch(0.275 0.015 230);   /* survol */
+  --line: oklch(0.31 0.015 230);    /* bordure discrète */
+  --line-2: oklch(0.40 0.02 230);   /* bordure marquée */
+  --txt-0: oklch(0.95 0.008 230);   /* texte primaire */
+  --txt-1: oklch(0.74 0.012 230);   /* secondaire */
+  --txt-2: oklch(0.56 0.012 230);   /* discret */
+  /* Accent — le turquoise du jeu (#00E5FF) */
+  --acc: oklch(0.83 0.135 200);
+  --acc-soft: oklch(0.83 0.135 200 / 0.14);
+  --acc-line: oklch(0.83 0.135 200 / 0.40);
+  --acc-dim: oklch(0.45 0.06 200);
+  --warn: oklch(0.78 0.15 65);
+  --ok: oklch(0.82 0.15 155);
+  --shadow: 0 8px 30px oklch(0.10 0.02 230 / 0.55);
+  --r: 9px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  font-family: 'Epilogue', system-ui, sans-serif;
+  background: var(--bg-0);
+  color: var(--txt-0);
+  font-size: 13px;
+  line-height: 1.45;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+.app {
+  display: grid;
+  grid-template-rows: 44px 62px 1fr 26px;
+  height: 100vh;
+}
+.bebas { font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.06em; }
+.mono { font-family: 'JetBrains Mono', monospace; }
+
+/* ============ TOPBAR ============ */
+.topbar {
+  display: flex; align-items: center; gap: 16px;
+  padding: 0 16px;
+  background: var(--bg-1);
+  border-bottom: 1px solid var(--line);
+}
+.brand { display: flex; align-items: baseline; gap: 9px; }
+.brand .logo {
+  width: 22px; height: 22px; border-radius: 6px;
+  background: var(--acc-soft); border: 1px solid var(--acc-line);
+  display: grid; place-items: center; color: var(--acc);
+  font-size: 13px; align-self: center;
+}
+.brand .name { font-family: 'Bebas Neue'; font-size: 22px; letter-spacing: 0.05em; color: var(--txt-0); line-height: 1; }
+.brand .sub { font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--acc); }
+.room-pill {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 12px 5px 10px; border-radius: 999px;
+  background: var(--bg-2); border: 1px solid var(--line);
+  font-size: 12px; color: var(--txt-1);
+}
+.room-pill b { color: var(--txt-0); font-weight: 600; }
+.room-pill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+.spacer { flex: 1; }
+.tbtn {
+  display: inline-flex; align-items: center; gap: 7px;
+  height: 32px; padding: 0 12px; border-radius: 7px;
+  background: var(--bg-2); border: 1px solid var(--line);
+  color: var(--txt-1); font-size: 12px; font-weight: 500; cursor: pointer;
+  transition: border-color .18s, color .18s, background .18s;
+}
+.tbtn:hover { border-color: var(--line-2); color: var(--txt-0); background: var(--bg-3); }
+.tbtn .ic { font-size: 14px; line-height: 1; }
+.tbtn.primary { background: var(--acc); color: oklch(0.16 0.02 230); border-color: transparent; font-weight: 700; }
+.tbtn.primary:hover { background: oklch(0.88 0.135 200); }
+.eleve {
+  display: inline-flex; align-items: center; gap: 8px;
+  height: 32px; padding: 0 12px; border-radius: 7px;
+  background: transparent; border: 1px dashed var(--line-2);
+  color: var(--txt-2); font-size: 11px; cursor: pointer;
+}
+.eleve .sw { width: 26px; height: 15px; border-radius: 999px; background: var(--bg-3); position: relative; }
+.eleve .sw::after { content:''; position:absolute; top:2px; left:2px; width:11px; height:11px; border-radius:50%; background: var(--txt-2); transition: all .2s; }
+
+/* ============ PIPELINE RAIL ============ */
+.pipeline {
+  display: flex; align-items: center;
+  padding: 0 20px;
+  background: var(--bg-1);
+  border-bottom: 1px solid var(--line);
+  gap: 0;
+  overflow-x: auto;
+}
+.step {
+  display: flex; align-items: center; gap: 10px;
+  cursor: pointer; flex-shrink: 0;
+  padding: 4px 2px;
+  background: none; border: none; color: inherit; font: inherit;
+}
+.step .node {
+  width: 28px; height: 28px; border-radius: 50%;
+  display: grid; place-items: center; flex-shrink: 0;
+  font-family: 'JetBrains Mono'; font-size: 12px; font-weight: 500;
+  border: 1.5px solid var(--line-2); color: var(--txt-2);
+  background: var(--bg-1);
+  transition: all .22s cubic-bezier(0.22,1,0.36,1);
+}
+.step .lbl {
+  font-family: 'Bebas Neue'; font-size: 17px; letter-spacing: 0.07em;
+  color: var(--txt-2); line-height: 1; white-space: nowrap;
+  transition: color .22s;
+}
+.connector { width: 26px; height: 1.5px; background: var(--line); flex-shrink: 0; transition: background .22s; }
+/* états */
+.step.done .node { border-color: var(--acc-dim); color: var(--acc); background: oklch(0.45 0.06 200 / 0.18); }
+.step.done .lbl { color: var(--txt-1); }
+.step.active .node {
+  border-color: var(--acc); color: oklch(0.16 0.02 230); background: var(--acc);
+  box-shadow: 0 0 0 4px var(--acc-soft), 0 0 16px oklch(0.83 0.135 200 / 0.35);
+  transform: scale(1.08);
+}
+.step.active .lbl { color: var(--acc); }
+.connector.filled { background: var(--acc-dim); }
+
+/* ============ MAIN 3-COLUMN ============ */
+.main { display: grid; grid-template-columns: 264px 1fr 304px; min-height: 0; }
+
+/* --- panneaux génériques --- */
+.panel { background: var(--bg-1); display: flex; flex-direction: column; min-height: 0; }
+.panel.left { border-right: 1px solid var(--line); }
+.panel.right { border-left: 1px solid var(--line); }
+.p-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 15px 11px; border-bottom: 1px solid var(--line);
+}
+.p-head .t { font-family: 'Bebas Neue'; font-size: 16px; letter-spacing: 0.08em; color: var(--txt-0); }
+.p-head .num { font-family: 'JetBrains Mono'; font-size: 10px; color: var(--acc); border: 1px solid var(--acc-line); border-radius: 4px; padding: 1px 5px; }
+.p-body { padding: 14px 15px; overflow-y: auto; flex: 1; }
+.caption { font-size: 11.5px; color: var(--txt-2); line-height: 1.5; margin-bottom: 16px; }
+
+.search {
+  width: 100%; height: 32px; border-radius: 7px;
+  background: var(--bg-2); border: 1px solid var(--line);
+  color: var(--txt-0); padding: 0 11px; font-size: 12px; font-family: inherit;
+  margin-bottom: 12px;
+}
+.search::placeholder { color: var(--txt-2); }
+.search:focus { outline: none; border-color: var(--acc-line); }
+
+.chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+.chip {
+  padding: 4px 10px; border-radius: 999px; font-size: 11px; cursor: pointer;
+  background: var(--bg-2); border: 1px solid var(--line); color: var(--txt-1);
+}
+.chip.on { background: var(--acc-soft); border-color: var(--acc-line); color: var(--acc); }
+
+.sect-title { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--txt-2); margin: 4px 0 9px; }
+
+/* grille d'assets */
+.assets { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.asset {
+  border-radius: 8px; background: var(--bg-2); border: 1px solid var(--line);
+  overflow: hidden; cursor: grab; transition: border-color .16s, transform .16s;
+}
+.asset:hover { border-color: var(--acc-line); transform: translateY(-1px); }
+.asset .thumb {
+  height: 62px; display: grid; place-items: center; position: relative;
+  background:
+    radial-gradient(120% 90% at 50% 15%, oklch(0.30 0.03 200 / 0.5), transparent 70%),
+    repeating-linear-gradient(45deg, oklch(0.22 0.014 230), oklch(0.22 0.014 230) 8px, oklch(0.20 0.014 230) 8px, oklch(0.20 0.014 230) 16px);
+}
+.asset .glyph { font-size: 22px; opacity: 0.85; filter: drop-shadow(0 2px 6px oklch(0.1 0 0 / 0.5)); }
+.asset .tri { position: absolute; bottom: 5px; right: 6px; font-family: 'JetBrains Mono'; font-size: 9px; color: var(--txt-1); background: oklch(0.15 0.01 230 / 0.7); padding: 1px 5px; border-radius: 4px; }
+.asset .an { padding: 6px 8px 7px; font-size: 11px; color: var(--txt-1); border-top: 1px solid var(--line); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.dropzone {
+  margin-top: 12px; border: 1px dashed var(--line-2); border-radius: 8px;
+  padding: 14px; text-align: center; color: var(--txt-2); font-size: 11px; cursor: pointer;
+}
+.dropzone:hover { border-color: var(--acc-line); color: var(--acc); }
+.dropzone .plus { font-size: 18px; color: var(--acc); display: block; margin-bottom: 3px; }
+
+/* gabarits (construire) */
+.templates { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+.tpl {
+  aspect-ratio: 1.3; border-radius: 8px; background: var(--bg-2);
+  border: 1px solid var(--line); cursor: pointer; position: relative;
+  display: grid; place-items: center; transition: border-color .16s;
+}
+.tpl:hover { border-color: var(--acc-line); }
+.tpl svg { width: 46px; height: 34px; }
+.tpl .tn { position: absolute; bottom: 5px; left: 0; right: 0; text-align: center; font-size: 10px; color: var(--txt-1); }
+
+.tools { display: flex; flex-direction: column; gap: 6px; }
+.tool {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 11px; border-radius: 7px; cursor: pointer;
+  background: var(--bg-2); border: 1px solid var(--line); color: var(--txt-1); font-size: 12px;
+  transition: border-color .16s, color .16s;
+}
+.tool:hover { border-color: var(--acc-line); color: var(--txt-0); }
+.tool.on { background: var(--acc-soft); border-color: var(--acc-line); color: var(--acc); }
+.tool .ic { font-size: 15px; width: 18px; text-align: center; }
+
+/* textures */
+.swatches { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 16px; }
+.sw-tile { aspect-ratio: 1; border-radius: 7px; border: 1px solid var(--line); cursor: pointer; position: relative; overflow: hidden; }
+.sw-tile:hover { border-color: var(--acc-line); }
+.sw-tile.on { border-color: var(--acc); box-shadow: 0 0 0 2px var(--acc-soft); }
+.sw-tile .swn { position: absolute; bottom: 0; left: 0; right: 0; font-size: 9px; text-align: center; padding: 3px 2px; background: oklch(0.15 0.01 230 / 0.72); color: var(--txt-1); }
+
+/* presets lumière */
+.presets { display: flex; flex-direction: column; gap: 7px; margin: 4px 0 16px; }
+.preset {
+  display: flex; align-items: center; gap: 11px; padding: 9px 11px;
+  border-radius: 7px; background: var(--bg-2); border: 1px solid var(--line); cursor: pointer; font-size: 12px; color: var(--txt-1);
+}
+.preset:hover { border-color: var(--acc-line); }
+.preset .orb { width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0; }
+
+/* sliders */
+.field { margin-bottom: 13px; }
+.field .fl { display: flex; justify-content: space-between; font-size: 11px; color: var(--txt-1); margin-bottom: 6px; }
+.field .fv { font-family: 'JetBrains Mono'; font-size: 11px; color: var(--acc); }
+.range { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; border-radius: 999px; background: var(--bg-3); outline: none; }
+.range::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--acc); cursor: pointer; box-shadow: 0 0 8px var(--acc-soft); }
+
+/* audio rows */
+.arow { display: flex; align-items: center; gap: 9px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+.arow:last-child { border-bottom: none; }
+.arow .acat { font-size: 11px; color: var(--txt-2); width: 74px; flex-shrink: 0; text-transform: uppercase; letter-spacing: 0.06em; }
+.arow .atrack { flex: 1; font-size: 12px; color: var(--txt-0); }
+.arow .atrig { font-family: 'JetBrains Mono'; font-size: 10px; color: var(--acc); background: var(--acc-soft); padding: 2px 6px; border-radius: 4px; }
+
+/* interagir */
+.ztypes { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-bottom: 14px; }
+.ztype { padding: 10px 8px; border-radius: 7px; background: var(--bg-2); border: 1px solid var(--line); text-align: center; font-size: 11px; color: var(--txt-1); cursor: pointer; }
+.ztype:hover { border-color: var(--acc-line); color: var(--txt-0); }
+.ztype .zi { font-size: 17px; display: block; margin-bottom: 4px; }
+
+/* tester */
+.play-big {
+  width: 100%; padding: 18px; border-radius: 10px; cursor: pointer;
+  background: var(--acc); color: oklch(0.16 0.02 230); border: none;
+  font-family: 'Bebas Neue'; font-size: 22px; letter-spacing: 0.08em;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  box-shadow: 0 6px 20px oklch(0.83 0.135 200 / 0.28); margin-bottom: 14px;
+}
+.check-line { display: flex; align-items: center; gap: 9px; font-size: 12px; padding: 9px 11px; border-radius: 7px; background: var(--bg-2); border: 1px solid var(--line); margin-bottom: 8px; color: var(--txt-1); }
+.check-line .ci { color: var(--ok); font-size: 14px; }
+.publish { width: 100%; margin-top: 8px; padding: 11px; border-radius: 8px; background: transparent; border: 1px solid var(--acc-line); color: var(--acc); font-weight: 600; font-size: 12px; cursor: pointer; }
+.publish:hover { background: var(--acc-soft); }
+
+/* ============ VIEWPORT (centre) ============ */
+.viewport { position: relative; background: radial-gradient(120% 100% at 50% 120%, oklch(0.22 0.03 205 / 0.4), var(--bg-0) 60%); overflow: hidden; }
+.scene { position: absolute; inset: 0; perspective: 900px; }
+.floor {
+  position: absolute; left: 50%; bottom: -6%; width: 220%; height: 150%;
+  transform: translateX(-50%) rotateX(66deg);
+  background-image: linear-gradient(oklch(0.83 0.135 200 / 0.10) 1px, transparent 1px),
+                    linear-gradient(90deg, oklch(0.83 0.135 200 / 0.10) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(60% 60% at 50% 40%, oklch(0 0 0) 40%, transparent 80%);
+}
+.horizon { position: absolute; left: 0; right: 0; top: 42%; height: 130px; background: radial-gradient(60% 100% at 50% 0, oklch(0.83 0.135 200 / 0.14), transparent 70%); pointer-events: none; }
+/* silhouettes de meubles */
+.obj { position: absolute; border-radius: 4px; box-shadow: var(--shadow); }
+.obj.o1 { width: 130px; height: 90px; left: 30%; top: 46%; background: linear-gradient(160deg, oklch(0.30 0.015 230), oklch(0.22 0.014 230)); border: 1px solid var(--line-2); transform: skewY(-8deg); }
+.obj.o2 { width: 78px; height: 120px; left: 55%; top: 38%; background: linear-gradient(160deg, oklch(0.27 0.015 230), oklch(0.20 0.014 230)); border: 1px solid var(--line); transform: skewY(6deg); }
+.obj.o3 { width: 60px; height: 60px; left: 20%; top: 58%; background: linear-gradient(160deg, oklch(0.26 0.014 230), oklch(0.19 0.014 230)); border: 1px solid var(--line); }
+/* objet sélectionné + gizmo */
+.obj.selected { border: 1.5px solid var(--acc); box-shadow: 0 0 0 1px var(--acc), 0 0 22px oklch(0.83 0.135 200 / 0.35); }
+.gizmo { position: absolute; left: calc(30% + 65px); top: calc(46% + 45px); width: 0; height: 0; z-index: 5; }
+.gizmo i { position: absolute; height: 2px; border-radius: 2px; transform-origin: left center; }
+.gizmo .gx { width: 46px; background: oklch(0.62 0.19 25); }
+.gizmo .gy { width: 40px; background: oklch(0.72 0.17 145); transform: rotate(-90deg); }
+.gizmo .gz { width: 40px; background: var(--acc); transform: rotate(28deg); }
+.gizmo .gh { position: absolute; width: 9px; height: 9px; border-radius: 50%; background: var(--acc); left: -4px; top: -4px; box-shadow: 0 0 10px var(--acc); }
+
+/* contrôles flottants viewport */
+.vfloat { position: absolute; display: flex; gap: 4px; padding: 4px; background: var(--bg-1); border: 1px solid var(--line); border-radius: 9px; box-shadow: var(--shadow); }
+.vfloat.tl { top: 14px; left: 14px; }
+.vfloat.tr { top: 14px; right: 14px; }
+.vseg { padding: 6px 11px; border-radius: 6px; font-size: 11.5px; color: var(--txt-1); cursor: pointer; }
+.vseg.on { background: var(--acc-soft); color: var(--acc); }
+.vseg:hover:not(.on) { background: var(--bg-3); color: var(--txt-0); }
+
+/* minimap plan 2D */
+.minimap { position: absolute; bottom: 14px; left: 14px; width: 180px; background: var(--bg-1); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; box-shadow: var(--shadow); }
+.minimap .mh { display: flex; align-items: center; justify-content: space-between; padding: 7px 10px; border-bottom: 1px solid var(--line); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--txt-2); }
+.minimap .mh .fold { cursor: pointer; color: var(--txt-1); }
+.minimap .mv { height: 96px; position: relative; background: repeating-linear-gradient(0deg, transparent, transparent 15px, oklch(0.24 0.014 230) 15px, oklch(0.24 0.014 230) 16px), repeating-linear-gradient(90deg, transparent, transparent 15px, oklch(0.24 0.014 230) 15px, oklch(0.24 0.014 230) 16px); }
+.minimap .mroom { position: absolute; left: 24px; top: 20px; right: 30px; bottom: 22px; border: 2px solid var(--acc-dim); border-radius: 3px; }
+.minimap .mspawn { position: absolute; left: 40px; top: 40px; width: 8px; height: 8px; border-radius: 50%; background: var(--acc); box-shadow: 0 0 8px var(--acc); }
+
+/* cluster bas-droite : budget + jouer */
+.vbr { position: absolute; bottom: 14px; right: 14px; display: flex; align-items: center; gap: 10px; }
+.budget { background: var(--bg-1); border: 1px solid var(--line); border-radius: 9px; padding: 8px 12px; box-shadow: var(--shadow); }
+.budget .bl { font-size: 10px; color: var(--txt-2); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 5px; }
+.budget .bbar { width: 128px; height: 5px; border-radius: 999px; background: var(--bg-3); overflow: hidden; }
+.budget .bfill { height: 100%; width: 47%; background: var(--acc); border-radius: 999px; }
+.budget .bv { font-family: 'JetBrains Mono'; font-size: 10px; color: var(--txt-1); margin-top: 5px; }
+.play-here {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 11px 16px; border-radius: 9px; border: none; cursor: pointer;
+  background: var(--acc); color: oklch(0.16 0.02 230);
+  font-family: 'Bebas Neue'; font-size: 17px; letter-spacing: 0.06em;
+  box-shadow: 0 6px 20px oklch(0.83 0.135 200 / 0.3);
+}
+
+/* ============ INSPECTEUR (droite) ============ */
+.insp-obj { display: flex; align-items: center; gap: 10px; }
+.insp-obj .oi { width: 30px; height: 30px; border-radius: 7px; background: var(--acc-soft); border: 1px solid var(--acc-line); display: grid; place-items: center; font-size: 15px; }
+.insp-obj .on2 { font-weight: 600; font-size: 13px; color: var(--txt-0); }
+.insp-obj .ot { font-size: 10px; color: var(--txt-2); text-transform: uppercase; letter-spacing: 0.08em; }
+.insp-acts { display: flex; gap: 4px; }
+.iact { width: 28px; height: 28px; border-radius: 6px; background: var(--bg-2); border: 1px solid var(--line); color: var(--txt-1); cursor: pointer; display: grid; place-items: center; font-size: 13px; }
+.iact:hover { border-color: var(--acc-line); color: var(--acc); }
+
+.igroup { margin-top: 18px; }
+.igroup .gt { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--txt-2); margin-bottom: 10px; }
+.xyz { display: grid; grid-template-columns: repeat(3,1fr); gap: 7px; margin-bottom: 10px; }
+.axis { }
+.axis .al { font-family: 'JetBrains Mono'; font-size: 10px; margin-bottom: 4px; text-align: center; }
+.axis.x .al { color: oklch(0.68 0.17 25); }
+.axis.y .al { color: oklch(0.75 0.15 145); }
+.axis.z .al { color: var(--acc); }
+.axis input {
+  width: 100%; height: 30px; border-radius: 6px; text-align: center;
+  background: var(--bg-2); border: 1px solid var(--line); color: var(--txt-0);
+  font-family: 'JetBrains Mono'; font-size: 11px;
+}
+.axis input:focus { outline: none; border-color: var(--acc-line); }
+.grow-note { font-size: 10.5px; color: var(--txt-2); margin-top: 3px; }
+
+/* ============ STATUS BAR ============ */
+.status { display: flex; align-items: center; gap: 16px; padding: 0 16px; background: var(--bg-1); border-top: 1px solid var(--line); font-size: 11px; color: var(--txt-2); }
+.status .hint { color: var(--txt-1); }
+.status .coords { font-family: 'JetBrains Mono'; font-size: 10.5px; color: var(--txt-2); }
+.status .coords b { color: var(--txt-1); font-weight: 500; }
+
+/* petite bannière maquette */
+.mockbadge { position: fixed; top: 8px; left: 50%; transform: translateX(-50%); z-index: 50; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--acc); background: var(--acc-soft); border: 1px solid var(--acc-line); padding: 3px 12px; border-radius: 999px; pointer-events: none; }
+</style>
+</head>
+<body>
+<div class="mockbadge">Maquette statique — E2</div>
+<div class="app">
+
+  <!-- ===== TOPBAR ===== -->
+  <div class="topbar">
+    <div class="brand">
+      <span class="logo">◈</span>
+      <span class="name">Résistance</span>
+      <span class="sub">Éditeur</span>
+    </div>
+    <div class="room-pill"><span class="dot"></span> Pièce&nbsp;: <b>sas_securite</b></div>
+    <div class="spacer"></div>
+    <button class="eleve" title="Bascule le profil élève (catalogue restreint, budget imposé)"><span class="sw"></span> Mode élève</button>
+    <button class="tbtn" title="Historique des sauvegardes"><span class="ic">↺</span> Historique</button>
+    <button class="tbtn" title="Vérifier avant publication"><span class="ic">✓</span> Vérifier</button>
+    <button class="tbtn primary" title="Publier la salle pour le jeu"><span class="ic">↗</span> Publier</button>
+  </div>
+
+  <!-- ===== PIPELINE RAIL ===== -->
+  <div class="pipeline" id="pipeline">
+    <button class="step" data-i="0"><span class="node">1</span><span class="lbl">Construire</span></button>
+    <span class="connector"></span>
+    <button class="step" data-i="1"><span class="node">2</span><span class="lbl">Habiller</span></button>
+    <span class="connector"></span>
+    <button class="step" data-i="2"><span class="node">3</span><span class="lbl">Peupler</span></button>
+    <span class="connector"></span>
+    <button class="step" data-i="3"><span class="node">4</span><span class="lbl">Éclairer</span></button>
+    <span class="connector"></span>
+    <button class="step" data-i="4"><span class="node">5</span><span class="lbl">Sonoriser</span></button>
+    <span class="connector"></span>
+    <button class="step" data-i="5"><span class="node">6</span><span class="lbl">Interagir</span></button>
+    <span class="connector"></span>
+    <button class="step" data-i="6"><span class="node">▶</span><span class="lbl">Tester</span></button>
+  </div>
+
+  <!-- ===== MAIN ===== -->
+  <div class="main">
+
+    <!-- ---- LEFT : bibliothèque / outils selon l'étape ---- -->
+    <aside class="panel left">
+      <div class="p-head"><span class="t" id="left-title">Peupler</span><span class="num" id="left-num">3 / 7</span></div>
+      <div class="p-body">
+        <p class="caption" id="left-caption">Place des objets et des personnages dans la scène. Glisse un élément du catalogue vers le viewport.</p>
+
+        <!-- 0 CONSTRUIRE -->
+        <div class="lib-step" data-i="0" hidden>
+          <div class="sect-title">Gabarits de départ</div>
+          <div class="templates">
+            <div class="tpl"><svg viewBox="0 0 46 34"><rect x="8" y="4" width="30" height="26" fill="none" stroke="currentColor" stroke-width="1.5" color="#5aa8b5"/></svg><span class="tn">Salle carrée</span></div>
+            <div class="tpl"><svg viewBox="0 0 46 34"><rect x="6" y="10" width="34" height="12" fill="none" stroke="currentColor" stroke-width="1.5" color="#5aa8b5"/></svg><span class="tn">Couloir</span></div>
+            <div class="tpl"><svg viewBox="0 0 46 34"><path d="M8 4 h18 v12 h12 v14 H8 Z" fill="none" stroke="currentColor" stroke-width="1.5" color="#5aa8b5"/></svg><span class="tn">Salle en L</span></div>
+            <div class="tpl"><svg viewBox="0 0 46 34"><rect x="8" y="4" width="30" height="26" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="3 3" color="#4a6a7e"/></svg><span class="tn">Vierge</span></div>
+          </div>
+          <div class="sect-title">Outils murs</div>
+          <div class="tools">
+            <div class="tool on"><span class="ic">✎</span> Dessiner un mur</div>
+            <div class="tool"><span class="ic">▢</span> Créer une pièce</div>
+            <div class="tool"><span class="ic">⟺</span> Mesurer</div>
+            <div class="tool"><span class="ic">◎</span> Position de départ</div>
+          </div>
+        </div>
+
+        <!-- 1 HABILLER -->
+        <div class="lib-step" data-i="1" hidden>
+          <div class="chips"><span class="chip on">Mur</span><span class="chip">Sol</span><span class="chip">Plafond</span></div>
+          <div class="sect-title">Textures</div>
+          <div class="swatches">
+            <div class="sw-tile on" style="background:repeating-linear-gradient(30deg,oklch(0.42 0.01 60),oklch(0.42 0.01 60) 5px,oklch(0.38 0.01 60) 5px,oklch(0.38 0.01 60) 10px)"><span class="swn">Béton</span></div>
+            <div class="sw-tile" style="background:oklch(0.55 0.03 70)"><span class="swn">Beige</span></div>
+            <div class="sw-tile" style="background:repeating-linear-gradient(0deg,oklch(0.36 0.01 60),oklch(0.36 0.01 60) 3px,oklch(0.32 0.01 60) 3px,oklch(0.32 0.01 60) 7px)"><span class="swn">Décrépi</span></div>
+            <div class="sw-tile" style="background:oklch(0.48 0.02 60)"><span class="swn">Sol béton</span></div>
+            <div class="sw-tile" style="background:oklch(0.7 0.01 90)"><span class="swn">Plafond</span></div>
+            <div class="sw-tile" style="background:var(--bg-2);display:grid;place-items:center;color:var(--acc);font-size:18px">+</div>
+          </div>
+          <div class="field"><div class="fl"><span>Répétition (tuile)</span><span class="fv">1.0 m</span></div><input class="range" type="range" value="40"></div>
+        </div>
+
+        <!-- 2 PEUPLER -->
+        <div class="lib-step" data-i="2">
+          <input class="search" placeholder="Rechercher un objet…">
+          <div class="chips"><span class="chip on">Tout</span><span class="chip">Meubles</span><span class="chip">Perso</span><span class="chip">Structure</span></div>
+          <div class="assets">
+            <div class="asset"><div class="thumb"><span class="glyph">🛋️</span><span class="tri">4.2k △</span></div><div class="an">Canapé Chesterfield</div></div>
+            <div class="asset"><div class="thumb"><span class="glyph">⚡</span><span class="tri">6.8k △</span></div><div class="an">Générateur</div></div>
+            <div class="asset"><div class="thumb"><span class="glyph">💿</span><span class="tri">2.1k △</span></div><div class="an">Tourne-disque</div></div>
+            <div class="asset"><div class="thumb"><span class="glyph">🐕</span><span class="tri">9.0k △</span></div><div class="an">Berger allemand</div></div>
+            <div class="asset"><div class="thumb"><span class="glyph">🕹️</span><span class="tri">3.4k △</span></div><div class="an">Borne Arcade</div></div>
+            <div class="asset"><div class="thumb"><span class="glyph">📚</span><span class="tri">5.5k △</span></div><div class="an">Bibliothèque</div></div>
+          </div>
+          <div class="dropzone"><span class="plus">＋</span> Importer un modèle .glb</div>
+        </div>
+
+        <!-- 3 ÉCLAIRER -->
+        <div class="lib-step" data-i="3" hidden>
+          <div class="sect-title">Ajouter une source</div>
+          <div class="tools" style="margin-bottom:16px">
+            <div class="tool"><span class="ic">☀</span> Lumière ambiante</div>
+            <div class="tool"><span class="ic">●</span> Ponctuelle</div>
+            <div class="tool"><span class="ic">▲</span> Spot</div>
+          </div>
+          <div class="sect-title">Ambiances</div>
+          <div class="presets">
+            <div class="preset"><span class="orb" style="background:radial-gradient(circle,oklch(0.4 0.05 250),oklch(0.2 0.02 250))"></span> Bunker sombre</div>
+            <div class="preset"><span class="orb" style="background:radial-gradient(circle,var(--acc),oklch(0.3 0.06 200))"></span> Néons Nexus</div>
+            <div class="preset"><span class="orb" style="background:radial-gradient(circle,oklch(0.8 0.12 70),oklch(0.4 0.06 60))"></span> Chaleureux</div>
+          </div>
+          <div class="field"><div class="fl"><span>Intensité ambiante</span><span class="fv">0.42</span></div><input class="range" type="range" value="42"></div>
+        </div>
+
+        <!-- 4 SONORISER -->
+        <div class="lib-step" data-i="4" hidden>
+          <p class="caption" style="margin-bottom:10px">Une piste par catégorie, déclenchée au chargement, au clic ou au déplacement.</p>
+          <div class="arow"><span class="acat">Musique</span><span class="atrack">La chanson du Nexus</span><span class="atrig">chargement</span></div>
+          <div class="arow"><span class="acat">Ambiance</span><span class="atrack">Salle des machines</span><span class="atrig">clic</span></div>
+          <div class="arow"><span class="acat">Bruitage</span><span class="atrack">Respiration chien</span><span class="atrig">clic</span></div>
+          <div class="arow"><span class="acat">Mouvement</span><span class="atrack">Pas sur béton</span><span class="atrig">marche</span></div>
+          <div class="dropzone" style="margin-top:14px"><span class="plus">＋</span> Ajouter une piste audio</div>
+        </div>
+
+        <!-- 5 INTERAGIR -->
+        <div class="lib-step" data-i="5" hidden>
+          <div class="sect-title">Type de zone</div>
+          <div class="ztypes">
+            <div class="ztype"><span class="zi">🔗</span> Lien</div>
+            <div class="ztype"><span class="zi">▷</span> Vidéo</div>
+            <div class="ztype"><span class="zi">🖼</span> Image</div>
+            <div class="ztype"><span class="zi">✎</span> Texte</div>
+            <div class="ztype" style="grid-column:span 2"><span class="zi">◆</span> Défi (mini-jeu)</div>
+          </div>
+          <div class="tools"><div class="tool on"><span class="ic">▦</span> Dessiner une zone</div></div>
+          <p class="caption" style="margin-top:14px">Astuce&nbsp;: une zone vidéo peut enchaîner sur une autre salle à la fin de la lecture.</p>
+        </div>
+
+        <!-- 6 TESTER -->
+        <div class="lib-step" data-i="6" hidden>
+          <button class="play-big">▶ Jouer ici</button>
+          <div class="sect-title">Vérification</div>
+          <div class="check-line"><span class="ci">✓</span> Aucune zone cassée</div>
+          <div class="check-line"><span class="ci">✓</span> Toutes les textures présentes</div>
+          <div class="check-line"><span class="ci">✓</span> Aucun objet sous le sol</div>
+          <button class="publish">↗ Publier la salle</button>
+        </div>
+
+      </div>
+    </aside>
+
+    <!-- ---- CENTER : viewport 3D ---- -->
+    <section class="viewport">
+      <div class="scene">
+        <div class="horizon"></div>
+        <div class="floor"></div>
+        <div class="obj o1 selected" title="Générateur (sélectionné)"></div>
+        <div class="obj o2"></div>
+        <div class="obj o3"></div>
+        <div class="gizmo"><span class="gh"></span><i class="gx"></i><i class="gy"></i><i class="gz"></i></div>
+      </div>
+
+      <div class="vfloat tl">
+        <span class="vseg on">Perspective</span><span class="vseg">Dessus</span><span class="vseg">Face</span>
+      </div>
+      <div class="vfloat tr">
+        <span class="vseg on">Déplacer</span><span class="vseg">Tourner</span><span class="vseg">Échelle</span>
+      </div>
+
+      <div class="minimap">
+        <div class="mh">Plan 2D <span class="fold">▾</span></div>
+        <div class="mv"><div class="mroom"></div><div class="mspawn"></div></div>
+      </div>
+
+      <div class="vbr">
+        <div class="budget">
+          <div class="bl">Poids de la salle</div>
+          <div class="bbar"><div class="bfill"></div></div>
+          <div class="bv">1,4 / 3,0 Mo</div>
+        </div>
+        <button class="play-here">▶ Jouer ici</button>
+      </div>
+    </section>
+
+    <!-- ---- RIGHT : inspecteur contextuel ---- -->
+    <aside class="panel right">
+      <div class="p-head" style="align-items:flex-start">
+        <div class="insp-obj">
+          <span class="oi">⚡</span>
+          <div><div class="on2">Générateur</div><div class="ot">Objet importé</div></div>
+        </div>
+        <div class="insp-acts">
+          <button class="iact" title="Visible">👁</button>
+          <button class="iact" title="Verrouiller">🔓</button>
+          <button class="iact" title="Dupliquer">⧉</button>
+        </div>
+      </div>
+      <div class="p-body">
+        <div class="igroup" style="margin-top:2px">
+          <div class="gt">Position (m)</div>
+          <div class="xyz">
+            <div class="axis x"><div class="al">X</div><input value="-18.79"></div>
+            <div class="axis y"><div class="al">Y</div><input value="1.349"></div>
+            <div class="axis z"><div class="al">Z</div><input value="4.021"></div>
+          </div>
+        </div>
+        <div class="igroup">
+          <div class="gt">Rotation (°)</div>
+          <div class="xyz">
+            <div class="axis x"><div class="al">X</div><input value="0"></div>
+            <div class="axis y"><div class="al">Y</div><input value="90"></div>
+            <div class="axis z"><div class="al">Z</div><input value="0"></div>
+          </div>
+        </div>
+        <div class="igroup">
+          <div class="gt">Échelle</div>
+          <div class="xyz">
+            <div class="axis x"><div class="al">X</div><input value="1.00"></div>
+            <div class="axis y"><div class="al">Y</div><input value="1.00"></div>
+            <div class="axis z"><div class="al">Z</div><input value="1.00"></div>
+          </div>
+        </div>
+        <div class="igroup">
+          <div class="gt">Réglages visuels</div>
+          <div class="field"><div class="fl"><span>Gamma</span><span class="fv">0.65</span></div><input class="range" type="range" value="65"></div>
+          <div class="field"><div class="fl"><span>Rugosité</span><span class="fv">0.40</span></div><input class="range" type="range" value="40"></div>
+          <div class="field"><div class="fl"><span>Opacité</span><span class="fv">1.00</span></div><input class="range" type="range" value="100"></div>
+        </div>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- ===== STATUS BAR ===== -->
+  <div class="status">
+    <span class="hint" id="status-hint">Glisse un objet dans la scène · clic droit pour les options</span>
+    <div class="spacer"></div>
+    <span class="coords">curseur <b>x 2.86</b> <b>y 0.51</b> <b>z −7.16</b></span>
+    <span class="coords">· 13 objets · 3 murs</span>
+  </div>
+
+</div>
+
+<script>
+// Démonstration du pipeline : chaque étape réorganise le panneau de gauche.
+const steps = [
+  { t:'Construire', cap:"Murs, sol, plafond. Pars d'un gabarit ou dessine ton plan.", hint:"Clique-glisse pour tracer un mur · maintiens Ctrl pour effacer" },
+  { t:'Habiller',   cap:"Applique des textures aux murs, au sol et au plafond.", hint:"Clique une face pour y appliquer la texture sélectionnée" },
+  { t:'Peupler',    cap:"Place des objets et des personnages dans la scène. Glisse un élément du catalogue vers le viewport.", hint:"Glisse un objet dans la scène · clic droit pour les options" },
+  { t:'Éclairer',   cap:"Ambiance lumineuse : sources, intensité, presets.", hint:"Déplace le gizmo d'une lampe pour la repositionner" },
+  { t:'Sonoriser',  cap:"Musiques, ambiances, bruitages et sons de déplacement.", hint:"Associe une piste à un objet ou à une action du joueur" },
+  { t:'Interagir',  cap:"Zones cliquables : liens, vidéos, images, textes, défis.", hint:"Dessine une zone sur le sol ou sur un mur" },
+  { t:'Tester',     cap:"Joue ta salle, vérifie-la, publie-la.", hint:"« Jouer ici » lance le mode jeu sans quitter l'éditeur" },
+];
+const rail = document.getElementById('pipeline');
+const stepEls = [...rail.querySelectorAll('.step')];
+const connEls = [...rail.querySelectorAll('.connector')];
+const libSteps = [...document.querySelectorAll('.lib-step')];
+
+function setStep(active) {
+  stepEls.forEach((el, i) => {
+    el.classList.toggle('active', i === active);
+    el.classList.toggle('done', i < active);
+    el.classList.toggle('upcoming', i > active);
+  });
+  connEls.forEach((c, i) => c.classList.toggle('filled', i < active));
+  libSteps.forEach(el => { el.hidden = (+el.dataset.i !== active); });
+  document.getElementById('left-title').textContent = steps[active].t;
+  document.getElementById('left-num').textContent = (active + 1) + ' / 7';
+  document.getElementById('left-caption').textContent = steps[active].cap;
+  document.getElementById('status-hint').textContent = steps[active].hint;
+}
+stepEls.forEach(el => el.addEventListener('click', () => setStep(+el.dataset.i)));
+setStep(2); // démarre sur « Peupler »
+</script>
+</body>
+</html>
