@@ -32,7 +32,10 @@
 html, body { height: 100%; }
 body { font-family: 'Epilogue', system-ui, sans-serif; background: var(--bg-0); color: var(--txt-0); font-size: 13px; line-height: 1.45; overflow: hidden; -webkit-font-smoothing: antialiased; }
 .app { display: grid; grid-template-rows: 44px 62px 1fr 26px; height: 100vh; }
-.app.zen { grid-template-columns: 0 1fr 0; }
+/* renommage par clic (sons, lumières, objets) */
+.rename { cursor: text; border-radius: 4px; padding: 0 3px; margin: 0 -3px; transition: background .15s, box-shadow .15s; outline: none; }
+.rename:hover { background: var(--bg-3); box-shadow: inset 0 -1px 0 var(--acc-line); }
+.rename[contenteditable="true"] { background: var(--bg-2); box-shadow: inset 0 0 0 1px var(--acc-line); color: var(--txt-0); }
 
 /* ============ TOPBAR ============ */
 .topbar { display: flex; align-items: center; gap: 14px; padding: 0 16px; background: var(--bg-1); border-bottom: 1px solid var(--line); }
@@ -90,9 +93,12 @@ body { font-family: 'Epilogue', system-ui, sans-serif; background: var(--bg-0); 
 .budget-pop .tip::before { content: '→'; position: absolute; left: 0; color: var(--acc); }
 
 /* ============ MAIN ============ */
-.main { display: grid; grid-template-columns: 272px 1fr 304px; min-height: 0; transition: grid-template-columns .28s cubic-bezier(0.22,1,0.36,1); }
-.app.zen .main { grid-template-columns: 0 1fr 0; }
-.app.zen .panel { opacity: 0; pointer-events: none; }
+.main { display: grid; grid-template-columns: 272px 1fr 304px; min-height: 0; }
+/* Mode zen : les panneaux disparaissent totalement (display:none, robuste)
+   et la scène occupe toute la largeur. Pas de transition de grille (fr non
+   interpolable de façon fiable) — masquage instantané, à la Blender. */
+.app.zen .panel { display: none; }
+.app.zen .main { grid-template-columns: 1fr; }
 
 .panel { background: var(--bg-1); display: flex; flex-direction: column; min-height: 0; overflow: hidden; transition: opacity .2s; }
 .panel.left { border-right: 1px solid var(--line); }
@@ -222,8 +228,8 @@ body { font-family: 'Epilogue', system-ui, sans-serif; background: var(--bg-0); 
 .minimap .mv { height: 96px; position: relative; background: repeating-linear-gradient(0deg, transparent, transparent 15px, oklch(0.24 0.014 230) 15px, oklch(0.24 0.014 230) 16px), repeating-linear-gradient(90deg, transparent, transparent 15px, oklch(0.24 0.014 230) 15px, oklch(0.24 0.014 230) 16px); }
 .minimap .mroom { position: absolute; left: 24px; top: 20px; right: 30px; bottom: 22px; border: 2px solid var(--acc-dim); border-radius: 3px; }
 .minimap .mspawn { position: absolute; left: 40px; top: 40px; width: 8px; height: 8px; border-radius: 50%; background: var(--acc); box-shadow: 0 0 8px var(--acc); }
-.zen-exit { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); display: none; padding: 6px 14px; border-radius: 999px; background: var(--bg-1); border: 1px solid var(--acc-line); color: var(--acc); font-size: 11px; cursor: pointer; box-shadow: var(--shadow); z-index: 20; }
-.app.zen .zen-exit { display: block; }
+#zen-btn svg { width: 15px; height: 15px; display: block; }
+.app.zen #zen-btn { border-color: var(--acc-line); color: var(--acc); }
 
 /* ============ INSPECTEUR ============ */
 .insp-obj { display: flex; align-items: center; gap: 10px; }
@@ -260,7 +266,7 @@ body { font-family: 'Epilogue', system-ui, sans-serif; background: var(--bg-0); 
     <div class="room-pill"><span class="dot"></span> Pièce&nbsp;: <b>sas_securite</b></div>
     <span class="mockchip">Maquette</span>
     <div class="spacer"></div>
-    <button class="tbtn icon-only" id="zen-btn" title="Masquer les panneaux · scène plein écran"><span class="ic">⛶</span></button>
+    <button class="tbtn icon-only" id="zen-btn"></button>
     <div class="divider"></div>
     <button class="eleve" id="eleve-btn" title="Profil élève : catalogue restreint, budget imposé, champ « enjeu IA » obligatoire"><span class="sw"></span> Mode élève</button>
     <button class="tbtn" title="Historique des sauvegardes"><span class="ic">↺</span> Historique</button>
@@ -387,15 +393,15 @@ body { font-family: 'Epilogue', system-ui, sans-serif; background: var(--bg-0); 
           <div class="sect-title">Lumières de la scène</div>
           <div class="lightlist">
             <div class="litem sel">
-              <span class="lty">☀</span><span class="lnm">Ambiante<small>directionnelle</small></span>
+              <span class="lty">☀</span><span class="lnm"><span class="rename" title="Cliquer pour renommer">Ambiante</span><small>directionnelle</small></span>
               <span class="lacts"><span class="la on" title="Allumée">💡</span><span class="la" title="Verrouiller la position">🔓</span><span class="la danger" title="Supprimer">🗑</span></span>
             </div>
             <div class="litem">
-              <span class="lty">●</span><span class="lnm">Néon générateur<small>ponctuelle</small></span>
+              <span class="lty">●</span><span class="lnm"><span class="rename" title="Cliquer pour renommer">Néon générateur</span><small>ponctuelle</small></span>
               <span class="lacts"><span class="la on" title="Allumée">💡</span><span class="la" title="Verrouiller la position">🔓</span><span class="la danger" title="Supprimer">🗑</span></span>
             </div>
             <div class="litem">
-              <span class="lty">▲</span><span class="lnm">Spot arcade<small>spot · éteint</small></span>
+              <span class="lty">▲</span><span class="lnm"><span class="rename" title="Cliquer pour renommer">Spot arcade</span><small>spot · éteint</small></span>
               <span class="lacts"><span class="la" title="Éteinte">🌑</span><span class="la" title="Position verrouillée">🔒</span><span class="la danger" title="Supprimer">🗑</span></span>
             </div>
           </div>
@@ -422,18 +428,18 @@ body { font-family: 'Epilogue', system-ui, sans-serif; background: var(--bg-0); 
         <div class="lib-step" data-i="4" hidden>
           <div class="sect-title">Sons automatiques · mixeur global</div>
           <p class="caption" style="margin:-4px 0 11px">Ambiance de la salle, jouée toute seule. En jeu, le joueur n'agit dessus que via l'icône volume en haut à gauche (Dialogues · Musique · Bruitages).</p>
-          <div class="arow"><span class="acat">Musique</span><span class="atrack">Musique de fond</span><span class="atrig">chargement</span></div>
-          <div class="arow"><span class="acat">Ambiance</span><span class="atrack">Salle des machines</span><span class="atrig">chargement</span></div>
-          <div class="arow"><span class="acat">Bruitage</span><span class="atrack">Respiration chien</span><span class="atrig">boucle</span></div>
-          <div class="arow"><span class="acat">Pas · marche</span><span class="atrack">Pas sur béton</span><span class="atrig">marche</span></div>
-          <div class="arow"><span class="acat">Pas · course</span><span class="atrack">Course sur béton</span><span class="atrig">course</span></div>
+          <div class="arow"><span class="acat">Musique</span><span class="atrack"><span class="rename" title="Cliquer pour renommer">Musique de fond</span></span><span class="atrig">chargement</span></div>
+          <div class="arow"><span class="acat">Ambiance</span><span class="atrack"><span class="rename" title="Cliquer pour renommer">Salle des machines</span></span><span class="atrig">chargement</span></div>
+          <div class="arow"><span class="acat">Bruitage</span><span class="atrack"><span class="rename" title="Cliquer pour renommer">Respiration chien</span></span><span class="atrig">boucle</span></div>
+          <div class="arow"><span class="acat">Pas · marche</span><span class="atrack"><span class="rename" title="Cliquer pour renommer">Pas sur béton</span></span><span class="atrig">marche</span></div>
+          <div class="arow"><span class="acat">Pas · course</span><span class="atrack"><span class="rename" title="Cliquer pour renommer">Course sur béton</span></span><span class="atrig">course</span></div>
           <div class="dropzone" style="margin:12px 0 4px"><span class="plus">＋</span> Ajouter un son automatique</div>
 
           <div class="sect-title">Sons déclenchés · avec lecteur</div>
           <p class="caption" style="margin:-4px 0 11px">Attachés à un objet. Au clic, un petit lecteur apparaît en jeu : le joueur peut mettre en pause, arrêter et régler le volume de ce son individuellement.</p>
           <div class="arow">
             <span class="acat">Objet</span>
-            <span class="atrack">La chanson du Nexus<small style="display:block;font-size:9px;color:var(--txt-2);text-transform:none;letter-spacing:0">clic sur Tourne-disque</small></span>
+            <span class="atrack"><span class="rename" title="Cliquer pour renommer">La chanson du Nexus</span><small style="display:block;font-size:9px;color:var(--txt-2);text-transform:none;letter-spacing:0">clic sur Tourne-disque</small></span>
             <span style="display:flex;gap:5px;align-items:center;color:var(--acc);font-size:12px" title="Un lecteur (lecture / pause / stop / volume) s'affiche en jeu">▶⏸⏹</span>
           </div>
           <div class="dropzone" style="margin-top:12px"><span class="plus">＋</span> Ajouter un son déclenché (lecteur)</div>
@@ -478,7 +484,6 @@ body { font-family: 'Epilogue', system-ui, sans-serif; background: var(--bg-0); 
       <div class="vfloat tl"><span class="vseg on">Perspective</span><span class="vseg">Dessus</span><span class="vseg">Face</span></div>
       <div class="vfloat tr"><span class="vseg on">Déplacer</span><span class="vseg">Tourner</span><span class="vseg">Échelle</span></div>
       <div class="minimap"><div class="mh">Plan 2D <span class="fold">▾</span></div><div class="mv"><div class="mroom"></div><div class="mspawn"></div></div></div>
-      <button class="zen-exit" id="zen-exit">⛶ Réafficher les panneaux</button>
     </section>
 
     <!-- ---- RIGHT : INSPECTEUR ---- -->
@@ -486,7 +491,7 @@ body { font-family: 'Epilogue', system-ui, sans-serif; background: var(--bg-0); 
       <div class="p-head" style="align-items:flex-start">
         <div class="insp-obj">
           <span class="oi">⚡</span>
-          <div><div class="on2">Générateur</div><div class="ot">Inspecteur · objet importé</div></div>
+          <div><div class="on2 rename" title="Cliquer pour renommer">Générateur</div><div class="ot">Inspecteur · objet importé</div></div>
         </div>
         <div class="insp-acts">
           <button class="iact" title="Visible">👁</button>
@@ -560,8 +565,18 @@ setStep(2);
 
 // Mode zen : masquer/afficher les panneaux en une opération
 const app = document.getElementById('app');
-document.getElementById('zen-btn').addEventListener('click', () => app.classList.add('zen'));
-document.getElementById('zen-exit').addEventListener('click', () => app.classList.remove('zen'));
+const zenBtn = document.getElementById('zen-btn');
+// Coins vers l'extérieur = « agrandir » (masquer les panneaux)
+const ICON_MAX = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>';
+// Coins vers l'intérieur = « réduire » (réafficher les panneaux)
+const ICON_MIN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3"/><path d="M21 8h-3a2 2 0 0 1-2-2V3"/><path d="M3 16h3a2 2 0 0 1 2 2v3"/><path d="M16 21v-3a2 2 0 0 1 2-2h3"/></svg>';
+function updateZenBtn() {
+  const zen = app.classList.contains('zen');
+  zenBtn.innerHTML = zen ? ICON_MIN : ICON_MAX;
+  zenBtn.title = zen ? 'Réafficher les panneaux' : 'Masquer les panneaux · scène plein écran';
+}
+zenBtn.addEventListener('click', () => { app.classList.toggle('zen'); updateZenBtn(); });
+updateZenBtn();
 
 // Mode élève : bascule visuelle du switch
 document.getElementById('eleve-btn').addEventListener('click', function() {
@@ -593,6 +608,22 @@ function applyBudget() {
 }
 applyBudget();
 budget.addEventListener('click', () => { bi = (bi + 1) % states.length; applyBudget(); });
+
+// Renommage par clic : sons, lumières, objets
+document.addEventListener('click', (e) => {
+  const el = e.target.closest('.rename');
+  if (!el || el.getAttribute('contenteditable') === 'true') return;
+  el.setAttribute('contenteditable', 'true');
+  el.focus();
+  const range = document.createRange(); range.selectNodeContents(el);
+  const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && e.target.classList && e.target.classList.contains('rename')) { e.preventDefault(); e.target.blur(); }
+});
+document.addEventListener('blur', (e) => {
+  if (e.target.classList && e.target.classList.contains('rename')) e.target.setAttribute('contenteditable', 'false');
+}, true);
 </script>
 </body>
 </html>
