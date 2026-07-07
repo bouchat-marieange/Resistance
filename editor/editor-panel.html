@@ -46,6 +46,20 @@
             </button>
         </div>
 
+        <!-- Bouton Historique des sauvegardes (E1) -->
+        <div style="display: flex; flex-direction: column; align-items: center; padding: 8px 0;">
+            <button id="autosave-history-btn" class="flex items-center justify-center" onclick="showAutosaveHistory()" style="background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 8px; width: 40px; height: 40px; cursor: pointer; transition: all 0.3s;" title="🕐 Historique des sauvegardes — revenir à un instantané précédent">
+                <img src="icones/rotate-ccw.svg" width="18" height="18" style="filter: brightness(0) invert(0.7);">
+            </button>
+        </div>
+
+        <!-- Bouton Checklist de publication (E1) -->
+        <div style="display: flex; flex-direction: column; align-items: center; padding: 8px 0;">
+            <button id="checklist-btn" class="flex items-center justify-center" onclick="runPublishChecklist()" style="background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 8px; width: 40px; height: 40px; cursor: pointer; transition: all 0.3s;" title="✓ Vérifier avant publication — zones cassées, blobs orphelins, objets sous le sol">
+                <span style="font-size: 17px; line-height: 1;">✅</span>
+            </button>
+        </div>
+
     </div>
 
     <!-- Contenu principal (flex column: sticky header + scrollable content) -->

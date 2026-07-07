@@ -446,6 +446,17 @@ async function saveProject() {
             audioTrackIdCounter: audioTrackIdCounter
         };
 
+        // Vignette de la salle (pour la liste des pièces de l'éditeur) — capturée
+        // AVANT d'attacher l'historique d'autosauvegarde à projectData, pour ne
+        // jamais l'y inclure (voir buildAutosaveHistory ci-dessous).
+        projectData.thumbnail = captureRoomThumbnail();
+
+        // Historique d'autosauvegarde (E1) : chaque sauvegarde — manuelle ou
+        // automatique — ajoute un instantané horodaté, fenêtre glissante de 10.
+        // Capturé ici (avant le put) pour inclure thumbnail mais PAS autosaves
+        // lui-même (évite une récursion infinie des instantanés).
+        projectData.autosaves = await buildAutosaveHistory(currentRoomName, projectData);
+
         await RoomEditorDB.put(RoomEditorDB.STORE_PROJECTS, projectData);
         console.log(`✅ IndexedDB: ${wallsData.length} murs sauvegardés (dont ${wallsData.filter(w=>w.isMerged).length} fusionnés)`);
 
@@ -473,6 +484,158 @@ async function saveProject() {
         console.log('💾 Projet partiellement sauvegardé (localStorage uniquement)');
     }
 }
+
+// ==================== E1 — FILETS DE SÉCURITÉ ====================
+// Vignettes de salle, historique d'autosauvegarde versionné, checklist de
+// publication. Ajouté 07/2026 sans nouveau store IndexedDB ni bascule de
+// DB_VERSION : les deux copies de RoomEditorDB (ici et game/engine/db.js,
+// qui ouvrent la MÊME base) devraient rester rigoureusement synchronisées
+// pour éviter un VersionError qui casserait les parties de tous les joueurs
+// au premier chargement d'une page de jeu après un changement de schéma.
+// Vignette et autosaves vivent donc comme simples champs supplémentaires
+// du même enregistrement STORE_PROJECTS existant.
+
+/**
+ * Capture une vignette basse résolution (320×180 max, JPEG qualité 0.6) du
+ * rendu 3D courant. Retourne null si le renderer n'est pas disponible
+ * (jamais bloquant : une sauvegarde sans vignette reste une sauvegarde).
+ */
+function captureRoomThumbnail() {
+    try {
+        if (typeof renderer === 'undefined' || !renderer || !renderer.domElement) return null;
+        const src = renderer.domElement;
+        const maxW = 320;
+        const scale = Math.min(1, maxW / src.width);
+        const w = Math.round(src.width * scale);
+        const h = Math.round(src.height * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(src, 0, 0, w, h);
+        return canvas.toDataURL('image/jpeg', 0.6);
+    } catch (e) {
+        console.warn('⚠️ Capture de vignette impossible:', e);
+        return null;
+    }
+}
+
+/**
+ * Construit la fenêtre glissante des 10 derniers instantanés horodatés pour
+ * cette salle, en réutilisant l'historique déjà stocké et en y ajoutant
+ * l'état courant. `newProjectData` est capturé AVANT que .autosaves n'y soit
+ * assigné (voir l'appel dans saveProject) : chaque entrée de l'historique
+ * est donc un état "plat", sans sous-historique imbriqué.
+ */
+async function buildAutosaveHistory(roomName, newProjectData) {
+    const MAX_AUTOSAVES = 10;
+    let history = [];
+    try {
+        const existing = await RoomEditorDB.get(RoomEditorDB.STORE_PROJECTS, 'project_' + roomName);
+        if (existing && Array.isArray(existing.autosaves)) history = existing.autosaves.slice();
+    } catch (e) { /* première sauvegarde de cette salle : historique vide */ }
+
+    history.push({
+        timestamp: Date.now(),
+        data: JSON.parse(JSON.stringify(newProjectData))
+    });
+    if (history.length > MAX_AUTOSAVES) {
+        history = history.slice(history.length - MAX_AUTOSAVES);
+    }
+    return history;
+}
+
+/** Formate un timestamp en "il y a X min/h" (français, approximatif). */
+function formatAutosaveRelativeTime(timestamp) {
+    const diffMs = Date.now() - timestamp;
+    const min = Math.round(diffMs / 60000);
+    if (min < 1) return "à l'instant";
+    if (min < 60) return `il y a ${min} min`;
+    const h = Math.round(min / 60);
+    if (h < 24) return `il y a ${h} h`;
+    const j = Math.round(h / 24);
+    return `il y a ${j} j`;
+}
+
+/**
+ * Ouvre un panneau listant les instantanés disponibles pour la salle
+ * courante, avec un bouton de restauration par entrée.
+ */
+async function showAutosaveHistory() {
+    let record;
+    try {
+        record = await RoomEditorDB.get(RoomEditorDB.STORE_PROJECTS, 'project_' + currentRoomName);
+    } catch (e) {
+        alert('❌ Impossible de lire l\'historique.');
+        return;
+    }
+    const history = (record && Array.isArray(record.autosaves)) ? record.autosaves.slice().reverse() : [];
+
+    let overlay = document.getElementById('autosave-history-overlay');
+    if (overlay) overlay.remove();
+    overlay = document.createElement('div');
+    overlay.id = 'autosave-history-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:100000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);';
+
+    const rows = history.length === 0
+        ? '<p style="color:#888;text-align:center;padding:16px;">Aucun instantané pour le moment — sauvegardez au moins une fois.</p>'
+        : history.map(entry => `
+            <div style="display:flex;justify-content:space-between;align-items:center;background:#222;border:1px solid #333;border-radius:8px;padding:10px 14px;margin-bottom:8px;">
+                <span style="color:#eee;font-size:13px;">${formatAutosaveRelativeTime(entry.timestamp)}
+                    <span style="color:#666;font-size:11px;">(${new Date(entry.timestamp).toLocaleTimeString('fr-FR')})</span>
+                </span>
+                <button class="room-card-btn" onclick="restoreAutosave(${entry.timestamp})">Restaurer</button>
+            </div>
+        `).join('');
+
+    overlay.innerHTML = `
+        <div style="background:#1a1a1a;border:1px solid #333;border-radius:14px;padding:24px 28px;max-width:440px;width:90%;max-height:70vh;overflow-y:auto;">
+            <h2 style="color:#00E5FF;font-size:20px;margin:0 0 4px 0;">Historique des sauvegardes</h2>
+            <p style="color:#888;font-size:12px;margin:0 0 16px 0;">Jusqu'aux 10 derniers instantanés de cette salle.</p>
+            <div>${rows}</div>
+            <button class="room-card-btn" style="width:100%;margin-top:12px;background:#333;color:#aaa;" onclick="document.getElementById('autosave-history-overlay').remove()">Fermer</button>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+}
+
+/**
+ * Restaure la salle courante à l'état d'un instantané donné (réutilise
+ * loadProjectFromIndexedDB, la même fonction qui reconstruit la scène à
+ * l'ouverture normale d'une pièce — aucune logique de reconstruction dupliquée).
+ * L'état courant non sauvegardé est perdu ; confirmation demandée.
+ */
+async function restoreAutosave(timestamp) {
+    if (!confirm(`Restaurer l'état ${formatAutosaveRelativeTime(timestamp)} ?\n\nL'état actuel non sauvegardé sera perdu.`)) return;
+    try {
+        const record = await RoomEditorDB.get(RoomEditorDB.STORE_PROJECTS, 'project_' + currentRoomName);
+        const entry = record && Array.isArray(record.autosaves)
+            ? record.autosaves.find(a => a.timestamp === timestamp)
+            : null;
+        if (!entry) { alert('❌ Instantané introuvable (a-t-il expiré ?).'); return; }
+        await loadProjectFromIndexedDB(entry.data);
+        const overlay = document.getElementById('autosave-history-overlay');
+        if (overlay) overlay.remove();
+        alert('✅ Instantané restauré. Cliquez sur Sauvegarder pour le conserver définitivement.');
+    } catch (e) {
+        console.error('❌ Erreur restauration autosave:', e);
+        alert('❌ Erreur pendant la restauration — voir la console.');
+    }
+}
+
+// Autosauvegarde périodique (toutes les 3 min, seulement s'il y a des
+// changements non sauvegardés) — la "timeline" décrite ci-dessus n'a de sens
+// que si des instantanés s'accumulent même sans Ctrl+S manuel.
+setInterval(() => {
+    try {
+        if (typeof hasUnsavedChanges !== 'undefined' && hasUnsavedChanges
+            && typeof editorMode !== 'undefined' && editorMode
+            && typeof currentRoomName !== 'undefined' && currentRoomName) {
+            console.log('⏱️ Autosauvegarde périodique...');
+            saveProject();
+        }
+    } catch (e) { /* ne jamais interrompre l'éditeur pour un échec d'autosave */ }
+}, 3 * 60 * 1000);
 
 // ==================== EXPORT SCENE_DATA ====================
 /**

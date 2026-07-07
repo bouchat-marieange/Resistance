@@ -64,6 +64,14 @@
             padding: 8px 18px; font-size: 13px; font-weight: 600; cursor: pointer;
         }
         .room-card-btn:hover { background: #00c9e0; }
+        .room-thumb-wrap {
+            width: 64px; height: 40px; border-radius: 6px; overflow: hidden;
+            background: #1a1a1a; margin-right: 14px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .room-thumb { width: 100%; height: 100%; object-fit: cover; }
+        .room-thumb-placeholder { color: #444; font-size: 20px; }
+        .room-card-body { display: flex; align-items: center; flex: 1; min-width: 0; }
         #btn-new-room {
             display: block; width: 100%; background: #333; color: #aaa;
             border: 1px dashed #555; border-radius: 10px; padding: 12px;
@@ -220,6 +228,7 @@
 <script src="editor/editor-camera-lights.js"></script>
 <script src="editor/editor-audio.js"></script>
 <script src="editor/editor-save.js"></script>
+<script src="editor/editor-checklist.js"></script>
 <!-- Plan 2D : anciennement editor-floorplan.js (8618 lignes), scindé en
      10 modules (E0-bis, 07/2026) — même méthode que game/engine/ (Phase 4).
      L'ordre n'affecte pas le comportement (aucun code exécuté au chargement
@@ -400,15 +409,39 @@ function populateRoomList() {
         const card = document.createElement('div');
         card.className = 'room-card';
         card.innerHTML = `
-            <div>
-                <div class="room-name">${room.name}</div>
-                <div class="room-title">${room.title || ''}</div>
-                ${room.createdAt ? '<div class="room-date">Créée le ' + new Date(room.createdAt).toLocaleDateString('fr-FR') + '</div>' : ''}
+            <div class="room-card-body">
+                <div class="room-thumb-wrap">
+                    <img class="room-thumb" id="thumb-${room.name}" style="display:none;" alt="">
+                    <span class="room-thumb-placeholder" id="thumb-placeholder-${room.name}">🏠</span>
+                </div>
+                <div>
+                    <div class="room-name">${room.name}</div>
+                    <div class="room-title">${room.title || ''}</div>
+                    ${room.createdAt ? '<div class="room-date">Créée le ' + new Date(room.createdAt).toLocaleDateString('fr-FR') + '</div>' : ''}
+                </div>
             </div>
             <button class="room-card-btn" onclick="selectRoom('${room.name}', '${(room.title || '').replace(/'/g, "\\'")}')">Ouvrir</button>
         `;
         listEl.appendChild(card);
+        // Vignette chargée en tâche de fond (E1) — ne bloque pas l'affichage de la liste
+        loadRoomThumbnail(room.name);
     });
+}
+
+/** Charge et affiche la vignette d'une salle depuis IndexedDB (si elle existe). */
+async function loadRoomThumbnail(roomName) {
+    try {
+        const record = await RoomEditorDB.get(RoomEditorDB.STORE_PROJECTS, 'project_' + roomName);
+        if (record && record.thumbnail) {
+            const img = document.getElementById('thumb-' + roomName);
+            const placeholder = document.getElementById('thumb-placeholder-' + roomName);
+            if (img) {
+                img.src = record.thumbnail;
+                img.style.display = 'block';
+                if (placeholder) placeholder.style.display = 'none';
+            }
+        }
+    } catch (e) { /* pas grave : le pictogramme de secours reste affiché */ }
 }
 
 function showNewRoomForm() {
