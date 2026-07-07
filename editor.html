@@ -9,6 +9,11 @@
     <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.14/dist/full.min.css" rel="stylesheet" type="text/css" />
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="editor/editor.css">
+    <!-- Coque refonte E2 : barre + rail pipeline (DA Résistance) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Epilogue:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="editor/editor-shell.css">
 
     <style>
         body {
@@ -99,6 +104,44 @@
     </style>
 </head>
 <body>
+
+<!-- ========== COQUE REFONTE E2 (barre + rail pipeline) ========== -->
+<div id="editor-shell">
+  <div class="es-topbar">
+    <div class="es-brand"><span class="es-logo">◈</span><span class="es-name">Résistance</span><span class="es-sub">Éditeur</span></div>
+    <div class="es-room"><span class="es-dot"></span> Pièce&nbsp;: <b id="es-room-name">—</b></div>
+    <div class="es-spacer"></div>
+    <button class="es-tbtn icon-only es-zenbtn" id="es-zen-btn" title="Masquer les panneaux · scène plein écran"></button>
+    <button class="es-tbtn" id="es-history-btn" title="Historique des sauvegardes"><span>↺</span> Historique</button>
+    <button class="es-tbtn" id="es-check-btn" title="Vérifier avant publication"><span>✓</span> Vérifier</button>
+    <button class="es-tbtn" id="es-export-btn" title="Exporter project.json + tous les blobs pour scene_data/"><span>⭳</span> Exporter les assets</button>
+    <button class="es-tbtn primary" id="es-save-btn" title="Sauvegarder (Ctrl+S)"><span>💾</span> Sauvegarder</button>
+  </div>
+  <div class="es-pipeline" id="es-pipeline">
+    <button class="es-step" data-i="0" data-mode="floor-plan" data-tool="draw-wall"><span class="es-node">1</span><span class="es-lbl">Construire</span></button>
+    <span class="es-conn"></span>
+    <button class="es-step" data-i="1" data-mode="floor-plan" data-tool="texture"><span class="es-node">2</span><span class="es-lbl">Habiller</span></button>
+    <span class="es-conn"></span>
+    <button class="es-step" data-i="2" data-mode="objects"><span class="es-node">3</span><span class="es-lbl">Peupler</span></button>
+    <span class="es-conn"></span>
+    <button class="es-step" data-i="3" data-mode="lights"><span class="es-node">4</span><span class="es-lbl">Éclairer</span></button>
+    <span class="es-conn"></span>
+    <button class="es-step" data-i="4" data-mode="audio"><span class="es-node">5</span><span class="es-lbl">Sonoriser</span></button>
+    <span class="es-conn"></span>
+    <button class="es-step" data-i="5" data-mode="game-setup"><span class="es-node">6</span><span class="es-lbl">Interagir</span></button>
+    <span class="es-conn"></span>
+    <button class="es-step" data-i="6" data-action="test"><span class="es-node">▶</span><span class="es-lbl">Tester</span></button>
+    <span class="es-rail-spacer"></span>
+    <div class="es-rail-right">
+      <div class="es-budget" title="Poids indicatif de la salle (valeurs réelles à venir)">
+        <div class="es-bl">Poids</div>
+        <div class="es-btrack"><div class="es-bfill" style="width:47%"></div></div>
+        <div class="es-bv" id="es-budget-val">— Mo</div>
+      </div>
+      <button class="es-play" id="es-play-btn" title="Jouer la salle (à venir)">▶ Jouer ici</button>
+    </div>
+  </div>
+</div>
 
 <!-- ========== LOADING SCREEN ========== -->
 <div id="loading-screen">
@@ -1083,6 +1126,62 @@ async function initEditorPanel() {
             editorMode = true;
         };
     }
+
+    // Coque refonte E2 (barre + rail pipeline)
+    try { setupEditorShell(); } catch (e) { console.warn('⚠️ Coque E2 non initialisée:', e); }
+}
+
+/* ============================================================
+   COQUE REFONTE E2 — câblage du rail pipeline et de la barre sur
+   les fonctions existantes de l'éditeur. Non destructif : le
+   panneau et la navigation d'origine restent fonctionnels.
+   ============================================================ */
+function setupEditorShell() {
+    const shell = document.getElementById('editor-shell');
+    if (!shell) return;
+    shell.classList.add('visible');
+    document.body.classList.add('es-shell');
+
+    const rn = document.getElementById('es-room-name');
+    if (rn) rn.textContent = (typeof currentRoomName !== 'undefined' && currentRoomName) ? currentRoomName : '—';
+
+    // Rail pipeline → modes/outils existants
+    const steps = [].slice.call(shell.querySelectorAll('.es-step'));
+    const conns = [].slice.call(shell.querySelectorAll('.es-conn'));
+    function setActiveStep(i) {
+        steps.forEach(function(el, k) { el.classList.toggle('active', k === i); el.classList.toggle('done', k < i); });
+        conns.forEach(function(c, k) { c.classList.toggle('filled', k < i); });
+    }
+    steps.forEach(function(el, i) {
+        el.addEventListener('click', function() {
+            setActiveStep(i);
+            var action = el.dataset.action, mode = el.dataset.mode, tool = el.dataset.tool;
+            if (action === 'test') { if (typeof runPublishChecklist === 'function') runPublishChecklist(); return; }
+            if (mode && typeof switchEditorMode === 'function') switchEditorMode(mode);
+            if (tool && typeof setFloorPlanTool === 'function') { try { setFloorPlanTool(tool); } catch (e) {} }
+        });
+    });
+    setActiveStep(2); // démarrer sur « Peupler » (objets)
+
+    // Boutons de la barre → fonctions existantes
+    function wire(id, fn) { var b = document.getElementById(id); if (b) b.addEventListener('click', fn); }
+    wire('es-save-btn',    function() { if (typeof saveProject === 'function') saveProject(); });
+    wire('es-history-btn', function() { if (typeof showAutosaveHistory === 'function') showAutosaveHistory(); });
+    wire('es-check-btn',   function() { if (typeof runPublishChecklist === 'function') runPublishChecklist(); });
+    wire('es-export-btn',  function() { if (typeof generateSceneDataDownload === 'function') generateSceneDataDownload(); });
+    wire('es-play-btn',    function() { alert('« Jouer ici » — test instantané dans l\'éditeur : prévu à l\'incrément E3.'); });
+
+    // Interrupteur zen (masque les panneaux latéraux, garde barre + rail)
+    var zenBtn = document.getElementById('es-zen-btn');
+    var ICON_MAX = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>';
+    var ICON_MIN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3"/><path d="M21 8h-3a2 2 0 0 1-2-2V3"/><path d="M3 16h3a2 2 0 0 1 2 2v3"/><path d="M16 21v-3a2 2 0 0 1 2-2h3"/></svg>';
+    function updateZen() {
+        var zen = document.body.classList.contains('es-zen');
+        if (zenBtn) { zenBtn.innerHTML = zen ? ICON_MIN : ICON_MAX; zenBtn.title = zen ? 'Réafficher les panneaux' : 'Masquer les panneaux · scène plein écran'; }
+        document.body.classList.toggle('es-zen-active', zen);
+    }
+    if (zenBtn) zenBtn.addEventListener('click', function() { document.body.classList.toggle('es-zen'); updateZen(); });
+    updateZen();
 }
 
 function addEditorUIElements() {

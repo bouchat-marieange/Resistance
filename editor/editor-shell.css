@@ -1,0 +1,95 @@
+/* ============================================================
+   RESISTANCE — editor/editor-shell.css
+   Coque de la refonte E2 : barre du haut + rail pipeline 7 étapes
+   + interrupteur zen. Non destructif : se superpose à l'éditeur
+   existant (canvas plein écran + panneau flottant), qui reste
+   fonctionnel. Les incréments suivants dockeront le canvas et
+   réorganiseront les contrôles.
+   Direction artistique : neutres OKLCH teintés turquoise, accent
+   #00E5FF, Bebas Neue / Epilogue / JetBrains Mono.
+   ============================================================ */
+
+:root {
+  --es-bg-0: oklch(0.155 0.012 230);
+  --es-bg-1: oklch(0.185 0.013 230);
+  --es-bg-2: oklch(0.225 0.014 230);
+  --es-bg-3: oklch(0.275 0.015 230);
+  --es-line: oklch(0.31 0.015 230);
+  --es-line-2: oklch(0.40 0.02 230);
+  --es-txt-0: oklch(0.95 0.008 230);
+  --es-txt-1: oklch(0.74 0.012 230);
+  --es-txt-2: oklch(0.56 0.012 230);
+  --es-acc: oklch(0.83 0.135 200);
+  --es-acc-soft: oklch(0.83 0.135 200 / 0.14);
+  --es-acc-line: oklch(0.83 0.135 200 / 0.40);
+  --es-acc-dim: oklch(0.45 0.06 200);
+  --es-warn: oklch(0.78 0.15 65);
+  --es-danger: oklch(0.63 0.20 25);
+  --es-ok: oklch(0.82 0.15 155);
+  --es-shadow: 0 8px 30px oklch(0.10 0.02 230 / 0.55);
+}
+
+/* ---- conteneur de la coque (barre + rail), fixé en haut ---- */
+#editor-shell {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 150;
+  display: none; /* affiché par le script quand une pièce est ouverte */
+  flex-direction: column;
+  font-family: 'Epilogue', system-ui, sans-serif;
+}
+#editor-shell.visible { display: flex; }
+/* Mode zen : on garde la barre + le rail (pour accéder au bouton) et on
+   masque les panneaux latéraux + icônes flottantes → scène dégagée. */
+body.es-zen #editor-panel,
+body.es-zen #info-icon,
+body.es-zen #volume-icon,
+body.es-zen #settings-icon,
+body.es-zen #toggle-panel-collapse { display: none !important; }
+
+/* ---- barre du haut ---- */
+.es-topbar {
+  display: flex; align-items: center; gap: 14px; height: 44px; padding: 0 16px;
+  background: var(--es-bg-1); border-bottom: 1px solid var(--es-line);
+}
+.es-brand { display: flex; align-items: baseline; gap: 9px; }
+.es-brand .es-logo { width: 22px; height: 22px; border-radius: 6px; background: var(--es-acc-soft); border: 1px solid var(--es-acc-line); display: grid; place-items: center; color: var(--es-acc); font-size: 13px; align-self: center; }
+.es-brand .es-name { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 0.05em; color: var(--es-txt-0); line-height: 1; }
+.es-brand .es-sub { font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--es-acc); }
+.es-room { display: flex; align-items: center; gap: 8px; padding: 5px 12px 5px 10px; border-radius: 999px; background: var(--es-bg-2); border: 1px solid var(--es-line); font-size: 12px; color: var(--es-txt-1); }
+.es-room b { color: var(--es-txt-0); font-weight: 600; }
+.es-room .es-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--es-ok); box-shadow: 0 0 8px var(--es-ok); }
+.es-spacer { flex: 1; }
+.es-tbtn { display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 12px; border-radius: 7px; background: var(--es-bg-2); border: 1px solid var(--es-line); color: var(--es-txt-1); font-size: 12px; font-weight: 500; cursor: pointer; font-family: inherit; transition: border-color .18s, color .18s, background .18s; }
+.es-tbtn:hover { border-color: var(--es-line-2); color: var(--es-txt-0); background: var(--es-bg-3); }
+.es-tbtn.icon-only { padding: 0; width: 32px; justify-content: center; }
+.es-tbtn.icon-only svg { width: 15px; height: 15px; display: block; }
+.es-tbtn.primary { background: var(--es-acc); color: oklch(0.16 0.02 230); border-color: transparent; font-weight: 700; }
+.es-tbtn.primary:hover { background: oklch(0.88 0.135 200); }
+body.es-zen-active .es-zenbtn { border-color: var(--es-acc-line); color: var(--es-acc); }
+
+/* ---- rail pipeline ---- */
+.es-pipeline { display: flex; align-items: center; height: 62px; padding: 0 20px; background: var(--es-bg-1); border-bottom: 1px solid var(--es-line); overflow-x: auto; }
+.es-step { display: flex; align-items: center; gap: 10px; cursor: pointer; flex-shrink: 0; padding: 4px 2px; background: none; border: none; color: inherit; font: inherit; }
+.es-step .es-node { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; flex-shrink: 0; font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 500; border: 1.5px solid var(--es-line-2); color: var(--es-txt-2); background: var(--es-bg-1); transition: all .22s cubic-bezier(0.22,1,0.36,1); }
+.es-step .es-lbl { font-family: 'Bebas Neue', sans-serif; font-size: 17px; letter-spacing: 0.07em; color: var(--es-txt-2); line-height: 1; white-space: nowrap; transition: color .22s; }
+.es-conn { width: 22px; height: 1.5px; background: var(--es-line); flex-shrink: 0; transition: background .22s; }
+.es-step.done .es-node { border-color: var(--es-acc-dim); color: var(--es-acc); background: oklch(0.45 0.06 200 / 0.18); }
+.es-step.done .es-lbl { color: var(--es-txt-1); }
+.es-step.active .es-node { border-color: var(--es-acc); color: oklch(0.16 0.02 230); background: var(--es-acc); box-shadow: 0 0 0 4px var(--es-acc-soft), 0 0 16px oklch(0.83 0.135 200 / 0.35); transform: scale(1.08); }
+.es-step.active .es-lbl { color: var(--es-acc); }
+.es-conn.filled { background: var(--es-acc-dim); }
+.es-rail-spacer { flex: 1; min-width: 20px; }
+.es-rail-right { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+
+/* jauge de poids (statique pour l'instant, valeurs réelles en E2.4) */
+.es-budget { display: flex; align-items: center; gap: 10px; padding: 5px 10px; border-radius: 8px; border: 1px solid var(--es-line); background: var(--es-bg-2); }
+.es-budget .es-bl { font-size: 9px; color: var(--es-txt-2); text-transform: uppercase; letter-spacing: 0.1em; }
+.es-budget .es-btrack { width: 110px; height: 6px; border-radius: 999px; overflow: hidden; position: relative; background: linear-gradient(90deg, oklch(0.45 0.06 200 / 0.25) 0 55%, oklch(0.55 0.10 65 / 0.25) 55% 82%, oklch(0.5 0.14 25 / 0.28) 82% 100%); }
+.es-budget .es-bfill { position: absolute; top: 0; left: 0; height: 100%; border-radius: 999px; background: var(--es-acc); transition: width .3s, background .3s; }
+.es-budget .es-bv { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--es-txt-1); }
+.es-play { display: inline-flex; align-items: center; gap: 8px; padding: 8px 15px; border-radius: 8px; border: none; cursor: pointer; background: var(--es-acc); color: oklch(0.16 0.02 230); font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 0.06em; box-shadow: 0 4px 14px oklch(0.83 0.135 200 / 0.3); }
+
+/* ---- décalage des éléments existants sous la coque (barre 44 + rail 62 = 106) ---- */
+body.es-shell #editor-panel { top: 118px !important; }
+body.es-shell #info-icon { top: 118px !important; }
+body.es-shell #volume-icon { top: 158px !important; }
+body.es-shell #settings-icon { top: 198px !important; }
