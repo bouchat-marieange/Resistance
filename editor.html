@@ -1412,7 +1412,20 @@ function enterPlayMode() {
     if (interactionMode === 'game') return;
 
     if (typeof deselectEditorObject === 'function') deselectEditorObject();
-    if (typeof transformControl !== 'undefined' && transformControl) transformControl.detach();
+    if (typeof transformControl !== 'undefined' && transformControl) {
+        transformControl.detach();
+        transformControl.visible = false;
+    }
+    // Masquer les indicateurs d'édition (gizmos caméra/lumières, étiquettes de
+    // zones) — absents du jeu réel, ils n'ont pas leur place pendant le test.
+    if (typeof hideCameraGizmo === 'function') hideCameraGizmo();
+    if (typeof hideLightGizmo === 'function') hideLightGizmo();
+    if (typeof hideAllLightHelpers === 'function') hideAllLightHelpers();
+    if (typeof floorPlanGrid !== 'undefined' && floorPlanGrid) floorPlanGrid.visible = false;
+    interactionZones.forEach(function(zone) {
+        if (zone.labelSprite) zone.labelSprite.visible = false;
+        if (zone.meshGroup) zone.meshGroup.visible = false; // checkZoneProximity() reprend la main ensuite
+    });
 
     interactionMode = 'game';
     document.body.classList.add('es-playing');
@@ -1440,6 +1453,12 @@ function exitPlayMode() {
     interactionMode = 'developer';
     document.body.classList.remove('es-playing');
     PlayerMovement.updateControlsForMode('developer');
+
+    // Restaurer l'état visuel (gizmos, étiquettes, grille) propre à l'étape
+    // active avant le test, plutôt que de le deviner ici au cas par cas.
+    if (typeof switchEditorMode === 'function' && typeof currentEditorMode !== 'undefined' && currentEditorMode) {
+        switchEditorMode(currentEditorMode);
+    }
 
     var playBtn = document.getElementById('es-play-btn');
     if (playBtn) { playBtn.textContent = '▶ Jouer ici'; playBtn.title = 'Jouer la salle'; }

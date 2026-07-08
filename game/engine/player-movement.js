@@ -32,8 +32,8 @@ var PlayerMovement = (function() {
     var DECELERATION = 40.0;
     var HEAD_BOB_WALK_FREQ = 8.0;
     var HEAD_BOB_RUN_FREQ = 12.0;
-    var HEAD_BOB_WALK_AMP = 0.008;
-    var HEAD_BOB_RUN_AMP = 0.014;
+    var HEAD_BOB_WALK_AMP = 0.004; // réduit (0.008 d'origine — jugé trop prononcé en test)
+    var HEAD_BOB_RUN_AMP = 0.007;  // réduit (0.014 d'origine)
 
     // ---- dépendances injectées par l'hôte (game page ou éditeur) ----
     var THREE, camera, controls, getScene, input, gamepad, getSpawn, roomLimit, eyeHeight, walkSpeed, runSpeed;
