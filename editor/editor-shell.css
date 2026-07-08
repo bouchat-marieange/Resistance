@@ -67,7 +67,12 @@ body.es-zen-active .es-zenbtn { border-color: var(--es-acc-line); color: var(--e
 /* ---- rail pipeline (étapes) ---- */
 .es-step { display: flex; align-items: center; gap: 10px; cursor: pointer; flex-shrink: 0; padding: 4px 2px; background: none; border: none; color: inherit; font: inherit; }
 .es-step .es-node { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; flex-shrink: 0; font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 500; border: 1.5px solid var(--es-line-2); color: var(--es-txt-2); background: var(--es-bg-1); transition: all .22s cubic-bezier(0.22,1,0.36,1); }
-.es-step .es-lbl { font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 0.07em; color: var(--es-txt-2); line-height: 1; white-space: nowrap; transition: color .22s; }
+/* E2.8 : seule l'étape active affiche son libellé (les autres restent de
+   simples pastilles reliées par un trait fin) — le titre au survol des
+   pastilles inactives passe par l'attribut title (info-bulle native).
+   Gagne beaucoup de largeur et évite le défilement de .es-steps-scroll. */
+.es-step .es-lbl { display: none; font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 0.07em; color: var(--es-txt-2); line-height: 1; white-space: nowrap; transition: color .22s; }
+.es-step.active .es-lbl { display: inline-block; }
 .es-conn { width: 18px; height: 1.5px; background: var(--es-line); flex-shrink: 0; transition: background .22s; }
 .es-step.done .es-node { border-color: var(--es-acc-dim); color: var(--es-acc); background: oklch(0.45 0.06 200 / 0.18); }
 .es-step.done .es-lbl { color: var(--es-txt-1); }

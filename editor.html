@@ -13,7 +13,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Epilogue:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="editor/editor-shell.css?v=e2.7c">
+    <link rel="stylesheet" href="editor/editor-shell.css?v=e2.8">
 
     <style>
         body {
@@ -113,19 +113,19 @@
     <!-- E2.7 : zone centrale défilante — seules les étapes scrollent si la
          fenêtre est trop étroite ; poids/icônes/jouer restent toujours visibles. -->
     <div class="es-steps-scroll">
-      <button class="es-step" data-i="0" data-mode="floor-plan" data-tool="draw-wall" data-substep="construire"><span class="es-node">1</span><span class="es-lbl">Construire</span></button>
+      <button class="es-step" data-i="0" data-mode="floor-plan" data-tool="draw-wall" data-substep="construire" title="Construire"><span class="es-node">1</span><span class="es-lbl">Construire</span></button>
       <span class="es-conn"></span>
-      <button class="es-step" data-i="1" data-mode="floor-plan" data-tool="texture" data-substep="habiller"><span class="es-node">2</span><span class="es-lbl">Habiller</span></button>
+      <button class="es-step" data-i="1" data-mode="floor-plan" data-tool="texture" data-substep="habiller" title="Habiller"><span class="es-node">2</span><span class="es-lbl">Habiller</span></button>
       <span class="es-conn"></span>
-      <button class="es-step" data-i="2" data-mode="objects"><span class="es-node">3</span><span class="es-lbl">Peupler</span></button>
+      <button class="es-step" data-i="2" data-mode="objects" title="Peupler"><span class="es-node">3</span><span class="es-lbl">Peupler</span></button>
       <span class="es-conn"></span>
-      <button class="es-step" data-i="3" data-mode="lights"><span class="es-node">4</span><span class="es-lbl">Éclairer</span></button>
+      <button class="es-step" data-i="3" data-mode="lights" title="Éclairer"><span class="es-node">4</span><span class="es-lbl">Éclairer</span></button>
       <span class="es-conn"></span>
-      <button class="es-step" data-i="4" data-mode="audio"><span class="es-node">5</span><span class="es-lbl">Sonoriser</span></button>
+      <button class="es-step" data-i="4" data-mode="audio" title="Sonoriser"><span class="es-node">5</span><span class="es-lbl">Sonoriser</span></button>
       <span class="es-conn"></span>
-      <button class="es-step" data-i="5" data-mode="game-setup"><span class="es-node">6</span><span class="es-lbl">Interagir</span></button>
+      <button class="es-step" data-i="5" data-mode="game-setup" title="Interagir"><span class="es-node">6</span><span class="es-lbl">Interagir</span></button>
       <span class="es-conn"></span>
-      <button class="es-step" data-i="6" data-action="test"><span class="es-node">▶</span><span class="es-lbl">Tester</span></button>
+      <button class="es-step" data-i="6" data-action="test" title="Tester"><span class="es-node">▶</span><span class="es-lbl">Tester</span></button>
     </div>
 
     <div class="es-budget" id="es-budget" title="Poids de la pièce (objets, personnages, sons importés)">
