@@ -49,7 +49,10 @@ body.es-zen #toggle-panel-collapse { display: none !important; }
 .es-topbar {
   display: flex; align-items: center; gap: 14px; height: 44px; padding: 0 16px;
   background: var(--es-bg-1); border-bottom: 1px solid var(--es-line);
+  overflow-x: auto; /* fenêtre étroite : la barre défile au lieu de couper les boutons */
 }
+.es-topbar > * { flex-shrink: 0; }
+.es-topbar .es-spacer { flex-shrink: 1; }
 .es-brand { display: flex; align-items: baseline; gap: 9px; }
 .es-brand .es-logo { width: 22px; height: 22px; border-radius: 6px; background: var(--es-acc-soft); border: 1px solid var(--es-acc-line); display: grid; place-items: center; color: var(--es-acc); font-size: 13px; align-self: center; }
 .es-brand .es-name { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 0.05em; color: var(--es-txt-0); line-height: 1; }

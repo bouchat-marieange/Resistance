@@ -47,19 +47,27 @@ async function runPublishChecklist() {
 
     // 1. Zones cassées : liens/vidéos/images LOCAUX (pas http/https, non
     // vérifiables sans risque CORS) dont la ressource répond en erreur.
+    // Chaque requête est plafonnée à 4 s : sans délai limite, un serveur
+    // lent ou une ressource qui traîne figerait l'analyse pour toujours
+    // (constaté en vérification E2.1 sur le serveur de dev local).
     const zonesAVerifier = (projectData.interactionZones || []).filter(z =>
         ['link', 'video', 'lightbox-image'].indexOf(z.actionType) !== -1 && z.actionValue
         && !/^https?:\/\//i.test(z.actionValue)
     );
     for (const zone of zonesAVerifier) {
         const label = zone.customName || `zone #${zone.id}`;
+        const ctrl = new AbortController();
+        const minuterie = setTimeout(() => ctrl.abort(), 4000);
         try {
-            const resp = await fetch(zone.actionValue, { method: 'HEAD' });
+            const resp = await fetch(zone.actionValue, { method: 'HEAD', signal: ctrl.signal });
             if (!resp.ok) {
                 problemes.push({ gravite: 'erreur', texte: `Zone « ${label} » : « ${zone.actionValue} » introuvable (HTTP ${resp.status})` });
             }
         } catch (e) {
-            problemes.push({ gravite: 'erreur', texte: `Zone « ${label} » : « ${zone.actionValue} » — impossible à vérifier (${e.message})` });
+            const motif = (e && e.name === 'AbortError') ? 'délai dépassé (4 s)' : e.message;
+            problemes.push({ gravite: 'avertissement', texte: `Zone « ${label} » : « ${zone.actionValue} » — impossible à vérifier (${motif})` });
+        } finally {
+            clearTimeout(minuterie);
         }
     }
 
