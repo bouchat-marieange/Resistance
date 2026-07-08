@@ -13,7 +13,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Epilogue:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="editor/editor-shell.css?v=e2.8">
+    <link rel="stylesheet" href="editor/editor-shell.css?v=e3.1">
 
     <style>
         body {
@@ -142,7 +142,7 @@
       <button class="es-tbtn icon-only primary" id="es-save-btn" title="Sauvegarder (Ctrl+S)"><span>💾</span></button>
     </div>
 
-    <button class="es-play" id="es-play-btn" title="Jouer la salle (à venir)">▶ Jouer ici</button>
+    <button class="es-play" id="es-play-btn" title="Jouer la salle">▶ Jouer ici</button>
   </div>
 
   <!-- E2.4 : popover de conseils quand la pièce dépasse le seuil de poids -->
@@ -432,6 +432,10 @@
 
 <!-- Score Manager -->
 <script src="game/score-manager.js"></script>
+
+<!-- E3 : mouvement FPS + collisions du joueur, partagé avec game/pages/sas-securite.js
+     (voir game/engine/player-movement.js) — utilisé par « Jouer ici ». -->
+<script src="game/engine/player-movement.js"></script>
 
 <!-- ========== EDITOR SCRIPTS (tous chargés) ========== -->
 <script src="editor/editor-state.js?v=e2.7"></script>
@@ -1180,6 +1184,40 @@ function initScene() {
     // Reset des touches si la fenêtre perd le focus (évite les touches "bloquées")
     window.addEventListener('blur', () => {
         Object.keys(_editorKeys).forEach(k => _editorKeys[k] = false);
+        if (typeof PlayerMovement !== 'undefined') PlayerMovement.resetMovementState();
+    });
+
+    // ========== E3 : « Jouer ici » — mouvement FPS + collisions partagés
+    // avec le jeu réel (game/engine/player-movement.js), clavier/souris
+    // uniquement (pas de manette pour l'instant). ==========
+    function _editorIsActionPressed(action) {
+        const map = { forward: ['z', 'w'], backward: ['s'], left: ['q', 'a'], right: ['d', 'e'] };
+        return (map[action] || []).some(k => !!_editorKeys[k]);
+    }
+    PlayerMovement.init({
+        THREE: THREE,
+        camera: camera,
+        controls: controls,
+        getScene: () => scene,
+        input: {
+            isActionPressed: _editorIsActionPressed,
+            isSprintPressed: () => !!_editorKeys['shift']
+        },
+        getSpawn: () => ({ position: spawnPosition, rotationY: spawnRotationY, saved: spawnSaved }),
+        roomLimit: 98,
+        eyeHeight: 1.5,
+        walkSpeed: 0.8,
+        runSpeed: 3
+    });
+    PlayerMovement.setupMouseLook(renderer.domElement, () => interactionMode === 'game');
+
+    // Zones d'interaction (déjà dessinées à l'étape Interagir) — déclenchement
+    // clic/double-clic ; survol, proximité et maintien sont gérés dans animate().
+    renderer.domElement.addEventListener('click', (e) => {
+        if (interactionMode === 'game' && typeof checkZoneInteraction === 'function') checkZoneInteraction(e, 'click');
+    });
+    renderer.domElement.addEventListener('dblclick', (e) => {
+        if (interactionMode === 'game' && typeof checkZoneInteraction === 'function') checkZoneInteraction(e, 'double-click');
     });
 
     const _moveDir = new THREE.Vector3();
@@ -1222,9 +1260,23 @@ function initScene() {
         requestAnimationFrame(animate);
         if (_cinematicPlaying) return;
         const delta = _clock.getDelta();
-        // Navigation clavier ZQSD
-        updateEditorMovement(delta);
-        controls.update();
+
+        if (interactionMode === 'game') {
+            // E3 : « Jouer ici » — mouvement FPS + collisions + zones d'interaction
+            PlayerMovement.handleSceneMovement(delta, 'game');
+            controls.update();
+            PlayerMovement.updateHeadBob(delta, 'game');
+            PlayerMovement.enforceGameHeight('game');
+            PlayerMovement.enforceCameraCollisions('game');
+            if (typeof checkZoneProximity === 'function') checkZoneProximity();
+            if (typeof checkHoverAndProximityTriggers === 'function') checkHoverAndProximityTriggers();
+            if (typeof checkHoldTrigger === 'function') checkHoldTrigger();
+        } else {
+            // Navigation clavier ZQSD (édition libre)
+            updateEditorMovement(delta);
+            controls.update();
+        }
+
         // Mettre à jour les mixers d'animation
         if (mixer) mixer.update(delta);
         importedCharacters.forEach(char => {
@@ -1352,6 +1404,56 @@ async function initEditorPanel() {
 }
 
 /* ============================================================
+   E3 — « Jouer ici » : teste la pièce en FPS sans quitter l'éditeur.
+   Démarre à la position de départ si elle est définie, sinon depuis
+   la vue libre actuelle (juste la hauteur des yeux est verrouillée).
+   ============================================================ */
+function enterPlayMode() {
+    if (interactionMode === 'game') return;
+
+    if (typeof deselectEditorObject === 'function') deselectEditorObject();
+    if (typeof transformControl !== 'undefined' && transformControl) transformControl.detach();
+
+    interactionMode = 'game';
+    document.body.classList.add('es-playing');
+
+    if (spawnPosition && spawnSaved) {
+        var lookDir = new THREE.Vector3(-Math.sin(spawnRotationY), 0, -Math.cos(spawnRotationY));
+        camera.position.set(spawnPosition.x, spawnPosition.y, spawnPosition.z);
+        camera.lookAt(camera.position.x + lookDir.x * 10, camera.position.y, camera.position.z + lookDir.z * 10);
+        PlayerMovement.setupFPSCamera();
+    } else {
+        // Pas de position de départ définie : garder position/orientation actuelles,
+        // juste verrouiller la hauteur des yeux à leur niveau courant.
+        PlayerMovement.setupFPSCamera(camera.position.y);
+    }
+
+    var playBtn = document.getElementById('es-play-btn');
+    if (playBtn) { playBtn.textContent = '■ Arrêter'; playBtn.title = 'Quitter le mode test (Échap)'; }
+
+    if (typeof layoutEditorViewport === 'function') layoutEditorViewport();
+}
+
+function exitPlayMode() {
+    if (interactionMode !== 'game') return;
+
+    interactionMode = 'developer';
+    document.body.classList.remove('es-playing');
+    PlayerMovement.updateControlsForMode('developer');
+
+    var playBtn = document.getElementById('es-play-btn');
+    if (playBtn) { playBtn.textContent = '▶ Jouer ici'; playBtn.title = 'Jouer la salle'; }
+
+    if (typeof layoutEditorViewport === 'function') layoutEditorViewport();
+}
+
+window.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && typeof interactionMode !== 'undefined' && interactionMode === 'game') {
+        exitPlayMode();
+    }
+});
+
+/* ============================================================
    COQUE REFONTE E2 — câblage du rail pipeline et de la barre sur
    les fonctions existantes de l'éditeur. Non destructif : le
    panneau et la navigation d'origine restent fonctionnels.
@@ -1405,7 +1507,7 @@ function setupEditorShell() {
     wire('es-history-btn', function() { if (typeof showAutosaveHistory === 'function') showAutosaveHistory(); });
     wire('es-check-btn',   function() { if (typeof runPublishChecklist === 'function') runPublishChecklist(); });
     wire('es-export-btn',  function() { if (typeof generateSceneDataDownload === 'function') generateSceneDataDownload(); });
-    wire('es-play-btn',    function() { alert('« Jouer ici » — test instantané dans l\'éditeur : prévu à l\'incrément E3.'); });
+    wire('es-play-btn',    function() { if (interactionMode === 'game') exitPlayMode(); else enterPlayMode(); });
 
     // Interrupteur zen (masque les panneaux latéraux, garde barre + rail)
     var zenBtn = document.getElementById('es-zen-btn');

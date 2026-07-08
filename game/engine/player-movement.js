@@ -293,11 +293,64 @@ var PlayerMovement = (function() {
     // Hauteur Y des yeux verrouillée par setupFPSCamera() (null si jamais appelée)
     function getPlayerEyeY() { return gamePlayerY; }
 
+    // Rotation caméra (regard) au clic droit maintenu — Pointer Events +
+    // setPointerCapture (fonctionne hors zone du canvas, local et en ligne).
+    // isActiveFn() détermine si la rotation doit s'appliquer (typiquement
+    // "suis-je en mode jeu ?") — évite un conflit avec la rotation orbitale
+    // native d'OrbitControls en mode développeur (même bouton, RIGHT).
+    // Idempotent : n'attache les listeners qu'une fois par élément.
+    var _mouseLookAttached = new WeakSet();
+    function setupMouseLook(domElement, isActiveFn) {
+        if (_mouseLookAttached.has(domElement)) return;
+        _mouseLookAttached.add(domElement);
+
+        var prevX = 0, prevY = 0, capturedId = null;
+        var dir = new THREE.Vector3();
+
+        domElement.addEventListener('contextmenu', function(e) { e.preventDefault(); });
+        domElement.addEventListener('pointerdown', function(e) {
+            if (!isActiveFn() || e.button !== 2) return;
+            e.preventDefault();
+            capturedId = e.pointerId;
+            prevX = e.clientX; prevY = e.clientY;
+            try { domElement.setPointerCapture(e.pointerId); } catch (ex) {}
+        });
+        domElement.addEventListener('pointermove', function(e) {
+            if (capturedId === null || e.pointerId !== capturedId || !isActiveFn()) return;
+            var dx = e.clientX - prevX, dy = e.clientY - prevY;
+            prevX = e.clientX; prevY = e.clientY;
+            if (dx === 0 && dy === 0) return;
+            dir.subVectors(controls.target, camera.position);
+            var dist = Math.max(dir.length(), 0.001);
+            var theta = Math.atan2(dir.x, dir.z);
+            var phi = Math.acos(Math.max(-1, Math.min(1, dir.y / dist)));
+            var newTheta = theta - dx * 0.004;
+            var newPhi = Math.max(0.3, Math.min(2.8, phi + dy * 0.004));
+            dir.set(
+                dist * Math.sin(newPhi) * Math.sin(newTheta),
+                dist * Math.cos(newPhi),
+                dist * Math.sin(newPhi) * Math.cos(newTheta)
+            );
+            controls.target.copy(camera.position).add(dir);
+            camera.lookAt(controls.target);
+        });
+        domElement.addEventListener('pointerup', function(e) {
+            if (e.button === 2 && capturedId !== null) {
+                try { domElement.releasePointerCapture(e.pointerId); } catch (ex) {}
+                capturedId = null;
+            }
+        });
+    }
+
     // Initialise la position FPS en entrant en mode jeu (hauteur des yeux verrouillée,
     // target juste devant la caméra pour que la rotation OrbitControls = regard)
-    function setupFPSCamera() {
+    function setupFPSCamera(startY) {
         var spawn = getSpawn();
-        if (spawn && spawn.position && spawn.saved) {
+        if (typeof startY === 'number') {
+            // Hauteur imposée par l'hôte (ex: éditeur sans position de départ définie
+            // → garder la hauteur de la vue libre actuelle plutôt que sauter à eyeHeight)
+            gamePlayerY = startY;
+        } else if (spawn && spawn.position && spawn.saved) {
             gamePlayerY = spawn.position.y + eyeHeight;
         } else {
             gamePlayerY = eyeHeight;
@@ -468,6 +521,7 @@ var PlayerMovement = (function() {
         updateControlsForMode: updateControlsForMode,
         setupFPSCamera: setupFPSCamera,
         getPlayerEyeY: getPlayerEyeY,
+        setupMouseLook: setupMouseLook,
         resetMovementState: resetMovementState,
         updateHeadBob: updateHeadBob,
         handleSceneMovement: handleSceneMovement,

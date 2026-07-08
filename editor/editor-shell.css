@@ -46,6 +46,14 @@ body.es-zen #settings-icon,
 body.es-zen #toggle-panel-collapse,
 body.es-zen #toggle-inspector-collapse { display: none !important; }
 
+/* E3 : « Jouer ici » — masque les panneaux pendant le test, indépendamment
+   de l'état zen (pour ne pas altérer la préférence zen de l'utilisatrice
+   au retour à l'édition). */
+body.es-playing #editor-panel,
+body.es-playing #editor-inspector,
+body.es-playing #toggle-panel-collapse,
+body.es-playing #toggle-inspector-collapse { display: none !important; }
+
 /* ---- E2.7 : barre unique (topbar + rail pipeline fusionnés) ----
    3 zones : nom de pièce (fixe) | étapes (défile si trop étroit) |
    poids + icônes + jouer (fixe, toujours visible — jamais coupé). */
