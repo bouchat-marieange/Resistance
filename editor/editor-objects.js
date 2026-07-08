@@ -1237,7 +1237,27 @@ function createObjectTreeItem(obj, level = 0) {
         }
     };
 
-    // ===== DRAG & DROP pour réorganiser =====
+    // ===== DRAG & DROP pour réorganiser (E2.7) =====
+    // Zone du milieu d'un DOSSIER = inclusion dedans (comportement historique).
+    // Zone haute/basse de N'IMPORTE QUEL élément = insertion avant/après, à
+    // cet endroit précis de la liste — ce qui peut aussi changer sa section
+    // (Personnages/Environnement/Objets) si elle diffère de celle de la cible.
+    function restoreItemAppearance() {
+        if (isLocked) {
+            item.style.background = '#3d1f1f';
+            item.style.border = '1px solid #ff4444';
+        } else if (isSelected) {
+            item.style.background = 'var(--es-acc-soft)';
+            item.style.border = '1px solid var(--es-acc-line)';
+        } else {
+            item.style.background = '#2a2a2a';
+            item.style.border = 'none';
+        }
+        item.style.boxShadow = '';
+    }
+
+    let _dropZone = null; // 'before' | 'after' | 'nest'
+
     item.ondragstart = (e) => {
         // Empêcher le drag si on clique sur les boutons d'action
         if (e.target.tagName === 'BUTTON' || e.target.tagName === 'IMG') {
@@ -1249,24 +1269,13 @@ function createObjectTreeItem(obj, level = 0) {
         e.dataTransfer.setData('text/plain', obj.uuid);
         item.style.opacity = '0.4';
         item.style.cursor = 'grabbing';
-        console.log('🎯 Début drag:', obj.userData.editorName);
     };
 
     item.ondragend = (e) => {
         item.style.opacity = '1';
         item.style.cursor = 'grab';
-
-        // Restaurer l'apparence selon l'état
-        if (isLocked) {
-            item.style.background = '#3d1f1f';
-            item.style.border = '1px solid #ff4444';
-        } else if (isSelected) {
-            item.style.background = 'var(--es-acc-soft)';
-            item.style.border = '1px solid var(--es-acc-line)';
-        } else {
-            item.style.background = '#2a2a2a';
-            item.style.border = 'none';
-        }
+        _dropZone = null;
+        restoreItemAppearance();
     };
 
     item.ondragover = (e) => {
@@ -1274,66 +1283,65 @@ function createObjectTreeItem(obj, level = 0) {
         e.stopPropagation();
         e.dataTransfer.dropEffect = 'move';
 
-        // Indicateur visuel de zone de drop
-        item.style.background = '#2a5a4a';
-        item.style.border = '2px dashed #4ade80';
+        const rect = item.getBoundingClientRect();
+        const ratio = rect.height > 0 ? (e.clientY - rect.top) / rect.height : 0.5;
+
+        if (obj.userData.isFolder && ratio > 0.25 && ratio < 0.75) {
+            _dropZone = 'nest';
+            item.style.background = '#2a5a4a';
+            item.style.border = '2px dashed #4ade80';
+            item.style.boxShadow = '';
+        } else if (ratio < 0.5) {
+            _dropZone = 'before';
+            restoreItemAppearance();
+            item.style.boxShadow = 'inset 0 2px 0 var(--es-acc)';
+        } else {
+            _dropZone = 'after';
+            restoreItemAppearance();
+            item.style.boxShadow = 'inset 0 -2px 0 var(--es-acc)';
+        }
     };
 
     item.ondragleave = (e) => {
         e.preventDefault();
-
-        // Restaurer l'apparence selon l'état
-        if (isLocked) {
-            item.style.background = '#3d1f1f';
-            item.style.border = '1px solid #ff4444';
-        } else if (isSelected) {
-            item.style.background = 'var(--es-acc-soft)';
-            item.style.border = '1px solid var(--es-acc-line)';
-        } else {
-            item.style.background = '#2a2a2a';
-            item.style.border = 'none';
-        }
+        _dropZone = null;
+        restoreItemAppearance();
     };
 
     item.ondrop = (e) => {
         e.preventDefault();
         e.stopPropagation();
-
-        // Restaurer l'apparence selon l'état
-        if (isLocked) {
-            item.style.background = '#3d1f1f';
-            item.style.border = '1px solid #ff4444';
-        } else if (isSelected) {
-            item.style.background = 'var(--es-acc-soft)';
-            item.style.border = '1px solid var(--es-acc-line)';
-        } else {
-            item.style.background = '#2a2a2a';
-            item.style.border = 'none';
-        }
+        const zone = _dropZone;
+        _dropZone = null;
+        restoreItemAppearance();
 
         const draggedId = e.dataTransfer.getData('text/plain');
         const draggedObj = scene.getObjectByProperty('uuid', draggedId);
+        if (!draggedObj || draggedObj === obj || !draggedObj.parent) return;
 
-        if (draggedObj && draggedObj !== obj && draggedObj.parent) {
-            // Vérifier qu'on ne déplace pas un parent vers son propre enfant
-            let isChild = false;
-            obj.traverseAncestors((ancestor) => {
-                if (ancestor === draggedObj) isChild = true;
-            });
+        // Vérifier qu'on ne déplace pas un parent vers son propre enfant
+        let isDescendant = false;
+        obj.traverseAncestors((ancestor) => { if (ancestor === draggedObj) isDescendant = true; });
+        if (isDescendant) {
+            console.warn('⚠️ Impossible de déplacer un parent vers son propre enfant');
+            return;
+        }
 
-            if (!isChild) {
-                // Retirer de l'ancien parent
-                draggedObj.parent.remove(draggedObj);
-
-                // Ajouter au nouvel objet parent
-                obj.add(draggedObj);
-
-                console.log(`📦 ${draggedObj.userData.editorName} déplacé sous ${obj.userData.editorName}`);
-                updateObjectsList();
+        if (zone === 'nest' && obj.userData.isFolder) {
+            draggedObj.parent.remove(draggedObj);
+            obj.add(draggedObj);
+            console.log(`📦 ${draggedObj.userData.editorName} inclus dans le dossier ${obj.userData.editorName}`);
+        } else {
+            const insertAfter = (zone === 'after');
+            if (obj.parent === scene) {
+                reorderTopLevelObject(draggedObj, obj, insertAfter);
             } else {
-                console.warn('⚠️ Impossible de déplacer un parent vers son propre enfant');
+                reorderWithinParent(draggedObj, obj, insertAfter);
             }
         }
+
+        markUnsavedChanges();
+        updateObjectsList();
     };
 
     // Créer un wrapper qui contient l'item et ses enfants
@@ -1375,6 +1383,58 @@ function toggleAccordion(header) {
     }
 }
 
+// E2.7 : réordonnancement par glisser-déposer À L'INTÉRIEUR d'un dossier —
+// l'affichage suit l'ordre réel de parent.children, donc on manipule ce
+// tableau directement (THREE.js n'a pas d'insertAt, .add() ajoute en fin).
+function reorderWithinParent(draggedObj, targetObj, insertAfter) {
+    const parent = targetObj.parent;
+    if (draggedObj.parent !== parent) parent.add(draggedObj);
+    const children = parent.children;
+    const fromIndex = children.indexOf(draggedObj);
+    if (fromIndex !== -1) children.splice(fromIndex, 1);
+    let toIndex = children.indexOf(targetObj);
+    if (insertAfter) toIndex += 1;
+    children.splice(toIndex, 0, draggedObj);
+}
+
+// E2.7 : réordonnancement par glisser-déposer AU NIVEAU RACINE — l'affichage
+// suit userData.editorCategory (section) + userData.sortOrder (position dans
+// la section), pas l'ordre de scene.children. Renumérote toute la section
+// pour insérer proprement, et adopte la section de la cible (permet de
+// changer un objet de section en le déposant dans une autre).
+function reorderTopLevelObject(draggedObj, targetObj, insertAfter) {
+    if (draggedObj.parent !== scene) scene.add(draggedObj);
+
+    const category = targetObj.userData.editorCategory || guessDefaultObjectCategory(targetObj);
+    draggedObj.userData.editorCategory = category;
+
+    const siblings = selectableObjects.filter(o =>
+        o.parent === scene && o.userData.editorName && o !== draggedObj &&
+        (o.userData.editorCategory || guessDefaultObjectCategory(o)) === category
+    );
+    siblings.sort((a, b) => (a.userData.sortOrder ?? 0) - (b.userData.sortOrder ?? 0));
+    let targetIndex = siblings.indexOf(targetObj);
+    if (targetIndex === -1) targetIndex = siblings.length - 1;
+    if (insertAfter) targetIndex += 1;
+    siblings.splice(Math.max(0, targetIndex), 0, draggedObj);
+    siblings.forEach((o, i) => { o.userData.sortOrder = i; });
+}
+
+// E2.7 : devine la section par défaut d'un objet depuis son nom (utilisé une
+// seule fois, à la migration — ensuite obj.userData.editorCategory prime et
+// peut être changé librement par glisser-déposer, indépendamment du nom).
+function guessDefaultObjectCategory(obj) {
+    const name = obj.userData.editorName || '';
+    if (obj.userData.isCharacter || name.includes('Naby') || name.includes('Animal') || name.includes('Personnage')) {
+        return 'Personnages';
+    }
+    if (name.includes('Mur') || name.includes('Sol') || name.includes('Plafond') ||
+        name.includes('Porte') || name.includes('Fenêtre') || name.includes('Fenetre')) {
+        return 'Environnement';
+    }
+    return 'Objets';
+}
+
 // Fonction pour mettre à jour la liste des objets dans le panneau (style Blender Outliner)
 function updateObjectsList() {
     const listEl = document.getElementById('objects-list');
@@ -1401,29 +1461,29 @@ function updateObjectsList() {
     const uniqueObjects = [];
     const seenNames = new Set();
 
-    selectableObjects.forEach(obj => {
+    selectableObjects.forEach((obj, idx) => {
         // Ne montrer que les objets dont le parent est la scène (pas les enfants d'autres objets)
         if (obj.userData.editorName && !seenNames.has(obj.userData.editorName) && obj.parent === scene) {
             seenNames.add(obj.userData.editorName);
             uniqueObjects.push(obj);
 
-            const name = obj.userData.editorName;
+            // E2.7 : section assignée par glisser-déposer (persistée) — à défaut,
+            // deviner une fois depuis le nom puis figer le choix (migration des
+            // objets créés/sauvegardés avant cette fonctionnalité).
+            if (!obj.userData.editorCategory) {
+                obj.userData.editorCategory = guessDefaultObjectCategory(obj);
+            }
+            if (obj.userData.sortOrder === undefined) {
+                obj.userData.sortOrder = idx;
+            }
 
-            // Personnages et animaux (flag isCharacter ou nom contenant Naby/Animal/Personnage)
-            if (obj.userData.isCharacter || name.includes('Naby') || name.includes('Animal') || name.includes('Personnage')) {
-                groupedObjects['Personnages'].push(obj);
-            }
-            // Environnement : Murs, Portes, Fenêtres, Sol, Plafond
-            else if (name.includes('Mur') || name.includes('Sol') || name.includes('Plafond') ||
-                     name.includes('Porte') || name.includes('Fenêtre') || name.includes('Fenetre')) {
-                groupedObjects['Environnement'].push(obj);
-            }
-            // Objets : Tout le reste (Formes, Boîtes, Tapis, Importés, etc.)
-            else {
-                groupedObjects['Objets'].push(obj);
-            }
+            const category = groupedObjects[obj.userData.editorCategory] ? obj.userData.editorCategory : 'Objets';
+            groupedObjects[category].push(obj);
         }
     });
+
+    // Trier chaque section par ordre choisi (glisser-déposer)
+    Object.values(groupedObjects).forEach(list => list.sort((a, b) => a.userData.sortOrder - b.userData.sortOrder));
 
     // Afficher un message si aucun objet n'est trouvé
     if (uniqueObjects.length === 0) {
@@ -1447,6 +1507,31 @@ function updateObjectsList() {
         groupHeader.style.alignItems = 'center';
         groupHeader.style.gap = '4px';
         groupHeader.dataset.groupName = groupName;
+
+        // E2.7 : déposer directement sur l'en-tête = envoyer l'objet à la fin
+        // de cette section (pratique aussi pour changer de section sans viser
+        // précisément la frontière entre deux éléments).
+        groupHeader.ondragover = (e) => {
+            e.preventDefault(); e.stopPropagation(); e.dataTransfer.dropEffect = 'move';
+            groupHeader.style.background = '#2a5a4a';
+        };
+        groupHeader.ondragleave = (e) => { groupHeader.style.background = '#323232'; };
+        groupHeader.ondrop = (e) => {
+            e.preventDefault(); e.stopPropagation();
+            groupHeader.style.background = '#323232';
+            const draggedId = e.dataTransfer.getData('text/plain');
+            const draggedObj = scene.getObjectByProperty('uuid', draggedId);
+            if (!draggedObj) return;
+            if (draggedObj.parent !== scene) scene.add(draggedObj);
+            draggedObj.userData.editorCategory = groupName;
+            const siblings = selectableObjects.filter(o =>
+                o.parent === scene && o.userData.editorName && o !== draggedObj &&
+                (o.userData.editorCategory || guessDefaultObjectCategory(o)) === groupName
+            );
+            draggedObj.userData.sortOrder = siblings.length;
+            markUnsavedChanges();
+            updateObjectsList();
+        };
 
         // Flèche d'expansion
         const arrow = document.createElement('span');

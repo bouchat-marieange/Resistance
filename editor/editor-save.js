@@ -319,6 +319,8 @@ async function saveProject() {
                 objectsData.push({
                     fileName: obj.userData.fileName,
                     editorName: obj.userData.editorName,
+                    editorCategory: obj.userData.editorCategory,
+                    sortOrder: obj.userData.sortOrder,
                     position: { x: obj.position.x, y: obj.position.y, z: obj.position.z },
                     rotation: { x: obj.rotation.x, y: obj.rotation.y, z: obj.rotation.z },
                     scale: { x: obj.scale.x, y: obj.scale.y, z: obj.scale.z },
@@ -2507,6 +2509,11 @@ function loadObjectFromURL(url, data) {
             model.userData.editorName = data.editorName;
             model.userData.isImported = true;
             model.userData.fileName = data.fileName;
+            // E2.7 : section (Personnages/Environnement/Objets) et ordre choisis
+            // par glisser-déposer — undefined si sauvegardé avant cette fonctionnalité,
+            // updateObjectsList() migre alors automatiquement vers une valeur par défaut.
+            if (data.editorCategory) model.userData.editorCategory = data.editorCategory;
+            if (data.sortOrder !== undefined) model.userData.sortOrder = data.sortOrder;
             // Restaurer fileData pour pouvoir re-sauvegarder
             if (data.fileData) {
                 model.userData.fileData = data.fileData;
