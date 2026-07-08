@@ -13,7 +13,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Epilogue:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="editor/editor-shell.css?v=e2.6b">
+    <link rel="stylesheet" href="editor/editor-shell.css?v=e2.7b">
 
     <style>
         body {
@@ -105,41 +105,44 @@
 </head>
 <body>
 
-<!-- ========== COQUE REFONTE E2 (barre + rail pipeline) ========== -->
+<!-- ========== COQUE REFONTE E2 (E2.7 : barre unique, topbar + rail fusionnés) ========== -->
 <div id="editor-shell">
-  <div class="es-topbar">
-    <div class="es-brand"><span class="es-logo">◈</span><span class="es-name">Résistance</span><span class="es-sub">Éditeur</span></div>
-    <div class="es-room"><span class="es-dot"></span> Pièce&nbsp;: <b id="es-room-name">—</b></div>
-    <div class="es-spacer"></div>
-    <button class="es-tbtn icon-only es-zenbtn" id="es-zen-btn" title="Masquer les panneaux · scène plein écran"></button>
-    <button class="es-tbtn" id="es-history-btn" title="Historique des sauvegardes"><span>↺</span> Historique</button>
-    <button class="es-tbtn" id="es-check-btn" title="Vérifier avant publication"><span>✓</span> Vérifier</button>
-    <button class="es-tbtn" id="es-export-btn" title="Exporter project.json + tous les blobs pour scene_data/"><span>⭳</span> Exporter les assets</button>
-    <button class="es-tbtn primary" id="es-save-btn" title="Sauvegarder (Ctrl+S)"><span>💾</span> Sauvegarder</button>
-  </div>
-  <div class="es-pipeline" id="es-pipeline">
-    <button class="es-step" data-i="0" data-mode="floor-plan" data-tool="draw-wall" data-substep="construire"><span class="es-node">1</span><span class="es-lbl">Construire</span></button>
-    <span class="es-conn"></span>
-    <button class="es-step" data-i="1" data-mode="floor-plan" data-tool="texture" data-substep="habiller"><span class="es-node">2</span><span class="es-lbl">Habiller</span></button>
-    <span class="es-conn"></span>
-    <button class="es-step" data-i="2" data-mode="objects"><span class="es-node">3</span><span class="es-lbl">Peupler</span></button>
-    <span class="es-conn"></span>
-    <button class="es-step" data-i="3" data-mode="lights"><span class="es-node">4</span><span class="es-lbl">Éclairer</span></button>
-    <span class="es-conn"></span>
-    <button class="es-step" data-i="4" data-mode="audio"><span class="es-node">5</span><span class="es-lbl">Sonoriser</span></button>
-    <span class="es-conn"></span>
-    <button class="es-step" data-i="5" data-mode="game-setup"><span class="es-node">6</span><span class="es-lbl">Interagir</span></button>
-    <span class="es-conn"></span>
-    <button class="es-step" data-i="6" data-action="test"><span class="es-node">▶</span><span class="es-lbl">Tester</span></button>
-    <span class="es-rail-spacer"></span>
-    <div class="es-rail-right">
-      <div class="es-budget" id="es-budget" title="Poids de la pièce (objets, personnages, sons importés)">
-        <div class="es-bl">Poids</div>
-        <div class="es-btrack"><div class="es-bfill" id="es-bfill" style="width:0%"></div></div>
-        <div class="es-bv" id="es-budget-val">— Mo</div>
-      </div>
-      <button class="es-play" id="es-play-btn" title="Jouer la salle (à venir)">▶ Jouer ici</button>
+  <div class="es-bar" id="es-pipeline">
+    <span class="es-room-name" id="es-room-name" title="Pièce en cours d'édition">—</span>
+
+    <!-- E2.7 : zone centrale défilante — seules les étapes scrollent si la
+         fenêtre est trop étroite ; poids/icônes/jouer restent toujours visibles. -->
+    <div class="es-steps-scroll">
+      <button class="es-step" data-i="0" data-mode="floor-plan" data-tool="draw-wall" data-substep="construire"><span class="es-node">1</span><span class="es-lbl">Construire</span></button>
+      <span class="es-conn"></span>
+      <button class="es-step" data-i="1" data-mode="floor-plan" data-tool="texture" data-substep="habiller"><span class="es-node">2</span><span class="es-lbl">Habiller</span></button>
+      <span class="es-conn"></span>
+      <button class="es-step" data-i="2" data-mode="objects"><span class="es-node">3</span><span class="es-lbl">Peupler</span></button>
+      <span class="es-conn"></span>
+      <button class="es-step" data-i="3" data-mode="lights"><span class="es-node">4</span><span class="es-lbl">Éclairer</span></button>
+      <span class="es-conn"></span>
+      <button class="es-step" data-i="4" data-mode="audio"><span class="es-node">5</span><span class="es-lbl">Sonoriser</span></button>
+      <span class="es-conn"></span>
+      <button class="es-step" data-i="5" data-mode="game-setup"><span class="es-node">6</span><span class="es-lbl">Interagir</span></button>
+      <span class="es-conn"></span>
+      <button class="es-step" data-i="6" data-action="test"><span class="es-node">▶</span><span class="es-lbl">Tester</span></button>
     </div>
+
+    <div class="es-budget" id="es-budget" title="Poids de la pièce (objets, personnages, sons importés)">
+      <div class="es-bl">Poids</div>
+      <div class="es-btrack"><div class="es-bfill" id="es-bfill" style="width:0%"></div></div>
+      <div class="es-bv" id="es-budget-val">— Mo</div>
+    </div>
+
+    <div class="es-icons">
+      <button class="es-tbtn icon-only es-zenbtn" id="es-zen-btn" title="Masquer les panneaux · scène plein écran"></button>
+      <button class="es-tbtn icon-only" id="es-history-btn" title="Historique des sauvegardes"><span>↺</span></button>
+      <button class="es-tbtn icon-only" id="es-check-btn" title="Vérifier avant publication"><span>✓</span></button>
+      <button class="es-tbtn icon-only" id="es-export-btn" title="Exporter project.json + tous les blobs pour scene_data/"><span>⭳</span></button>
+      <button class="es-tbtn icon-only primary" id="es-save-btn" title="Sauvegarder (Ctrl+S)"><span>💾</span></button>
+    </div>
+
+    <button class="es-play" id="es-play-btn" title="Jouer la salle (à venir)">▶ Jouer ici</button>
   </div>
 
   <!-- E2.4 : popover de conseils quand la pièce dépasse le seuil de poids -->
@@ -1254,7 +1257,7 @@ function initScene() {
    ============================================================ */
 function layoutEditorViewport() {
     if (typeof renderer === 'undefined' || !renderer || !renderer.domElement) return;
-    var CHROME_H = 106; // barre 44 + rail 62
+    var CHROME_H = 56; // E2.7 : barre unique (topbar + rail fusionnés)
     var zen = document.body.classList.contains('es-zen');
 
     // E2.6 : panneau bibliothèque à GAUCHE, Inspecteur à DROITE (inversion

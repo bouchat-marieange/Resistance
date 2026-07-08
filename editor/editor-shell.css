@@ -45,22 +45,16 @@ body.es-zen #volume-icon,
 body.es-zen #settings-icon,
 body.es-zen #toggle-panel-collapse { display: none !important; }
 
-/* ---- barre du haut ---- */
-.es-topbar {
-  display: flex; align-items: center; gap: 14px; height: 44px; padding: 0 16px;
+/* ---- E2.7 : barre unique (topbar + rail pipeline fusionnés) ----
+   3 zones : nom de pièce (fixe) | étapes (défile si trop étroit) |
+   poids + icônes + jouer (fixe, toujours visible — jamais coupé). */
+.es-bar {
+  display: flex; align-items: center; gap: 16px; height: 56px; padding: 0 18px;
   background: var(--es-bg-1); border-bottom: 1px solid var(--es-line);
-  overflow-x: auto; /* fenêtre étroite : la barre défile au lieu de couper les boutons */
 }
-.es-topbar > * { flex-shrink: 0; }
-.es-topbar .es-spacer { flex-shrink: 1; }
-.es-brand { display: flex; align-items: baseline; gap: 9px; }
-.es-brand .es-logo { width: 22px; height: 22px; border-radius: 6px; background: var(--es-acc-soft); border: 1px solid var(--es-acc-line); display: grid; place-items: center; color: var(--es-acc); font-size: 13px; align-self: center; }
-.es-brand .es-name { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 0.05em; color: var(--es-txt-0); line-height: 1; }
-.es-brand .es-sub { font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--es-acc); }
-.es-room { display: flex; align-items: center; gap: 8px; padding: 5px 12px 5px 10px; border-radius: 999px; background: var(--es-bg-2); border: 1px solid var(--es-line); font-size: 12px; color: var(--es-txt-1); }
-.es-room b { color: var(--es-txt-0); font-weight: 600; }
-.es-room .es-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--es-ok); box-shadow: 0 0 8px var(--es-ok); }
-.es-spacer { flex: 1; }
+.es-bar > * { flex-shrink: 0; }
+.es-steps-scroll { display: flex; align-items: center; gap: 0; flex: 1 1 auto; min-width: 40px; overflow-x: auto; overflow-y: hidden; height: 100%; }
+.es-room-name { font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--es-txt-0); white-space: nowrap; }
 .es-tbtn { display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 12px; border-radius: 7px; background: var(--es-bg-2); border: 1px solid var(--es-line); color: var(--es-txt-1); font-size: 12px; font-weight: 500; cursor: pointer; font-family: inherit; transition: border-color .18s, color .18s, background .18s; }
 .es-tbtn:hover { border-color: var(--es-line-2); color: var(--es-txt-0); background: var(--es-bg-3); }
 .es-tbtn.icon-only { padding: 0; width: 32px; justify-content: center; }
@@ -69,31 +63,29 @@ body.es-zen #toggle-panel-collapse { display: none !important; }
 .es-tbtn.primary:hover { background: oklch(0.88 0.135 200); }
 body.es-zen-active .es-zenbtn { border-color: var(--es-acc-line); color: var(--es-acc); }
 
-/* ---- rail pipeline ---- */
-.es-pipeline { display: flex; align-items: center; height: 62px; padding: 0 20px; background: var(--es-bg-1); border-bottom: 1px solid var(--es-line); overflow-x: auto; }
+/* ---- rail pipeline (étapes) ---- */
 .es-step { display: flex; align-items: center; gap: 10px; cursor: pointer; flex-shrink: 0; padding: 4px 2px; background: none; border: none; color: inherit; font: inherit; }
 .es-step .es-node { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; flex-shrink: 0; font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 500; border: 1.5px solid var(--es-line-2); color: var(--es-txt-2); background: var(--es-bg-1); transition: all .22s cubic-bezier(0.22,1,0.36,1); }
-.es-step .es-lbl { font-family: 'Bebas Neue', sans-serif; font-size: 17px; letter-spacing: 0.07em; color: var(--es-txt-2); line-height: 1; white-space: nowrap; transition: color .22s; }
-.es-conn { width: 22px; height: 1.5px; background: var(--es-line); flex-shrink: 0; transition: background .22s; }
+.es-step .es-lbl { font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 0.07em; color: var(--es-txt-2); line-height: 1; white-space: nowrap; transition: color .22s; }
+.es-conn { width: 18px; height: 1.5px; background: var(--es-line); flex-shrink: 0; transition: background .22s; }
 .es-step.done .es-node { border-color: var(--es-acc-dim); color: var(--es-acc); background: oklch(0.45 0.06 200 / 0.18); }
 .es-step.done .es-lbl { color: var(--es-txt-1); }
 .es-step.active .es-node { border-color: var(--es-acc); color: oklch(0.16 0.02 230); background: var(--es-acc); box-shadow: 0 0 0 4px var(--es-acc-soft), 0 0 16px oklch(0.83 0.135 200 / 0.35); transform: scale(1.08); }
 .es-step.active .es-lbl { color: var(--es-acc); }
 .es-conn.filled { background: var(--es-acc-dim); }
-.es-rail-spacer { flex: 1; min-width: 20px; }
-.es-rail-right { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+.es-icons { display: flex; align-items: center; gap: 6px; }
 
-/* jauge de poids (statique pour l'instant, valeurs réelles en E2.4) */
+/* jauge de poids (réelle depuis E2.4, editor/editor-budget.js) */
 .es-budget { display: flex; align-items: center; gap: 10px; padding: 5px 10px; border-radius: 8px; border: 1px solid var(--es-line); background: var(--es-bg-2); }
 .es-budget .es-bl { font-size: 9px; color: var(--es-txt-2); text-transform: uppercase; letter-spacing: 0.1em; }
-.es-budget .es-btrack { width: 110px; height: 6px; border-radius: 999px; overflow: hidden; position: relative; background: linear-gradient(90deg, oklch(0.45 0.06 200 / 0.25) 0 55%, oklch(0.55 0.10 65 / 0.25) 55% 82%, oklch(0.5 0.14 25 / 0.28) 82% 100%); }
+.es-budget .es-btrack { width: 90px; height: 6px; border-radius: 999px; overflow: hidden; position: relative; background: linear-gradient(90deg, oklch(0.45 0.06 200 / 0.25) 0 55%, oklch(0.55 0.10 65 / 0.25) 55% 82%, oklch(0.5 0.14 25 / 0.28) 82% 100%); }
 .es-budget .es-bfill { position: absolute; top: 0; left: 0; height: 100%; border-radius: 999px; background: var(--es-acc); transition: width .3s, background .3s; }
 .es-budget .es-bv { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--es-txt-1); }
 .es-budget.es-budget-heavy { cursor: pointer; }
-.es-play { display: inline-flex; align-items: center; gap: 8px; padding: 8px 15px; border-radius: 8px; border: none; cursor: pointer; background: var(--es-acc); color: oklch(0.16 0.02 230); font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 0.06em; box-shadow: 0 4px 14px oklch(0.83 0.135 200 / 0.3); }
+.es-play { display: inline-flex; align-items: center; gap: 8px; padding: 0 15px; height: 36px; border-radius: 8px; border: none; cursor: pointer; background: var(--es-acc); color: oklch(0.16 0.02 230); font-family: 'Bebas Neue', sans-serif; font-size: 15px; letter-spacing: 0.06em; box-shadow: 0 4px 14px oklch(0.83 0.135 200 / 0.3); }
 
 /* ---- E2.4 : popover de conseils (jauge de poids en état rouge) ---- */
-.es-budget-pop { position: fixed; top: 108px; right: 20px; width: 320px; background: var(--es-bg-1); border: 1px solid var(--es-danger); border-radius: 12px; box-shadow: var(--es-shadow); padding: 16px; z-index: 160; display: none; font-family: 'Epilogue', system-ui, sans-serif; }
+.es-budget-pop { position: fixed; top: 62px; right: 20px; width: 320px; background: var(--es-bg-1); border: 1px solid var(--es-danger); border-radius: 12px; box-shadow: var(--es-shadow); padding: 16px; z-index: 160; display: none; font-family: 'Epilogue', system-ui, sans-serif; }
 .es-budget-pop.show { display: block; }
 .es-budget-pop h4 { font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 0.06em; color: var(--es-warn); margin: 0 0 4px; }
 .es-budget-pop p { font-size: 11.5px; color: var(--es-txt-1); margin: 0 0 12px; line-height: 1.5; }
@@ -105,7 +97,7 @@ body.es-zen-active .es-zenbtn { border-color: var(--es-acc-line); color: var(--e
    gauche, Inspecteur à droite, scène au centre) ---- */
 body.es-shell #editor-panel {
   position: fixed !important;
-  top: 106px !important; left: 0 !important; right: auto !important; bottom: 0 !important;
+  top: 56px !important; left: 0 !important; right: auto !important; bottom: 0 !important;
   width: 360px !important; height: auto !important; max-height: none !important;
   margin: 0 !important; border-radius: 0 !important; box-shadow: none !important;
   border-left: none !important; border-right: 1px solid var(--es-line) !important;
@@ -118,7 +110,7 @@ body.es-shell canvas { z-index: 1 !important; }
 body.es-shell #info-icon,
 body.es-shell #volume-icon,
 body.es-shell #settings-icon { display: none !important; }
-body.es-shell #toggle-panel-collapse { top: 118px !important; left: 360px !important; right: auto !important; transition: left 0.3s ease; }
+body.es-shell #toggle-panel-collapse { top: 68px !important; left: 360px !important; right: auto !important; transition: left 0.3s ease; }
 body.es-shell #toggle-panel-collapse.collapsed { left: 20px !important; }
 /* E2.6 : le panneau glisse maintenant hors-écran par la GAUCHE quand il est
    plié — via `left` plutôt que `transform` (translateX ne s'appliquait pas
@@ -130,7 +122,7 @@ body.es-shell #editor-panel.collapsed { left: -380px !important; transform: none
    colonne DROITE pleine hauteur — visible seulement à l'étape « Peupler » ---- */
 #editor-inspector {
   display: none;
-  position: fixed; top: 106px; right: 0; bottom: 0; width: 280px;
+  position: fixed; top: 56px; right: 0; bottom: 0; width: 280px;
   background: var(--es-bg-1); border-left: 1px solid var(--es-line);
   overflow-y: auto; z-index: 149; padding: 14px 15px;
   color: var(--es-txt-0); font-family: 'Epilogue', system-ui, sans-serif; font-size: 13px;
