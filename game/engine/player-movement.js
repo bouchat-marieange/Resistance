@@ -115,6 +115,11 @@ var PlayerMovement = (function() {
             var p = child.parent;
             while (p) {
                 if (p.userData.isCharacter) return;
+                // Un ancêtre invisible masque aussi ses enfants même si ceux-ci ont
+                // individuellement visible=true (ex: gizmo TransformControls détaché
+                // dans l'éditeur — visible=false au niveau racine, mais ses mesh
+                // internes X/Y/Z/XY/... restent chacun visible=true).
+                if (!p.visible) return;
                 p = p.parent;
             }
             collisionMeshes.push(child);
