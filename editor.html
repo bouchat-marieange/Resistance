@@ -13,7 +13,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Epilogue:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="editor/editor-shell.css?v=e2.7b">
+    <link rel="stylesheet" href="editor/editor-shell.css?v=e2.7c">
 
     <style>
         body {
@@ -434,7 +434,7 @@
 <script src="game/score-manager.js"></script>
 
 <!-- ========== EDITOR SCRIPTS (tous chargés) ========== -->
-<script src="editor/editor-state.js"></script>
+<script src="editor/editor-state.js?v=e2.7"></script>
 <script src="editor/editor-utils.js"></script>
 <script src="editor/editor-objects.js?v=e2.5"></script>
 <script src="editor/editor-camera-lights.js?v=e2.5"></script>
@@ -1271,7 +1271,9 @@ function layoutEditorViewport() {
     }
     var inspector = document.getElementById('editor-inspector');
     var rightOffset = 0;
-    if (inspector && !zen && getComputedStyle(inspector).display !== 'none') {
+    if (inspector && !zen
+        && getComputedStyle(inspector).display !== 'none'
+        && !inspector.classList.contains('collapsed')) {
         rightOffset = Math.round(inspector.getBoundingClientRect().width) || 0;
     }
     var w = Math.max(1, window.innerWidth - leftOffset - rightOffset);
@@ -1325,7 +1327,9 @@ async function initEditorPanel() {
     const editorPanel = document.getElementById('editor-panel');
     if (editorPanel) editorPanel.style.display = 'flex';
     const collapseBtn = document.getElementById('toggle-panel-collapse');
-    if (collapseBtn) collapseBtn.style.display = 'block';
+    if (collapseBtn) collapseBtn.style.display = 'flex';
+    const inspCollapseBtn = document.getElementById('toggle-inspector-collapse');
+    if (inspCollapseBtn) inspCollapseBtn.style.display = 'flex';
 
     // Dans editor.html, l'éditeur est TOUJOURS actif.
     // Empêcher toggleEditor() de désactiver editorMode.
@@ -1443,24 +1447,27 @@ function addEditorUIElements() {
         document.body.appendChild(btn);
     }
 
-    // Bouton plier/déplier panneau
+    // E2.7 : boutons plier/déplier discrets (façon Photoshop) — un onglet fin
+    // accroché au bord de chaque panneau plutôt qu'un gros bouton flottant.
+    // Bibliothèque (gauche) et Inspecteur (droite) sont pliables indépendamment.
     if (!document.getElementById('toggle-panel-collapse')) {
         const btn = document.createElement('button');
         btn.id = 'toggle-panel-collapse';
+        btn.className = 'es-panel-toggle es-panel-toggle-left';
         btn.title = 'Plier/Déplier le panneau';
-        btn.innerHTML = '<img src="icones/circle-chevron-right.svg" alt="Déplier" width="24" height="24" style="filter: brightness(0) invert(1);">';
+        btn.innerHTML = '<span>‹</span>';
         document.body.appendChild(btn);
         btn.addEventListener('click', function() {
             const panel = document.getElementById('editor-panel');
             const btnEl = document.getElementById('toggle-panel-collapse');
             isPanelCollapsed = !isPanelCollapsed;
-            const btnImg = btnEl.querySelector('img');
+            const arrow = btnEl.querySelector('span');
             if (isPanelCollapsed) {
                 panel.classList.add('collapsed'); btnEl.classList.add('collapsed');
-                btnImg.src = 'icones/circle-chevron-left.svg';
+                arrow.textContent = '›';
             } else {
                 panel.classList.remove('collapsed'); btnEl.classList.remove('collapsed');
-                btnImg.src = 'icones/circle-chevron-right.svg';
+                arrow.textContent = '‹';
             }
             // E2.6 : forcer explicitement (ceinture et bretelles) — la classe
             // .collapsed seule ne suffisait pas de façon fiable après
@@ -1470,6 +1477,32 @@ function addEditorUIElements() {
             }
             // E2.2 : le repli/dépli change la largeur de la scène (le transform
             // ne déclenche pas ResizeObserver, on appelle explicitement)
+            if (typeof layoutEditorViewport === 'function') layoutEditorViewport();
+        });
+    }
+
+    // Bouton plier/déplier l'Inspecteur (E2.7, indépendant du panneau ci-dessus)
+    if (!document.getElementById('toggle-inspector-collapse')) {
+        const btn = document.createElement('button');
+        btn.id = 'toggle-inspector-collapse';
+        btn.className = 'es-panel-toggle es-panel-toggle-right';
+        btn.title = 'Plier/Déplier l\'Inspecteur';
+        btn.innerHTML = '<span>›</span>';
+        document.body.appendChild(btn);
+        btn.addEventListener('click', function() {
+            const insp = document.getElementById('editor-inspector');
+            const btnEl = document.getElementById('toggle-inspector-collapse');
+            isInspectorCollapsed = !isInspectorCollapsed;
+            const arrow = btnEl.querySelector('span');
+            if (isInspectorCollapsed) {
+                insp.classList.add('collapsed'); btnEl.classList.add('collapsed');
+                arrow.textContent = '‹';
+                insp.style.setProperty('right', '-300px', 'important');
+            } else {
+                insp.classList.remove('collapsed'); btnEl.classList.remove('collapsed');
+                arrow.textContent = '›';
+                insp.style.setProperty('right', '0px', 'important');
+            }
             if (typeof layoutEditorViewport === 'function') layoutEditorViewport();
         });
     }

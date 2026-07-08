@@ -43,7 +43,8 @@ body.es-zen #editor-panel,
 body.es-zen #info-icon,
 body.es-zen #volume-icon,
 body.es-zen #settings-icon,
-body.es-zen #toggle-panel-collapse { display: none !important; }
+body.es-zen #toggle-panel-collapse,
+body.es-zen #toggle-inspector-collapse { display: none !important; }
 
 /* ---- E2.7 : barre unique (topbar + rail pipeline fusionnés) ----
    3 zones : nom de pièce (fixe) | étapes (défile si trop étroit) |
@@ -110,13 +111,31 @@ body.es-shell canvas { z-index: 1 !important; }
 body.es-shell #info-icon,
 body.es-shell #volume-icon,
 body.es-shell #settings-icon { display: none !important; }
-body.es-shell #toggle-panel-collapse { top: 68px !important; left: 360px !important; right: auto !important; transition: left 0.3s ease; }
-body.es-shell #toggle-panel-collapse.collapsed { left: 20px !important; }
 /* E2.6 : le panneau glisse maintenant hors-écran par la GAUCHE quand il est
    plié — via `left` plutôt que `transform` (translateX ne s'appliquait pas
    de façon fiable ici, cause non élucidée ; `left` est robuste). */
 body.es-shell #editor-panel { transition: left 0.3s ease !important; }
 body.es-shell #editor-panel.collapsed { left: -380px !important; transform: none !important; }
+
+/* ---- E2.7 : onglets de repli/dépli discrets (façon Photoshop) — un petit
+   chevron accroché au bord de chaque panneau plutôt qu'un gros bouton
+   flottant. Bibliothèque et Inspecteur se plient indépendamment. ---- */
+.es-panel-toggle {
+  position: fixed; top: calc(50% + 28px); transform: translateY(-50%);
+  width: 14px; height: 46px; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--es-bg-2); border: 1px solid var(--es-line);
+  color: var(--es-txt-2); cursor: pointer; z-index: 155; font-size: 12px;
+  opacity: 0.45; transition: opacity .15s, color .15s, background .15s, left .3s ease, right .3s ease;
+}
+.es-panel-toggle:hover { opacity: 1; color: var(--es-acc); background: var(--es-bg-3); border-color: var(--es-acc-line); }
+.es-panel-toggle span { line-height: 1; pointer-events: none; }
+body.es-shell .es-panel-toggle-left { left: 360px; border-radius: 0 5px 5px 0; border-left: none; }
+body.es-shell .es-panel-toggle-left.collapsed { left: 0; }
+body.es-shell .es-panel-toggle-right { right: 280px; border-radius: 5px 0 0 5px; border-right: none; }
+body.es-shell .es-panel-toggle-right.collapsed { right: 0; }
+/* L'onglet Inspecteur n'a de sens que quand l'Inspecteur est affiché (étape Peupler) */
+body:not(.es-inspector-visible) #toggle-inspector-collapse { display: none !important; }
 
 /* ---- E2.3 / E2.6 : panneau Inspecteur (objet sélectionné), docké en
    colonne DROITE pleine hauteur — visible seulement à l'étape « Peupler » ---- */
@@ -126,6 +145,7 @@ body.es-shell #editor-panel.collapsed { left: -380px !important; transform: none
   background: var(--es-bg-1); border-left: 1px solid var(--es-line);
   overflow-y: auto; z-index: 149; padding: 14px 15px;
   color: var(--es-txt-0); font-family: 'Epilogue', system-ui, sans-serif; font-size: 13px;
+  transition: right 0.3s ease;
 }
 body.es-shell.es-inspector-visible #editor-inspector { display: block; }
 body.es-zen #editor-inspector { display: none !important; }

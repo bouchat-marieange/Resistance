@@ -10,6 +10,8 @@
 
 // Toggle du panneau éditeur
 var isPanelCollapsed = (typeof isPanelCollapsed !== 'undefined') ? isPanelCollapsed : false;
+// E2.7 : repli/dépli indépendant du panneau Inspecteur
+var isInspectorCollapsed = (typeof isInspectorCollapsed !== 'undefined') ? isInspectorCollapsed : false;
 
 // Variables pour l'éditeur
 var transformControl = (typeof transformControl !== 'undefined') ? transformControl : null;
