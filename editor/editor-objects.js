@@ -1078,8 +1078,8 @@ function createObjectTreeItem(obj, level = 0) {
         item.style.background = '#3d1f1f'; // Rouge foncé pour verrouillé
         item.style.border = '1px solid #ff4444'; // Bordure rouge
     } else if (isSelected) {
-        item.style.background = '#4a7ebf';
-        item.style.border = 'none';
+        item.style.background = 'var(--es-acc-soft)';
+        item.style.border = '1px solid var(--es-acc-line)';
     } else {
         item.style.background = '#2a2a2a';
         item.style.border = 'none';
@@ -1261,8 +1261,8 @@ function createObjectTreeItem(obj, level = 0) {
             item.style.background = '#3d1f1f';
             item.style.border = '1px solid #ff4444';
         } else if (isSelected) {
-            item.style.background = '#4a7ebf';
-            item.style.border = 'none';
+            item.style.background = 'var(--es-acc-soft)';
+            item.style.border = '1px solid var(--es-acc-line)';
         } else {
             item.style.background = '#2a2a2a';
             item.style.border = 'none';
@@ -1287,8 +1287,8 @@ function createObjectTreeItem(obj, level = 0) {
             item.style.background = '#3d1f1f';
             item.style.border = '1px solid #ff4444';
         } else if (isSelected) {
-            item.style.background = '#4a7ebf';
-            item.style.border = 'none';
+            item.style.background = 'var(--es-acc-soft)';
+            item.style.border = '1px solid var(--es-acc-line)';
         } else {
             item.style.background = '#2a2a2a';
             item.style.border = 'none';
@@ -1304,8 +1304,8 @@ function createObjectTreeItem(obj, level = 0) {
             item.style.background = '#3d1f1f';
             item.style.border = '1px solid #ff4444';
         } else if (isSelected) {
-            item.style.background = '#4a7ebf';
-            item.style.border = 'none';
+            item.style.background = 'var(--es-acc-soft)';
+            item.style.border = '1px solid var(--es-acc-line)';
         } else {
             item.style.background = '#2a2a2a';
             item.style.border = 'none';
@@ -1523,9 +1523,9 @@ function startRenameObject(obj, nameElement) {
     input.style.flex = '1';
     input.style.fontSize = '10px';
     input.style.padding = '1px 4px';
-    input.style.border = '1px solid #4a7ebf';
+    input.style.border = '1px solid var(--es-acc-line)';
     input.style.borderRadius = '2px';
-    input.style.background = '#1a1a1a';
+    input.style.background = 'var(--es-bg-0)';
     input.style.color = '#ffffff';
     input.style.outline = 'none';
     input.style.minWidth = '50px';

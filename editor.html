@@ -8,7 +8,7 @@
     <!-- Tailwind CSS + DaisyUI (requis par l'éditeur) -->
     <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.14/dist/full.min.css" rel="stylesheet" type="text/css" />
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="editor/editor.css">
+    <link rel="stylesheet" href="editor/editor.css?v=e2.5">
     <!-- Coque refonte E2 : barre + rail pipeline (DA Résistance) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -433,8 +433,8 @@
 <!-- ========== EDITOR SCRIPTS (tous chargés) ========== -->
 <script src="editor/editor-state.js"></script>
 <script src="editor/editor-utils.js"></script>
-<script src="editor/editor-objects.js?v=e2.3"></script>
-<script src="editor/editor-camera-lights.js"></script>
+<script src="editor/editor-objects.js?v=e2.5"></script>
+<script src="editor/editor-camera-lights.js?v=e2.5"></script>
 <script src="editor/editor-audio.js"></script>
 <script src="editor/editor-save.js"></script>
 <script src="editor/editor-checklist.js"></script>
@@ -445,7 +445,7 @@
      dans ces fichiers), gardé lisible par grande fonction. -->
 <script src="editor/floorplan/floorplan-core.js"></script>
 <script src="editor/floorplan/floorplan-tools-basic.js"></script>
-<script src="editor/floorplan/floorplan-zones.js"></script>
+<script src="editor/floorplan/floorplan-zones.js?v=e2.5"></script>
 <script src="editor/floorplan/floorplan-texture.js"></script>
 <script src="editor/floorplan/floorplan-walls-mitered.js"></script>
 <script src="editor/floorplan/floorplan-walls-merge.js"></script>
@@ -1287,7 +1287,7 @@ function layoutEditorViewport() {
 async function initEditorPanel() {
     // Charger le panneau HTML
     try {
-        const resp = await fetch('editor/editor-panel.html?v=e2.3');
+        const resp = await fetch('editor/editor-panel.html?v=e2.5');
         if (resp.ok) {
             document.getElementById('editor-container').innerHTML = await resp.text();
         }

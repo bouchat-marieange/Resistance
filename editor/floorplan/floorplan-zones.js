@@ -1354,7 +1354,7 @@ function createInteractionZoneListItem(zone) {
         input.type = 'text';
         input.value = zone.customName || '';
         input.placeholder = autoSummary;
-        input.style.cssText = 'width:100%;font-size:9px;padding:1px 3px;border:1px solid #00CED1;border-radius:2px;background:#1a1a1a;color:#fff;outline:none;';
+        input.style.cssText = 'width:100%;font-size:9px;padding:1px 3px;border:1px solid var(--es-acc-line);border-radius:2px;background:var(--es-bg-0);color:var(--es-txt-0);outline:none;';
 
         const finishRename = () => {
             const newName = input.value.trim();

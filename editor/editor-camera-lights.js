@@ -716,12 +716,12 @@ function updateLightsList() {
 
     sortedLights.forEach((light, index) => {
         const lightItem = document.createElement('div');
-        lightItem.style.cssText = 'padding: 6px 8px; margin: 2px 0; background: #2a2a2a; border-radius: 4px; border-left: 3px solid #4a4a4a; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: all 0.2s;';
+        lightItem.style.cssText = 'padding: 6px 8px; margin: 2px 0; background: var(--es-bg-2); border-radius: 4px; border-left: 3px solid var(--es-line-2); display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: all 0.2s;';
 
         // Bordure de couleur selon le type et l'état sélectionné
         if (selectedLight === light) {
-            lightItem.style.borderLeftColor = '#4a7ebf';
-            lightItem.style.background = '#3a3a3a';
+            lightItem.style.borderLeftColor = 'var(--es-acc)';
+            lightItem.style.background = 'var(--es-acc-soft)';
         }
 
         // Icônes SVG pour les types de lumière
@@ -781,7 +781,7 @@ function updateLightsList() {
         iconSpan.innerHTML = typeIcon;
 
         const nameSpan = document.createElement('span');
-        nameSpan.style.cssText = 'font-size: 10px; color: #d4d4d4; font-weight: 500; cursor: text; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;';
+        nameSpan.style.cssText = 'font-size: 10px; color: var(--es-txt-0); font-weight: 500; cursor: text; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;';
         nameSpan.title = 'Double-clic pour renommer';
         nameSpan.textContent = displayName;
         nameSpan.dataset.lightId = light.userData.lightId || 'default';
@@ -803,12 +803,12 @@ function updateLightsList() {
 
             const prefixTag = document.createElement('span');
             prefixTag.textContent = typePrefix;
-            prefixTag.style.cssText = 'font-size: 9px; font-weight: 700; color: #4a7ebf; background: rgba(74,126,191,0.15); border: 1px solid rgba(74,126,191,0.4); border-radius: 3px; padding: 1px 4px; flex-shrink: 0; font-family: monospace;';
+            prefixTag.style.cssText = 'font-size: 9px; font-weight: 700; color: var(--es-acc); background: var(--es-acc-soft); border: 1px solid var(--es-acc-line); border-radius: 3px; padding: 1px 4px; flex-shrink: 0; font-family: "JetBrains Mono", monospace;';
 
             const input = document.createElement('input');
             input.type = 'text';
             input.value = currentRaw;
-            input.style.cssText = 'font-size: 10px; padding: 2px 4px; background: #1a1a1a; color: #d4d4d4; border: 1px solid #4a7ebf; border-radius: 2px; outline: none; width: 100px;';
+            input.style.cssText = 'font-size: 10px; padding: 2px 4px; background: var(--es-bg-0); color: var(--es-txt-0); border: 1px solid var(--es-acc-line); border-radius: 2px; outline: none; width: 100px;';
             input.placeholder = 'Nom de la lumière…';
 
             let _committed = false;

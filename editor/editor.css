@@ -1,12 +1,19 @@
 /* ===================================================
    EDITOR CSS — Style Blender-like pour le panneau éditeur
    Fichier extrait de sas_securite.html pour réutilisation autonome
+
+   E2.5 : recoloré sur les jetons --es-* de la coque (editor-shell.css)
+   pour que l'intérieur des panneaux (Tailwind/DaisyUI d'origine)
+   rejoigne enfin la charte turquoise/OKLCH de la maquette au lieu du
+   bleu #4a7ebf historique. Typographie Bebas Neue (titres de section)
+   / JetBrains Mono (valeurs numériques) ajoutée en complément.
    =================================================== */
 
 /* Style Blender-like pour le panneau éditeur */
-#editor-panel {
-    background: #1a1a1a !important;
-    color: #d4d4d4 !important;
+#editor-panel, #editor-inspector {
+    background: var(--es-bg-0) !important;
+    color: var(--es-txt-0) !important;
+    font-family: 'Epilogue', system-ui, sans-serif;
 }
 
 #editor-panel .tabs {
@@ -16,27 +23,27 @@
 }
 
 #editor-panel .tab {
-    color: #808080 !important;
-    background: #2a2a2a !important;
+    color: var(--es-txt-2) !important;
+    background: var(--es-bg-1) !important;
     border-radius: 4px !important;
 }
 
 #editor-panel .tab-active {
-    background: #3a3a3a !important;
-    color: #ffffff !important;
+    background: var(--es-bg-3) !important;
+    color: var(--es-txt-0) !important;
 }
 
 /* Accordéons style Blender */
 .editor-accordion {
-    background: #2a2a2a;
-    border: 1px solid #3a3a3a;
+    background: var(--es-bg-1);
+    border: 1px solid var(--es-line);
     border-radius: 2px;
     margin-bottom: 2px;
 }
 
 .editor-accordion-header {
-    background: #2a2a2a;
-    color: #d4d4d4;
+    background: var(--es-bg-1);
+    color: var(--es-txt-0);
     padding: 4px 8px;
     cursor: pointer;
     font-size: 11px;
@@ -48,20 +55,20 @@
 }
 
 .editor-accordion-header:hover {
-    background: #323232;
+    background: var(--es-bg-3);
 }
 
-.accordion-arrow {
+#editor-panel .accordion-arrow, #editor-inspector .accordion-arrow {
     font-size: 10px;
     transition: transform 0.15s ease;
-    color: #808080;
+    color: var(--es-acc) !important;
     display: inline-block;
     width: 12px;
 }
 
 .editor-accordion-content {
     padding: 6px 8px;
-    background: #242424;
+    background: var(--es-bg-0);
     display: none;
 }
 
@@ -76,18 +83,19 @@
     gap: 4px;
     padding: 2px 4px;
     font-size: 11px;
-    color: #d4d4d4;
+    color: var(--es-txt-0);
     cursor: pointer;
     user-select: none;
 }
 
 .object-tree-item:hover {
-    background: #3a3a3a;
+    background: var(--es-bg-3);
 }
 
 .object-tree-item.selected {
-    background: #4a7ebf;
-    color: #ffffff;
+    background: var(--es-acc-soft);
+    color: var(--es-txt-0);
+    box-shadow: inset 0 0 0 1px var(--es-acc-line);
 }
 
 .object-tree-item .icon {
@@ -119,7 +127,7 @@
 
 /* Assurer que les SVG dans les tabs actifs sont blancs */
 #editor-panel .tab-active svg {
-    stroke: #ffffff !important;
+    stroke: var(--es-txt-0) !important;
 }
 
 /* Onglets verticaux - Style Blender */
@@ -145,34 +153,34 @@
 }
 
 .tab-vertical:hover {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--es-bg-2);
 }
 
 .tab-vertical.tab-active {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--es-bg-3);
 }
 
 .tab-vertical.tab-active::before {
-    background: #4a9eff;
+    background: var(--es-acc);
 }
 
 .tab-vertical svg {
-    stroke: #999999;
+    stroke: var(--es-txt-2);
     transition: stroke 0.15s ease;
 }
 
 .tab-vertical:hover svg {
-    stroke: #cccccc;
+    stroke: var(--es-txt-1);
 }
 
 .tab-vertical.tab-active svg {
-    stroke: #ffffff !important;
+    stroke: var(--es-txt-0) !important;
 }
 
 .object-tree-item .expand-arrow {
     width: 12px;
     font-size: 9px;
-    color: #808080;
+    color: var(--es-txt-2);
 }
 
 .object-tree-children {
@@ -183,9 +191,10 @@
 #editor-panel input[type="number"],
 #editor-panel input[type="text"],
 #editor-panel select {
-    background: #1a1a1a !important;
-    border: 1px solid #3a3a3a !important;
-    color: #d4d4d4 !important;
+    background: var(--es-bg-0) !important;
+    border: 1px solid var(--es-line) !important;
+    color: var(--es-txt-0) !important;
+    font-family: 'JetBrains Mono', monospace !important;
     font-size: 10px !important;
     padding: 2px 4px !important;
     height: 20px !important;
@@ -193,15 +202,15 @@
 
 #editor-panel input[type="number"]:focus,
 #editor-panel select:focus {
-    border-color: #4a7ebf !important;
+    border-color: var(--es-acc-line) !important;
     outline: none !important;
 }
 
 /* Boutons style Blender */
 #editor-panel .btn {
-    background: #3a3a3a !important;
-    border: 1px solid #4a4a4a !important;
-    color: #d4d4d4 !important;
+    background: var(--es-bg-2) !important;
+    border: 1px solid var(--es-line) !important;
+    color: var(--es-txt-1) !important;
     font-size: 10px !important;
     text-transform: none !important;
     min-height: 20px !important;
@@ -210,47 +219,96 @@
 }
 
 #editor-panel .btn:hover {
-    background: #4a4a4a !important;
+    background: var(--es-bg-3) !important;
+    color: var(--es-txt-0) !important;
+    border-color: var(--es-line-2) !important;
 }
 
 #editor-panel .btn-primary {
-    background: #4a7ebf !important;
-    border-color: #5a8ecf !important;
-    color: #ffffff !important;
+    background: var(--es-acc-soft) !important;
+    border-color: var(--es-acc-line) !important;
+    color: var(--es-acc) !important;
+}
+
+#editor-panel .btn-secondary,
+#editor-panel .btn-accent {
+    background: var(--es-acc-soft) !important;
+    border-color: var(--es-acc-line) !important;
+    color: var(--es-acc) !important;
 }
 
 #editor-panel .btn-success {
-    background: #4a8f4a !important;
-    border-color: #5a9f5a !important;
+    background: oklch(0.82 0.15 155 / 0.16) !important;
+    border-color: var(--es-ok) !important;
+    color: var(--es-ok) !important;
 }
 
 #editor-panel .btn-error {
-    background: #8f4a4a !important;
-    border-color: #9f5a5a !important;
+    background: oklch(0.63 0.20 25 / 0.16) !important;
+    border-color: var(--es-danger) !important;
+    color: var(--es-danger) !important;
+}
+
+#editor-panel .btn-warning {
+    background: oklch(0.78 0.15 65 / 0.16) !important;
+    border-color: var(--es-warn) !important;
+    color: var(--es-warn) !important;
 }
 
 /* Checkboxes style Blender */
 #editor-panel .checkbox {
-    border-color: #4a4a4a !important;
+    border-color: var(--es-line-2) !important;
+}
+#editor-panel .checkbox:checked,
+#editor-panel input[type="checkbox"]:checked {
+    accent-color: var(--es-acc);
+}
+
+/* Sliders (range) — piste fine + curseur accent, comme la maquette.
+   DaisyUI stylise le curseur nativement (::-webkit-slider-thumb) avec ses
+   propres couleurs de thème (primary/secondary/accent/warning/info...),
+   ce qui prime sur accent-color — on l'écrase explicitement ici. */
+#editor-panel input[type="range"],
+#editor-inspector input[type="range"] {
+    accent-color: var(--es-acc);
+}
+#editor-panel input[type="range"]::-webkit-slider-thumb,
+#editor-inspector input[type="range"]::-webkit-slider-thumb {
+    background-color: var(--es-acc) !important;
+    box-shadow: none !important;
+}
+#editor-panel input[type="range"]::-moz-range-thumb,
+#editor-inspector input[type="range"]::-moz-range-thumb {
+    background-color: var(--es-acc) !important;
+    border-color: var(--es-acc) !important;
+    box-shadow: none !important;
+}
+#editor-panel input[type="range"]::-webkit-slider-runnable-track,
+#editor-inspector input[type="range"]::-webkit-slider-runnable-track {
+    background-color: var(--es-bg-3) !important;
 }
 
 /* Scrollbar style sombre */
-#editor-panel ::-webkit-scrollbar {
+#editor-panel ::-webkit-scrollbar,
+#editor-inspector::-webkit-scrollbar {
     width: 12px;
     height: 12px;
 }
 
-#editor-panel ::-webkit-scrollbar-track {
-    background: #1a1a1a;
+#editor-panel ::-webkit-scrollbar-track,
+#editor-inspector::-webkit-scrollbar-track {
+    background: var(--es-bg-0);
 }
 
-#editor-panel ::-webkit-scrollbar-thumb {
-    background: #4a4a4a;
+#editor-panel ::-webkit-scrollbar-thumb,
+#editor-inspector::-webkit-scrollbar-thumb {
+    background: var(--es-bg-3);
     border-radius: 2px;
 }
 
-#editor-panel ::-webkit-scrollbar-thumb:hover {
-    background: #5a5a5a;
+#editor-panel ::-webkit-scrollbar-thumb:hover,
+#editor-inspector::-webkit-scrollbar-thumb:hover {
+    background: var(--es-line-2);
 }
 
 /* Curseur personnalisé pour le mode floor-plan */
@@ -275,15 +333,15 @@
 }
 
 .floor-plan-cursor-select {
-    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><polygon points="4,4 4,18 9,14 12,20 14,19 11,13 16,13" fill="%234488ff" stroke="white" stroke-width="1.5"/></svg>') 4 4, pointer !important;
+    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><polygon points="4,4 4,18 9,14 12,20 14,19 11,13 16,13" fill="%2300E5FF" stroke="white" stroke-width="1.5"/></svg>') 4 4, pointer !important;
 }
 
 .floor-plan-cursor-move {
-    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%234488ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="m15 19-3 3-3-3"/><path d="m19 9 3 3-3 3"/><path d="M2 12h20"/><path d="m5 9-3 3 3 3"/><path d="m9 5 3-3 3 3"/></svg>') 12 12, move !important;
+    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%2300E5FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="m15 19-3 3-3-3"/><path d="m19 9 3 3-3 3"/><path d="M2 12h20"/><path d="m5 9-3 3 3 3"/><path d="m9 5 3-3 3 3"/></svg>') 12 12, move !important;
 }
 
 .floor-plan-cursor-rotate {
-    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%234488ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>') 12 12, pointer !important;
+    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%2300E5FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>') 12 12, pointer !important;
 }
 
 .floor-plan-cursor-paint {
@@ -304,13 +362,13 @@
 
 .measure-label {
     position: absolute;
-    background: rgba(255, 105, 180, 0.9);
-    color: white;
+    background: rgba(0, 229, 255, 0.85);
+    color: #0a1620;
     padding: 2px 8px;
     border-radius: 4px;
     font-size: 13px;
     font-weight: bold;
-    font-family: 'Segoe UI', monospace;
+    font-family: 'JetBrains Mono', monospace;
     pointer-events: none;
     z-index: 100;
     white-space: nowrap;
@@ -320,27 +378,27 @@
 }
 
 .game-cursor-spawn {
-    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%2300ccff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-5"/><path d="M9 8V3"/><path d="M15 8V3"/><circle cx="12" cy="1.5" r="0" fill="%2300ccff"/><path d="M9 8a3 3 0 1 0 6 0"/><path d="M12 17c-2.8 0-5-1.1-5-3v-1a5 5 0 0 1 10 0v1c0 1.9-2.2 3-5 3z"/></svg>') 12 12, crosshair !important;
+    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%2300E5FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-5"/><path d="M9 8V3"/><path d="M15 8V3"/><circle cx="12" cy="1.5" r="0" fill="%2300E5FF"/><path d="M9 8a3 3 0 1 0 6 0"/><path d="M12 17c-2.8 0-5-1.1-5-3v-1a5 5 0 0 1 10 0v1c0 1.9-2.2 3-5 3z"/></svg>') 12 12, crosshair !important;
 }
 
 .game-cursor-zone-rect {
-    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%2300CED1" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="1"/><line x1="12" y1="2" x2="12" y2="22" stroke-dasharray="2,2"/><line x1="2" y1="12" x2="22" y2="12" stroke-dasharray="2,2"/></svg>') 12 12, crosshair !important;
+    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%2300E5FF" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="1"/><line x1="12" y1="2" x2="12" y2="22" stroke-dasharray="2,2"/><line x1="2" y1="12" x2="22" y2="12" stroke-dasharray="2,2"/></svg>') 12 12, crosshair !important;
 }
 
 .game-cursor-zone-oval {
-    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%2300CED1" stroke-width="2"><ellipse cx="12" cy="12" rx="10" ry="7"/><line x1="12" y1="2" x2="12" y2="22" stroke-dasharray="2,2"/><line x1="2" y1="12" x2="22" y2="12" stroke-dasharray="2,2"/></svg>') 12 12, crosshair !important;
+    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%2300E5FF" stroke-width="2"><ellipse cx="12" cy="12" rx="10" ry="7"/><line x1="12" y1="2" x2="12" y2="22" stroke-dasharray="2,2"/><line x1="2" y1="12" x2="22" y2="12" stroke-dasharray="2,2"/></svg>') 12 12, crosshair !important;
 }
 
 .game-cursor-zone-wall {
-    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%2300CED1" stroke-width="2"><rect x="6" y="2" width="12" height="20" rx="1"/><line x1="12" y1="2" x2="12" y2="22" stroke-dasharray="2,2"/></svg>') 12 12, crosshair !important;
+    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%2300E5FF" stroke-width="2"><rect x="6" y="2" width="12" height="20" rx="1"/><line x1="12" y1="2" x2="12" y2="22" stroke-dasharray="2,2"/></svg>') 12 12, crosshair !important;
 }
 
 .game-cursor-zone-object {
-    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%2300CED1" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M8 12h8"/></svg>') 12 12, pointer !important;
+    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%2300E5FF" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M8 12h8"/></svg>') 12 12, pointer !important;
 }
 
 .game-cursor-zone-character {
-    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%2300CED1" stroke-width="2"><circle cx="12" cy="6" r="4"/><path d="M6 22v-4a6 6 0 0 1 12 0v4"/></svg>') 12 12, pointer !important;
+    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%2300E5FF" stroke-width="2"><circle cx="12" cy="6" r="4"/><path d="M6 22v-4a6 6 0 0 1 12 0v4"/></svg>') 12 12, pointer !important;
 }
 
 .zone-list-item {
@@ -350,21 +408,21 @@
     padding: 3px 4px;
     margin: 1px 0;
     font-size: 10px;
-    color: #d4d4d4;
+    color: var(--es-txt-0);
     cursor: pointer;
     user-select: none;
-    background: #2a2a2a;
+    background: var(--es-bg-1);
     border-radius: 3px;
     transition: all 0.15s;
 }
-.zone-list-item:hover { background: #3a3a3a; }
-.zone-list-item.selected { background: #2a7a7a; border: 1px solid #00CED1; }
+.zone-list-item:hover { background: var(--es-bg-3); }
+.zone-list-item.selected { background: var(--es-acc-soft); border: 1px solid var(--es-acc-line); }
 .zone-list-item.locked { opacity: 0.6; }
 
 /* === AUDIO PANEL === */
 .audio-section {
     margin-bottom: 8px;
-    border: 1px solid #2a2a2a;
+    border: 1px solid var(--es-line);
     border-radius: 6px;
     overflow: hidden;
 }
@@ -373,15 +431,15 @@
     align-items: center;
     gap: 6px;
     padding: 6px 8px;
-    background: #1a1a1a;
+    background: var(--es-bg-0);
     cursor: pointer;
     user-select: none;
     font-size: 10px;
     font-weight: 600;
-    color: #ccc;
+    color: var(--es-txt-1);
 }
-.audio-section-header:hover { background: #222; }
-.audio-section-body { padding: 4px 6px; background: #1e1e1e; }
+.audio-section-header:hover { background: var(--es-bg-2); }
+.audio-section-body { padding: 4px 6px; background: var(--es-bg-1); }
 .audio-track-item {
     display: flex;
     flex-direction: column;
@@ -389,12 +447,12 @@
     padding: 5px 6px;
     margin: 2px 0;
     font-size: 9px;
-    color: #d4d4d4;
-    background: #2a2a2a;
+    color: var(--es-txt-0);
+    background: var(--es-bg-2);
     border-radius: 4px;
     transition: background 0.15s;
 }
-.audio-track-item:hover { background: #333; }
+.audio-track-item:hover { background: var(--es-bg-3); }
 .audio-track-controls {
     display: flex;
     align-items: center;
@@ -412,13 +470,13 @@
     font-size: 10px;
     font-weight: 500;
 }
-.audio-track-name:hover { background: #3a3a3a; }
+.audio-track-name:hover { background: var(--es-bg-3); }
 .audio-track-name-input {
     display: block;
     width: 100%;
-    background: #1a1a1a;
-    border: 1px solid #00CED1;
-    color: #e0e0e0;
+    background: var(--es-bg-0);
+    border: 1px solid var(--es-acc-line);
+    color: var(--es-txt-0);
     font-size: 10px;
     padding: 1px 3px;
     border-radius: 2px;
@@ -443,9 +501,9 @@
 }
 .audio-volume-control input[type="number"] {
     width: 46px;
-    background: #1a1a1a;
-    border: 1px solid #3a3a3a;
-    color: #d4d4d4;
+    background: var(--es-bg-0);
+    border: 1px solid var(--es-line);
+    color: var(--es-txt-0);
     font-size: 10px;
     text-align: center;
     padding: 2px 2px;
@@ -464,15 +522,15 @@
     width: 100%;
     padding: 4px 8px;
     margin: 4px 0;
-    background: #2a2a2a;
-    border: 1px dashed #4a4a4a;
+    background: var(--es-bg-1);
+    border: 1px dashed var(--es-line-2);
     border-radius: 4px;
-    color: #888;
+    color: var(--es-txt-2);
     font-size: 9px;
     cursor: pointer;
     transition: all 0.15s;
 }
-.audio-import-btn:hover { border-color: #00CED1; color: #00CED1; }
+.audio-import-btn:hover { border-color: var(--es-acc-line); color: var(--es-acc); }
 .audio-save-btn {
     display: flex;
     align-items: center;
@@ -481,15 +539,15 @@
     width: 100%;
     padding: 4px 8px;
     margin-top: 4px;
-    background: #1a3a3a;
-    border: 1px solid #00CED1;
+    background: var(--es-acc-soft);
+    border: 1px solid var(--es-acc-line);
     border-radius: 4px;
-    color: #00CED1;
+    color: var(--es-acc);
     font-size: 9px;
     cursor: pointer;
     transition: all 0.15s;
 }
-.audio-save-btn:hover { background: #2a4a4a; }
+.audio-save-btn:hover { background: oklch(0.83 0.135 200 / 0.22); }
 .audio-trigger-modal {
     display: none;
     position: fixed;
@@ -501,30 +559,33 @@
     position: absolute;
     top: 50%; left: 50%;
     transform: translate(-50%, -50%);
-    background: #1e1e1e;
-    border: 1px solid #3a3a3a;
+    background: var(--es-bg-1);
+    border: 1px solid var(--es-line);
     border-radius: 10px;
     padding: 20px 24px;
     min-width: 320px;
-    color: #d4d4d4;
+    color: var(--es-txt-0);
+    font-family: 'Epilogue', system-ui, sans-serif;
 }
 .audio-trigger-modal-content h3 {
     margin: 0 0 12px;
     font-size: 13px;
-    color: #00CED1;
+    color: var(--es-acc);
+    font-family: 'Bebas Neue', sans-serif;
+    letter-spacing: 0.05em;
 }
 .audio-trigger-modal-content label {
     display: block;
     font-size: 10px;
-    color: #888;
+    color: var(--es-txt-2);
     margin: 8px 0 3px;
 }
 .audio-trigger-modal-content select {
     width: 100%;
     padding: 5px 8px;
-    background: #2a2a2a;
-    border: 1px solid #3a3a3a;
-    color: #d4d4d4;
+    background: var(--es-bg-2);
+    border: 1px solid var(--es-line);
+    color: var(--es-txt-0);
     border-radius: 4px;
     font-size: 11px;
 }
@@ -542,7 +603,7 @@
             max-height: 90vh;
             overflow: hidden;
             overflow-x: hidden;
-            background: #2a2a2a;
+            background: var(--es-bg-1);
             padding: 0;
             border-radius: 8px;
             box-shadow: 0 8px 32px rgba(0,0,0,0.5);
@@ -550,12 +611,12 @@
             z-index: 100;
             display: none;
             transition: transform 0.3s ease;
-            border: 1px solid #1a1a1a;
+            border: 1px solid var(--es-bg-0);
         }
 
         #editor-panel .card-body {
-            background: #2a2a2a;
-            color: #cccccc;
+            background: var(--es-bg-1);
+            color: var(--es-txt-1);
             overflow-y: auto;
             overflow-x: hidden;
         }
@@ -577,16 +638,16 @@
         }
 
         #editor-panel .card-body::-webkit-scrollbar-track {
-            background: #1e1e1e;
+            background: var(--es-bg-0);
         }
 
         #editor-panel .card-body::-webkit-scrollbar-thumb {
-            background: #4a4a4a;
+            background: var(--es-bg-3);
             border-radius: 4px;
         }
 
         #editor-panel .card-body::-webkit-scrollbar-thumb:hover {
-            background: #5a5a5a;
+            background: var(--es-line-2);
         }
 
         /* État plié du panneau éditeur */
@@ -628,39 +689,48 @@
 
         #editor-panel h3 {
             margin: 0 0 10px 0;
-            color: #e0e0e0;
+            color: var(--es-txt-0);
             font-size: 15px;
-            border-bottom: 1px solid #3a3a3a;
+            border-bottom: 1px solid var(--es-line);
             padding-bottom: 8px;
             font-weight: 600;
             letter-spacing: 0.3px;
         }
 
-        /* Titres de section plus petits */
+        /* Titres de section — Bebas Neue, comme la maquette */
         #editor-panel .text-xs,
         #editor-panel .text-\[10px\] {
-            color: #999999;
+            color: var(--es-txt-2);
             text-transform: uppercase;
             font-size: 10px;
             font-weight: 600;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.08em;
+        }
+
+        /* Titre principal de chaque onglet (ex: "Plan de Pièce", "Gestion Lumières") */
+        #editor-panel > div > .text-xs.font-semibold.mb-2 {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 17px;
+            letter-spacing: 0.06em;
+            color: var(--es-txt-0);
+            text-transform: none;
         }
 
         /* Zones de liste et sections - Thème sombre */
         #editor-panel .bg-base-200 {
-            background: #1e1e1e !important;
-            border: 1px solid #3a3a3a;
+            background: var(--es-bg-0) !important;
+            border: 1px solid var(--es-line);
         }
 
         #editor-panel .bg-base-100 {
-            background: #2a2a2a !important;
+            background: var(--es-bg-1) !important;
         }
 
         /* Améliorer les contrastes des textes */
         #editor-panel span,
         #editor-panel label,
         #editor-panel div {
-            color: #cccccc;
+            color: var(--es-txt-1);
         }
 
         /* Listes d'objets - Meilleure visibilité */
@@ -668,18 +738,18 @@
         #imported-objects-container,
         #lights-list,
         #ambient-light-section {
-            color: #e0e0e0;
+            color: var(--es-txt-0);
         }
 
         /* S'assurer que les textes dans les listes sont visibles */
         .object-tree-item,
         .object-tree-item span {
-            color: #d4d4d4 !important;
+            color: var(--es-txt-0) !important;
         }
 
         .object-tree-item.selected,
         .object-tree-item.selected span {
-            color: #ffffff !important;
+            color: var(--es-txt-0) !important;
         }
 
         /* Titres et labels dans l'éditeur */
@@ -687,28 +757,28 @@
         #editor-panel .text-\[10px\],
         #editor-panel .font-semibold,
         #editor-panel .label-text {
-            color: #999999 !important;
+            color: var(--es-txt-2) !important;
         }
 
         /* Texte dans les inputs et selects */
         #editor-panel input,
         #editor-panel select,
         #editor-panel button {
-            color: #d4d4d4 !important;
+            color: var(--es-txt-0) !important;
         }
 
         /* Bordures des accordéons visibles */
         .editor-accordion {
-            border-color: #3a3a3a !important;
+            border-color: var(--es-line) !important;
         }
 
         .editor-accordion-header {
-            color: #d4d4d4 !important;
+            color: var(--es-txt-0) !important;
         }
 
         /* Messages d'aide */
         .text-base-content\/60 {
-            color: #808080 !important;
+            color: var(--es-txt-2) !important;
         }
 
         #editor-panel button {
@@ -855,7 +925,7 @@
             width: 18px;
             height: 18px;
             cursor: pointer;
-            accent-color: #3498db;
+            accent-color: var(--es-acc);
         }
 
         #axis-controls label {
@@ -866,7 +936,7 @@
         }
 
         #axis-controls label:hover {
-            background: rgba(52, 152, 219, 0.1);
+            background: var(--es-acc-soft);
         }
 
         /* Style pour les boutons de mode éditeur (Objets/Caméra/Lumières) */
@@ -886,6 +956,6 @@
         }
 
         .editor-mode-btn.active {
-            border: 2px solid #2c3e50;
-            box-shadow: 0 0 15px rgba(52, 152, 219, 0.6);
+            border: 2px solid var(--es-acc);
+            box-shadow: 0 0 15px var(--es-acc-soft);
         }
