@@ -199,6 +199,29 @@ function init() {
         RIGHT: THREE.MOUSE.ROTATE
     };
 
+    // E3 : mouvement FPS + collisions, extrait dans game/engine/player-movement.js
+    // (partagé avec l'éditeur pour "Jouer ici") — voir les wrappers globaux
+    // juste avant onWindowResize() plus bas dans ce fichier.
+    PlayerMovement.init({
+        THREE: THREE,
+        camera: camera,
+        controls: controls,
+        getScene: function() { return scene; },
+        input: {
+            isActionPressed: function(action) { return InputConfig.isActionPressed(action, keysPressed); },
+            isSprintPressed: function() { return !!keysPressed['shift']; }
+        },
+        gamepad: {
+            get connected() { return typeof GamepadManager !== 'undefined' && GamepadManager.connected; },
+            getActionValue: function(action) { return GamepadManager.getActionValue(action); }
+        },
+        getSpawn: function() { return { position: spawnPosition, rotationY: spawnRotationY, saved: spawnSaved }; },
+        roomLimit: ROOM_LIMIT,
+        eyeHeight: PLAYER_EYE_HEIGHT,
+        walkSpeed: walkSpeed,
+        runSpeed: runSpeed
+    });
+
     // Rotation FPS souris — Pointer Events + setPointerCapture
     // setPointerCapture force le canvas à recevoir tous les events même hors zone,
     // ce qui fonctionne sur local ET en ligne (HTTPS / GitHub Pages).
@@ -241,12 +264,8 @@ function init() {
     // MODE JEU: Zoom molette actif (exploration) — OrbitControls gère le zoom
     // La molette est libre dans les deux modes (game et developer)
 
-    // Si on démarre en mode jeu, pré-configurer la hauteur des yeux à 1.60m
-    if (interactionMode === 'game') {
-        gamePlayerY = PLAYER_EYE_HEIGHT; // 1.60m (sera mis à jour par applySpawnToCamera si spawn défini)
-        camera.position.y = gamePlayerY;
-        updateControlsForMode();
-    }
+    // Si on démarre en mode jeu, pré-configurer la hauteur des yeux
+    setupFPSCamera(); // no-op si interactionMode !== 'game' (garde interne)
 
     world = new CANNON.World();
     world.gravity.set(0, -20, 0);
@@ -379,8 +398,7 @@ function init() {
     // Réinitialiser l'état du panning espace si la fenêtre perd le focus
     window.addEventListener('blur', () => {
         // Reset mouvement FPS si la fenêtre perd le focus
-        currentSpeed = 0;
-        isMoving = false;
+        PlayerMovement.resetMovementState();
         wasMoving = false;
         stopAllFootstepAudio();
 
@@ -1369,452 +1387,23 @@ function _hideGenBubble() {
 
 /**
  * SYSTÈME DE DÉPLACEMENT & COLLISION CAMÉRA
- * Mode jeu : vue FPS (1ère personne), hauteur fixe, collisions solides, wall-sliding
- * Mode développeur : libre, pas de collision
+ * Extrait dans game/engine/player-movement.js (E3, "Jouer ici" dans
+ * l'éditeur) pour être partagé plutôt que dupliqué. Ces wrappers gardent
+ * la même API globale qu'avant l'extraction — aucun appel existant, ici
+ * ou dans game/engine/{build,bootstrap,restore}.js, n'a besoin de changer.
  */
-const CAMERA_COLLISION_MARGIN = 0.35;  // Marge de sécurité (rayon joueur)
-const CAMERA_COLLISION_RAYCASTER = new THREE.Raycaster();
-let gamePlayerY = null;    // Hauteur Y verrouillée du joueur en mode jeu
-let cachedCollisionMeshes = null;
-let _collisionCacheDirty = true;
-
-// Invalider le cache de collision quand la scène change (appeler depuis editor-save, etc.)
-function invalidateCollisionCache() { _collisionCacheDirty = true; }
-
-// Cache les meshes de collision — recalculé uniquement quand la scène change
-function getCollisionMeshes() {
-    if (!_collisionCacheDirty && cachedCollisionMeshes) return cachedCollisionMeshes;
-
-    const collisionMeshes = [];
-    scene.traverse(child => {
-        if (!child.isMesh || !child.visible) return;
-        if (child.userData.isGizmo && !child.userData.isCollisionProxy) return;
-        if (child.userData.isFloorPlanPoint || child.userData.isFloorPlanLine || child.userData.isPreview) return;
-        if (typeof floorPlanGrid !== 'undefined' && child === floorPlanGrid) return;
-        if (child.userData.isCharacter) return;
-        // Exclure les enfants de personnages via layers (fallback: parent walk)
-        if (child.layers && child.layers.test(_charLayer)) return;
-        let p = child.parent;
-        while (p) {
-            if (p.userData.isCharacter) return;
-            p = p.parent;
-        }
-        collisionMeshes.push(child);
-    });
-    cachedCollisionMeshes = collisionMeshes;
-    _collisionCacheDirty = false;
-    return collisionMeshes;
-}
-// Layer réservé aux personnages (pour filtrage rapide)
-const _charLayer = new THREE.Layers();
-_charLayer.set(1);
-
-// Lance un rayon et retourne la distance au premier obstacle (Infinity si rien)
-function raycastDistance(origin, direction, maxDist) {
-    CAMERA_COLLISION_RAYCASTER.set(origin, direction);
-    CAMERA_COLLISION_RAYCASTER.far = maxDist;
-    CAMERA_COLLISION_RAYCASTER.near = 0;
-    const meshes = getCollisionMeshes();
-    const hits = CAMERA_COLLISION_RAYCASTER.intersectObjects(meshes, false);
-    return hits.length > 0 ? hits[0].distance : Infinity;
-}
-
-// Vérifie si on peut se déplacer dans une direction, avec wall-sliding
-// Retourne le vecteur de déplacement autorisé (possiblement modifié pour glisser le long des murs)
-function computeAllowedMovement(origin, moveVec) {
-    const moveDist = moveVec.length();
-    if (moveDist < 0.0001) return moveVec;
-
-    _tmpVec3A.copy(moveVec).normalize();
-    const moveDir = _tmpVec3A;
-    const checkDist = moveDist + CAMERA_COLLISION_MARGIN;
-
-    // Test principal : direction complète du mouvement
-    const dist = raycastDistance(origin, moveDir, checkDist);
-    const allowed = dist - CAMERA_COLLISION_MARGIN;
-
-    if (allowed >= moveDist) {
-        return moveVec; // Pas d'obstacle
-    }
-
-    if (allowed > 0.01) {
-        // Collision partielle : avancer jusqu'au mur
-        return moveDir.multiplyScalar(allowed);
-    }
-
-    // Bloqué en direct → essayer le wall-sliding (glissement)
-    _slideX.set(moveVec.x, 0, 0);
-    _slideZ.set(0, 0, moveVec.z);
-    _slideResult.set(0, 0, 0);
-
-    // Essayer de glisser en X
-    if (Math.abs(_slideX.x) > 0.0001) {
-        _tmpVec3B.copy(_slideX).normalize();
-        const distX = raycastDistance(origin, _tmpVec3B, Math.abs(_slideX.x) + CAMERA_COLLISION_MARGIN);
-        const allowedX = distX - CAMERA_COLLISION_MARGIN;
-        if (allowedX > 0.01) {
-            _slideResult.x = _tmpVec3B.x * Math.min(allowedX, Math.abs(_slideX.x));
-        }
-    }
-
-    // Essayer de glisser en Z
-    if (Math.abs(_slideZ.z) > 0.0001) {
-        _tmpVec3B.copy(_slideZ).normalize();
-        const distZ = raycastDistance(origin, _tmpVec3B, Math.abs(_slideZ.z) + CAMERA_COLLISION_MARGIN);
-        const allowedZ = distZ - CAMERA_COLLISION_MARGIN;
-        if (allowedZ > 0.01) {
-            _slideResult.z = _tmpVec3B.z * Math.min(allowedZ, Math.abs(_slideZ.z));
-        }
-    }
-
-    return _slideResult;
-}
-
-// Directions de collision pré-allouées (4 cardinales XZ uniquement — pas besoin de Y en FPS)
-const _collisionDirs = [
-    new THREE.Vector3(1, 0, 0), new THREE.Vector3(-1, 0, 0),
-    new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, -1)
-];
-
-// Repousse la caméra hors des murs si elle est trop proche (4 directions)
-function enforceCameraCollisions() {
-    if (interactionMode !== 'game') return;
-
-    const pos = camera.position;
-    const margin = CAMERA_COLLISION_MARGIN;
-    const meshes = getCollisionMeshes();
-
-    for (let i = 0; i < 4; i++) {
-        const dir = _collisionDirs[i];
-        CAMERA_COLLISION_RAYCASTER.set(pos, dir);
-        CAMERA_COLLISION_RAYCASTER.far = margin;
-        CAMERA_COLLISION_RAYCASTER.near = 0;
-
-        const hits = CAMERA_COLLISION_RAYCASTER.intersectObjects(meshes, false);
-        if (hits.length > 0) {
-            const pushBack = margin - hits[0].distance;
-            if (pushBack > 0.001) {
-                pos.x -= dir.x * pushBack;
-                pos.z -= dir.z * pushBack;
-                controls.target.x -= dir.x * pushBack;
-                controls.target.z -= dir.z * pushBack;
-            }
-        }
-    }
-}
-
-// --- Collision proxies pour personnages (cylindres invisibles) ---
-
-function createCharacterCollisionProxy(character) {
-    if (!character) return;
-    // Vérifier qu'un proxy n'existe pas déjà
-    if (characterCollisionProxies.some(e => e.character === character)) return;
-
-    // Mesurer via les os (fiable pour SkinnedMesh) ou via referenceHeight
-    let height, radius;
-    const boneMeasure = measureCharacterByBones(character);
-    if (boneMeasure) {
-        height = boneMeasure.height;
-        // Utiliser la moitié de la plus grande dimension horizontale
-        radius = Math.max(boneMeasure.width, boneMeasure.depth) * 0.5;
-    } else if (character.userData.referenceHeightAtScale1) {
-        const s = character.scale.y;
-        height = character.userData.referenceHeightAtScale1 * s;
-        radius = height * 0.2;
-    } else {
-        // Fallback Box3
-        const box = new THREE.Box3().setFromObject(character);
-        const size = new THREE.Vector3();
-        box.getSize(size);
-        height = size.y || 1.7;
-        radius = Math.max(size.x, size.z) * 0.5 || 0.3;
-    }
-
-    // Rayon minimum pour être réaliste (au moins 35cm = épaisseur d'un corps humain)
-    radius = Math.max(radius, 0.35);
-    height = Math.max(height, 0.5);
-
-    // UTILISER BoxGeometry au lieu de CylinderGeometry pour un raycasting fiable
-    // Les BoxGeometry sont prouvés fonctionnels (même système que les murs)
-    const side = radius * 2;
-    const geometry = new THREE.BoxGeometry(side, height, side);
-    const material = new THREE.MeshBasicMaterial({
-        color: 0xff0000,
-        transparent: true,
-        opacity: 0,
-        depthWrite: false
-    });
-    const proxy = new THREE.Mesh(geometry, material);
-
-    // Positionner au pied du personnage + moitié hauteur
-    proxy.position.set(
-        character.position.x,
-        character.position.y + height / 2,
-        character.position.z
-    );
-    proxy.userData.isGizmo = true;
-    proxy.userData.isCollisionProxy = true;
-
-    scene.add(proxy);
-
-    // CRITIQUE: Forcer la mise à jour immédiate de la matrixWorld
-    // pour que le Raycaster puisse détecter le proxy dès le premier frame
-    proxy.updateMatrixWorld(true);
-
-    characterCollisionProxies.push({ character, proxy, radius, height });
-    invalidateCollisionCache();
-    console.log(`🛡️ Proxy collision créé pour "${character.userData.editorName || character.name || 'personnage'}" - h:${height.toFixed(2)}m box:${side.toFixed(2)}x${side.toFixed(2)}m pos:(${proxy.position.x.toFixed(2)}, ${proxy.position.y.toFixed(2)}, ${proxy.position.z.toFixed(2)})`);
-}
-
-function removeCharacterCollisionProxy(character) {
-    const idx = characterCollisionProxies.findIndex(e => e.character === character);
-    if (idx === -1) return;
-    const entry = characterCollisionProxies[idx];
-    scene.remove(entry.proxy);
-    entry.proxy.geometry.dispose();
-    entry.proxy.material.dispose();
-    characterCollisionProxies.splice(idx, 1);
-    invalidateCollisionCache();
-}
-
-function updateCharacterCollisionProxy(entry) {
-    if (!entry.character || !entry.proxy) return;
-    // Utiliser la position directe du personnage (plus fiable que Box3 pour SkinnedMesh)
-    entry.proxy.position.set(
-        entry.character.position.x,
-        entry.character.position.y + entry.height / 2,
-        entry.character.position.z
-    );
-    // CRITIQUE: Forcer la mise à jour de matrixWorld pour que le Raycaster
-    // utilise la bonne position lors des tests de collision
-    entry.proxy.updateMatrixWorld(true);
-}
-
-function updateAllCharacterCollisionProxies() {
-    characterCollisionProxies.forEach(entry => updateCharacterCollisionProxy(entry));
-}
-
-// Configure OrbitControls selon le mode de jeu
-function updateControlsForMode() {
-    if (interactionMode === 'game') {
-        // Mode FPS : clic droit maintenu pour orienter le regard
-        controls.enableZoom = true;
-        controls.enableRotate = false; // Rotation gérée par handler souris personnalisé (axes H/V indépendants)
-        controls.minDistance = 0.001; // Garder très proche pour éviter que OrbitControls pousse la caméra en arrière
-        controls.maxDistance = 20;
-        controls.minPolarAngle = Math.PI * 0.15;
-        controls.maxPolarAngle = Math.PI * 0.85;
-        controls.enablePan = false;
-        controls.rotateSpeed = 0.4;
-        controls.enableDamping = false;
-        controls.mouseButtons = {
-            LEFT: null,
-            MIDDLE: null,
-            RIGHT: THREE.MOUSE.ROTATE
-        };
-    } else {
-        // Mode développeur : comportement orbital libre
-        controls.enableZoom = true;
-        controls.enableRotate = true;  // Restaurer la rotation orbit
-        controls.minDistance = 2;
-        controls.maxDistance = 150;
-        controls.minPolarAngle = 0;
-        controls.maxPolarAngle = Math.PI / 2.1;
-        controls.enablePan = false;
-        controls.rotateSpeed = 1.0;
-        controls.enableDamping = true;
-        controls.dampingFactor = 0.05;
-        controls.mouseButtons = {
-            LEFT: null,
-            MIDDLE: THREE.MOUSE.DOLLY,       // Zoom molette
-            RIGHT: THREE.MOUSE.ROTATE        // Orbite avec clic droit
-        };
-    }
-    controls.update();
-}
-
-// Initialise la position FPS en mode jeu (target devant la caméra, très proche)
-function setupFPSCamera() {
-    if (interactionMode !== 'game') return;
-
-    // Fixer la hauteur des yeux à 1.60m (personne debout ~1.70m → yeux à 1.60m)
-    // Si un spawn est défini, utiliser spawn.y + 1.60, sinon forcer la hauteur à 1.60m
-    if (spawnPosition && spawnSaved) {
-        gamePlayerY = spawnPosition.y + PLAYER_EYE_HEIGHT;
-    } else {
-        gamePlayerY = PLAYER_EYE_HEIGHT; // 1.60m au-dessus du sol (y=0)
-    }
-    camera.position.y = gamePlayerY;
-
-    // Placer le target juste devant la caméra (très proche → rotation = regard)
-    const dir = new THREE.Vector3();
-    camera.getWorldDirection(dir);
-    controls.target.set(
-        camera.position.x + dir.x * 0.01,
-        camera.position.y + dir.y * 0.01,
-        camera.position.z + dir.z * 0.01
-    );
-
-    updateControlsForMode();
-    console.log(`🎮 Mode FPS activé - Hauteur verrouillée à Y=${gamePlayerY.toFixed(2)}`);
-}
-
-// --- Head Bob (balancement de tête) ---
-function updateHeadBob(delta) {
-    if (interactionMode !== 'game') return;
-
-    if (isMoving && currentSpeed > 0.5) {
-        const gpSprint   = typeof GamepadManager !== 'undefined' && GamepadManager.connected && GamepadManager.getActionValue('run') > 0.5;
-        const isSprinting = keysPressed['shift'] || gpSprint;
-        const freq = isSprinting ? HEAD_BOB_RUN_FREQ : HEAD_BOB_WALK_FREQ;
-        const ampY = isSprinting ? HEAD_BOB_RUN_AMP : HEAD_BOB_WALK_AMP;
-
-        headBobTime += delta * freq * Math.PI * 2;
-        headBobOffset = Math.sin(headBobTime) * ampY;
-    } else {
-        // Retour progressif à la position neutre
-        headBobOffset *= 0.85;
-        if (Math.abs(headBobOffset) < 0.0005) headBobOffset = 0;
-        headBobTime = 0;
-    }
-}
-
-/**
- * LOGIQUE DE DÉPLACEMENT CLAVIER DANS LA SCÈNE (ZSQD)
- */
-function handleSceneMovement(delta) {
-    // En mode jeu : déplacement FPS avec collisions et hauteur verrouillée
-    if (interactionMode === 'game') {
-        handleGameMovement(delta);
-        return;
-    }
-
-    // Mode développeur : déplacement libre (vitesse augmentée)
-    const moveSpeed = 0.4;
-    camera.getWorldDirection(_devDirection);
-    _devDirection.y = 0;
-    _devDirection.normalize();
-    _devSide.crossVectors(_devDirection, camera.up).normalize();
-
-    let moveX = 0, moveZ = 0;
-
-    if (InputConfig.isActionPressed('forward', keysPressed))  { moveX += _devDirection.x * moveSpeed; moveZ += _devDirection.z * moveSpeed; }
-    if (InputConfig.isActionPressed('backward', keysPressed)) { moveX -= _devDirection.x * moveSpeed; moveZ -= _devDirection.z * moveSpeed; }
-    if (InputConfig.isActionPressed('left', keysPressed))     { moveX -= _devSide.x * moveSpeed; moveZ -= _devSide.z * moveSpeed; }
-    if (InputConfig.isActionPressed('right', keysPressed))    { moveX += _devSide.x * moveSpeed; moveZ += _devSide.z * moveSpeed; }
-
-    // Manette — stick gauche (aussi en mode développeur)
-    if (GamepadManager.connected) {
-        const gpFwd = GamepadManager.getActionValue('forward');
-        const gpBack = GamepadManager.getActionValue('backward');
-        const gpLeft = GamepadManager.getActionValue('left');
-        const gpRight = GamepadManager.getActionValue('right');
-        if (gpFwd > 0)   { moveX += _devDirection.x * moveSpeed * gpFwd;  moveZ += _devDirection.z * moveSpeed * gpFwd; }
-        if (gpBack > 0)  { moveX -= _devDirection.x * moveSpeed * gpBack; moveZ -= _devDirection.z * moveSpeed * gpBack; }
-        if (gpLeft > 0)  { moveX -= _devSide.x * moveSpeed * gpLeft;      moveZ -= _devSide.z * moveSpeed * gpLeft; }
-        if (gpRight > 0) { moveX += _devSide.x * moveSpeed * gpRight;     moveZ += _devSide.z * moveSpeed * gpRight; }
-    }
-
-    if (moveX === 0 && moveZ === 0) return;
-
-    const nextX = camera.position.x + moveX;
-    const nextZ = camera.position.z + moveZ;
-
-    if (Math.abs(nextX) < ROOM_LIMIT) { camera.position.x = nextX; controls.target.x += moveX; }
-    if (Math.abs(nextZ) < ROOM_LIMIT) { camera.position.z = nextZ; controls.target.z += moveZ; }
-}
-
-// Mouvement FPS en mode jeu — delta-time, accélération/décélération, collisions
-// Supporte clavier (via InputConfig) ET manette (via GamepadManager)
-function handleGameMovement(delta) {
-    // 1. Direction souhaitée depuis les touches OU le stick gauche manette
-    camera.getWorldDirection(_moveForward);
-    _moveForward.y = 0;
-    _moveForward.normalize();
-    _moveRight.set(0, 1, 0);
-    _moveRight.crossVectors(_moveForward, _moveRight).normalize();
-
-    _moveInput.set(0, 0, 0);
-
-    // Clavier (utilise les bindings configurables)
-    if (InputConfig.isActionPressed('forward', keysPressed))  _moveInput.add(_moveForward);
-    if (InputConfig.isActionPressed('backward', keysPressed)) _moveInput.sub(_moveForward);
-    if (InputConfig.isActionPressed('left', keysPressed))     _moveInput.sub(_moveRight);
-    if (InputConfig.isActionPressed('right', keysPressed))    _moveInput.add(_moveRight);
-
-    // Manette — stick gauche (valeurs analogiques)
-    if (GamepadManager.connected) {
-        const gpFwd = GamepadManager.getActionValue('forward');
-        const gpBack = GamepadManager.getActionValue('backward');
-        const gpLeft = GamepadManager.getActionValue('left');
-        const gpRight = GamepadManager.getActionValue('right');
-        if (gpFwd > 0)   _moveInput.addScaledVector(_moveForward, gpFwd);
-        if (gpBack > 0)  _moveInput.addScaledVector(_moveForward, -gpBack);
-        if (gpLeft > 0)  _moveInput.addScaledVector(_moveRight, -gpLeft);
-        if (gpRight > 0) _moveInput.addScaledVector(_moveRight, gpRight);
-    }
-
-    const hasInput = _moveInput.lengthSq() > 0.001;
-    if (hasInput) _moveInput.normalize();
-
-    // 2. Vitesse cible
-    const kbSprint = InputConfig.isActionPressed('run', keysPressed);
-    const gpSprint = GamepadManager.connected && GamepadManager.getActionValue('run') > 0.5;
-    const isSprinting = (kbSprint || gpSprint) && hasInput;
-    const targetSpeed = hasInput ? (isSprinting ? runSpeed : walkSpeed) : 0;
-
-    // 3. Accélération / décélération progressive
-    if (targetSpeed > currentSpeed) {
-        currentSpeed = Math.min(targetSpeed, currentSpeed + ACCELERATION * delta);
-    } else {
-        currentSpeed = Math.max(targetSpeed, currentSpeed - DECELERATION * delta);
-    }
-
-    isMoving = currentSpeed > 0.5;
-
-    if (currentSpeed < 0.01) {
-        currentSpeed = 0;
-        return;
-    }
-
-    // 4. Vecteur de déplacement (réutilise _moveInput, pas de nouvelle allocation)
-    _moveInput.multiplyScalar(currentSpeed * delta);
-
-    // 5. Collision avec wall-sliding
-    const allowed = computeAllowedMovement(camera.position, _moveInput);
-    if (allowed.lengthSq() < 0.00001) return;
-
-    // 6. Appliquer le déplacement
-    camera.position.x += allowed.x;
-    camera.position.z += allowed.z;
-    controls.target.x += allowed.x;
-    controls.target.z += allowed.z;
-
-    // 7. Limites de la pièce
-    camera.position.x = Math.max(-ROOM_LIMIT, Math.min(ROOM_LIMIT, camera.position.x));
-    camera.position.z = Math.max(-ROOM_LIMIT, Math.min(ROOM_LIMIT, camera.position.z));
-}
-
-// Vecteur pré-alloué pour enforceGameHeight (évite 1 allocation par frame)
-const _lookDir = new THREE.Vector3();
-
-// Force la hauteur Y de la caméra et du target en mode jeu
-function enforceGameHeight() {
-    if (interactionMode !== 'game' || gamePlayerY === null) return;
-
-    // Capturer la direction du regard AVANT de corriger la hauteur
-    camera.getWorldDirection(_lookDir);
-
-    // Verrouiller la hauteur Y du joueur (pieds au sol) + head bob
-    camera.position.y = gamePlayerY + headBobOffset;
-
-    // Repositionner le target à 0.01 devant la caméra en préservant la direction du regard
-    controls.target.set(
-        camera.position.x + _lookDir.x * 0.01,
-        camera.position.y + _lookDir.y * 0.01,
-        camera.position.z + _lookDir.z * 0.01
-    );
-}
+function invalidateCollisionCache() { PlayerMovement.invalidateCollisionCache(); }
+function getCollisionMeshes() { return PlayerMovement.getCollisionMeshes(); }
+function computeAllowedMovement(origin, moveVec) { return PlayerMovement.computeAllowedMovement(origin, moveVec); }
+function enforceCameraCollisions() { PlayerMovement.enforceCameraCollisions(interactionMode); }
+function createCharacterCollisionProxy(character) { PlayerMovement.createCharacterCollisionProxy(character); }
+function removeCharacterCollisionProxy(character) { PlayerMovement.removeCharacterCollisionProxy(character); }
+function updateAllCharacterCollisionProxies() { PlayerMovement.updateAllCharacterCollisionProxies(); }
+function updateControlsForMode() { PlayerMovement.updateControlsForMode(interactionMode); }
+function setupFPSCamera() { if (interactionMode === 'game') PlayerMovement.setupFPSCamera(); }
+function updateHeadBob(delta) { PlayerMovement.updateHeadBob(delta, interactionMode); }
+function handleSceneMovement(delta) { PlayerMovement.handleSceneMovement(delta, interactionMode); }
+function enforceGameHeight() { PlayerMovement.enforceGameHeight(interactionMode); }
 
 function onWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
@@ -2383,7 +1972,7 @@ setTimeout(async () => {
             // regard = vers (0.6, 0, 0.8), droite = (0.8, 0, -0.6)
             const ARCADE_X  =  4.0;   // décalé à droite (vecteur droite = +0.8X -0.6Z)
             const ARCADE_Z  = -8.0;
-            const eyeH = (typeof gamePlayerY !== 'undefined' && gamePlayerY) || PLAYER_EYE_HEIGHT;
+            const eyeH = PlayerMovement.getPlayerEyeY() || PLAYER_EYE_HEIGHT;
             camera.position.set(ARCADE_X, eyeH, ARCADE_Z);
             // Cible dans la direction de l'arcade (centre ~4.48, -5.01)
             controls.target.set(ARCADE_X + 0.6, eyeH, ARCADE_Z + 0.8);  // regard vers arcade (4.48, -5.01)
@@ -2397,7 +1986,7 @@ setTimeout(async () => {
             const NABY_X   = -2.25;
             const NABY_Z   = -8.00;
             const OFFSET_Z =  1.4;   // joueur placé 1.4m devant Naby (axe -Z = face à elle)
-            const eyeH = (typeof gamePlayerY !== 'undefined' && gamePlayerY) || PLAYER_EYE_HEIGHT;
+            const eyeH = PlayerMovement.getPlayerEyeY() || PLAYER_EYE_HEIGHT;
             camera.position.set(NABY_X, eyeH, NABY_Z - OFFSET_Z);
             controls.target.set(NABY_X, eyeH, NABY_Z);
             controls.update();
