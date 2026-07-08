@@ -89,7 +89,16 @@ body.es-zen-active .es-zenbtn { border-color: var(--es-acc-line); color: var(--e
 .es-budget .es-btrack { width: 110px; height: 6px; border-radius: 999px; overflow: hidden; position: relative; background: linear-gradient(90deg, oklch(0.45 0.06 200 / 0.25) 0 55%, oklch(0.55 0.10 65 / 0.25) 55% 82%, oklch(0.5 0.14 25 / 0.28) 82% 100%); }
 .es-budget .es-bfill { position: absolute; top: 0; left: 0; height: 100%; border-radius: 999px; background: var(--es-acc); transition: width .3s, background .3s; }
 .es-budget .es-bv { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--es-txt-1); }
+.es-budget.es-budget-heavy { cursor: pointer; }
 .es-play { display: inline-flex; align-items: center; gap: 8px; padding: 8px 15px; border-radius: 8px; border: none; cursor: pointer; background: var(--es-acc); color: oklch(0.16 0.02 230); font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 0.06em; box-shadow: 0 4px 14px oklch(0.83 0.135 200 / 0.3); }
+
+/* ---- E2.4 : popover de conseils (jauge de poids en état rouge) ---- */
+.es-budget-pop { position: fixed; top: 108px; right: 20px; width: 320px; background: var(--es-bg-1); border: 1px solid var(--es-danger); border-radius: 12px; box-shadow: var(--es-shadow); padding: 16px; z-index: 160; display: none; font-family: 'Epilogue', system-ui, sans-serif; }
+.es-budget-pop.show { display: block; }
+.es-budget-pop h4 { font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 0.06em; color: var(--es-warn); margin: 0 0 4px; }
+.es-budget-pop p { font-size: 11.5px; color: var(--es-txt-1); margin: 0 0 12px; line-height: 1.5; }
+.es-budget-heavy-row { display: flex; justify-content: space-between; font-size: 11px; padding: 6px 9px; border-radius: 6px; background: var(--es-bg-2); margin-bottom: 5px; color: var(--es-txt-1); }
+.es-budget-heavy-row span:last-child { font-family: 'JetBrains Mono', monospace; color: var(--es-danger); }
 
 /* ---- E2.2 : dock du panneau en colonne droite pleine hauteur ---- */
 /* (le panneau est naturellement à droite — son repli le fait déjà glisser
@@ -123,5 +132,6 @@ body.es-shell.es-inspector-visible #editor-inspector { display: block; }
 body.es-zen #editor-inspector { display: none !important; }
 .es-insp-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--es-line); }
 .es-insp-head .es-insp-icon { width: 30px; height: 30px; border-radius: 7px; background: var(--es-acc-soft); border: 1px solid var(--es-acc-line); display: grid; place-items: center; font-size: 15px; flex-shrink: 0; color: var(--es-acc); }
-.es-insp-head .es-insp-name { font-weight: 600; font-size: 13px; color: var(--es-txt-0); }
+.es-insp-head .es-insp-name { font-weight: 600; font-size: 13px; color: var(--es-txt-0); cursor: text; border-radius: 4px; padding: 0 3px; margin: 0 -3px; }
+.es-insp-head .es-insp-name:hover { background: var(--es-bg-3); box-shadow: inset 0 -1px 0 var(--es-acc-line); }
 .es-insp-head .es-insp-type { font-size: 10px; color: var(--es-txt-2); text-transform: uppercase; letter-spacing: 0.08em; }

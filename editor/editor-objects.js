@@ -9,6 +9,14 @@ var importedCharacters = (typeof importedCharacters !== 'undefined') ? importedC
 // Initialisation des event listeners DOM de l'éditeur objets
 // (appelée après le chargement dynamique du panel HTML)
 function initEditorObjectsListeners() {
+    // E2.4 : renommage par clic depuis l'en-tête du panneau Inspecteur
+    // (pas d'ambiguïté avec une sélection ici, contrairement à la liste
+    // d'objets où le simple clic sélectionne déjà — double-clic y reste requis).
+    const inspName = document.getElementById('es-insp-name');
+    if (inspName) inspName.addEventListener('click', function() {
+        if (selectedEditorObject) startRenameObject(selectedEditorObject, inspName);
+    });
+
     // Connecter le bouton au sélecteur de fichier
     const importBtn = document.getElementById('import-model-btn');
     if (importBtn) importBtn.addEventListener('click', function() {

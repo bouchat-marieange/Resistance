@@ -133,13 +133,20 @@
     <button class="es-step" data-i="6" data-action="test"><span class="es-node">▶</span><span class="es-lbl">Tester</span></button>
     <span class="es-rail-spacer"></span>
     <div class="es-rail-right">
-      <div class="es-budget" title="Poids indicatif de la salle (valeurs réelles à venir)">
+      <div class="es-budget" id="es-budget" title="Poids de la pièce (objets, personnages, sons importés)">
         <div class="es-bl">Poids</div>
-        <div class="es-btrack"><div class="es-bfill" style="width:47%"></div></div>
+        <div class="es-btrack"><div class="es-bfill" id="es-bfill" style="width:0%"></div></div>
         <div class="es-bv" id="es-budget-val">— Mo</div>
       </div>
       <button class="es-play" id="es-play-btn" title="Jouer la salle (à venir)">▶ Jouer ici</button>
     </div>
+  </div>
+
+  <!-- E2.4 : popover de conseils quand la pièce dépasse le seuil de poids -->
+  <div class="es-budget-pop" id="es-budget-pop">
+    <h4>⚠ Salle lourde — chargement ralenti</h4>
+    <p>Au-delà du budget, la salle met plus longtemps à s'afficher pour le joueur. Fichiers les plus volumineux&nbsp;:</p>
+    <div id="es-budget-pop-list"></div>
   </div>
 </div>
 
@@ -431,6 +438,7 @@
 <script src="editor/editor-audio.js"></script>
 <script src="editor/editor-save.js"></script>
 <script src="editor/editor-checklist.js"></script>
+<script src="editor/editor-budget.js?v=e2.4"></script>
 <!-- Plan 2D : anciennement editor-floorplan.js (8618 lignes), scindé en
      10 modules (E0-bis, 07/2026) — même méthode que game/engine/ (Phase 4).
      L'ordre n'affecte pas le comportement (aucun code exécuté au chargement
@@ -1376,6 +1384,7 @@ function setupEditorShell() {
             // sens que pendant « Peupler » (mode objets, gizmo de transformation actif).
             document.body.classList.toggle('es-inspector-visible', mode === 'objects');
             layoutEditorViewport();
+            if (typeof updateBudgetGauge === 'function') updateBudgetGauge();
         });
     });
     setActiveStep(2); // démarrer sur « Peupler » (objets)
@@ -1415,6 +1424,9 @@ function setupEditorShell() {
     // Filet supplémentaire : re-layout après un court délai (le panneau finit
     // de se dimensionner après l'injection de son contenu).
     setTimeout(layoutEditorViewport, 300);
+
+    // E2.4 : jauge de poids réelle (objets/personnages/sons importés)
+    if (typeof setupBudgetGauge === 'function') setupBudgetGauge();
 }
 
 function addEditorUIElements() {
