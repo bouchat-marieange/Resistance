@@ -959,3 +959,64 @@
             border: 2px solid var(--es-acc);
             box-shadow: 0 0 15px var(--es-acc-soft);
         }
+
+/* ====================================================
+   E2.6 — REFONTE VISUELLE (au-delà de la couleur)
+   editor-panel.html est construit en classes Tailwind à taille fixe
+   (text-[9px], h-6/h-7/h-8...) écrites en dur dans le HTML : impossible
+   d'agrandir via un simple héritage de font-size sur un parent. On
+   surcharge donc directement ces classes, à l'intérieur du panneau
+   éditeur uniquement, pour se rapprocher de l'échelle plus respirée
+   de la maquette (editor/mockup-e2.html) sans toucher au HTML ni au
+   comportement (ids, listeners, structure intacts).
+   ==================================================== */
+
+/* Texte : +2px sur toutes les tailles "arbitraires" Tailwind du panneau */
+#editor-panel .text-\[8px\], #editor-inspector .text-\[8px\] { font-size: 10px !important; }
+#editor-panel .text-\[9px\], #editor-inspector .text-\[9px\] { font-size: 11px !important; }
+#editor-panel .text-\[10px\], #editor-inspector .text-\[10px\] { font-size: 12px !important; }
+#editor-panel .text-\[11px\], #editor-inspector .text-\[11px\] { font-size: 13px !important; }
+#editor-panel .text-xs, #editor-inspector .text-xs { font-size: 13px !important; }
+
+/* Boutons-outils en carte (icône + libellé empilés) — Construire, Éclairer,
+   Interagir : on leur donne plus d'air pour ressembler aux cartes-outils
+   de la maquette plutôt qu'à de petits boutons DaisyUI. */
+#editor-panel button.flex-col.items-center.justify-center {
+    height: 44px !important;
+    gap: 4px !important;
+    border-radius: 8px !important;
+}
+#editor-panel button.flex-col.items-center.justify-center img,
+#editor-panel button.flex-col.items-center.justify-center svg {
+    width: 18px !important;
+    height: 18px !important;
+}
+
+/* Listes dynamiques (objets/lumières/zones/audio) — davantage de respiration */
+.object-tree-item, .zone-list-item, .audio-track-item {
+    padding: 7px 8px;
+    border-radius: 6px;
+    margin: 3px 0;
+}
+.object-tree-item .icon, .object-tree-item .icon svg { width: 18px; height: 18px; }
+
+/* Bouton « Poser au sol » — accessible et visible juste sous la liste */
+#snap-to-ground.btn {
+    height: 34px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    border-radius: 7px !important;
+}
+
+/* Titres de sous-section ("Outils de construction", "Position", ...) —
+   un peu plus grands et mieux espacés, sans reproduire le Bebas Neue
+   (réservé au titre principal de chaque onglet, cf. règle E2.5). */
+#editor-panel .font-semibold.mb-1, #editor-inspector .font-semibold.mb-1 {
+    margin-bottom: 6px !important;
+}
+
+/* Champs numériques (position/rotation/échelle, sliders) un peu plus hauts */
+#editor-panel input[type="number"], #editor-inspector input[type="number"] {
+    height: 26px !important;
+    font-size: 12px !important;
+}

@@ -100,30 +100,37 @@ body.es-zen-active .es-zenbtn { border-color: var(--es-acc-line); color: var(--e
 .es-budget-heavy-row { display: flex; justify-content: space-between; font-size: 11px; padding: 6px 9px; border-radius: 6px; background: var(--es-bg-2); margin-bottom: 5px; color: var(--es-txt-1); }
 .es-budget-heavy-row span:last-child { font-family: 'JetBrains Mono', monospace; color: var(--es-danger); }
 
-/* ---- E2.2 : dock du panneau en colonne droite pleine hauteur ---- */
-/* (le panneau est naturellement à droite — son repli le fait déjà glisser
-   vers la droite ; on le rend flush, sans coins arrondis ni ombre) */
+/* ---- E2.2 / E2.6 : dock du panneau bibliothèque en colonne GAUCHE pleine
+   hauteur (E2.6 : inversion pour matcher la maquette — bibliothèque à
+   gauche, Inspecteur à droite, scène au centre) ---- */
 body.es-shell #editor-panel {
   position: fixed !important;
-  top: 106px !important; right: 0 !important; left: auto !important; bottom: 0 !important;
+  top: 106px !important; left: 0 !important; right: auto !important; bottom: 0 !important;
   width: 360px !important; height: auto !important; max-height: none !important;
   margin: 0 !important; border-radius: 0 !important; box-shadow: none !important;
-  border-left: 1px solid var(--es-line) !important;
+  border-left: none !important; border-right: 1px solid var(--es-line) !important;
 }
 /* le canvas 3D docké (position/taille posées en JS via layoutEditorViewport)
    passe sous le panneau et la coque */
 body.es-shell canvas { z-index: 1 !important; }
-/* icônes utilitaires flottantes, sous la coque */
-body.es-shell #info-icon { top: 118px !important; }
-body.es-shell #volume-icon { top: 158px !important; }
-body.es-shell #settings-icon { top: 198px !important; }
-body.es-shell #toggle-panel-collapse { top: 118px !important; }
+/* E2.6 : icônes utilitaires flottantes (info/volume/paramètres) — utiles
+   uniquement en mode jeu pour tester ; masquées en mode éditeur. */
+body.es-shell #info-icon,
+body.es-shell #volume-icon,
+body.es-shell #settings-icon { display: none !important; }
+body.es-shell #toggle-panel-collapse { top: 118px !important; left: 360px !important; right: auto !important; transition: left 0.3s ease; }
+body.es-shell #toggle-panel-collapse.collapsed { left: 20px !important; }
+/* E2.6 : le panneau glisse maintenant hors-écran par la GAUCHE quand il est
+   plié — via `left` plutôt que `transform` (translateX ne s'appliquait pas
+   de façon fiable ici, cause non élucidée ; `left` est robuste). */
+body.es-shell #editor-panel { transition: left 0.3s ease !important; }
+body.es-shell #editor-panel.collapsed { left: -380px !important; transform: none !important; }
 
-/* ---- E2.3 : panneau Inspecteur (objet sélectionné), docké entre la
-   scène et le panneau principal — visible seulement à l'étape « Peupler » ---- */
+/* ---- E2.3 / E2.6 : panneau Inspecteur (objet sélectionné), docké en
+   colonne DROITE pleine hauteur — visible seulement à l'étape « Peupler » ---- */
 #editor-inspector {
   display: none;
-  position: fixed; top: 106px; right: 360px; bottom: 0; width: 280px;
+  position: fixed; top: 106px; right: 0; bottom: 0; width: 280px;
   background: var(--es-bg-1); border-left: 1px solid var(--es-line);
   overflow-y: auto; z-index: 149; padding: 14px 15px;
   color: var(--es-txt-0); font-family: 'Epilogue', system-ui, sans-serif; font-size: 13px;

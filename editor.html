@@ -8,12 +8,12 @@
     <!-- Tailwind CSS + DaisyUI (requis par l'éditeur) -->
     <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.14/dist/full.min.css" rel="stylesheet" type="text/css" />
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="editor/editor.css?v=e2.5">
+    <link rel="stylesheet" href="editor/editor.css?v=e2.6">
     <!-- Coque refonte E2 : barre + rail pipeline (DA Résistance) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Epilogue:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="editor/editor-shell.css?v=e2.3">
+    <link rel="stylesheet" href="editor/editor-shell.css?v=e2.6b">
 
     <style>
         body {
@@ -1255,26 +1255,28 @@ function initScene() {
 function layoutEditorViewport() {
     if (typeof renderer === 'undefined' || !renderer || !renderer.domElement) return;
     var CHROME_H = 106; // barre 44 + rail 62
-    var panel = document.getElementById('editor-panel');
     var zen = document.body.classList.contains('es-zen');
-    var rightOffset = 0;
+
+    // E2.6 : panneau bibliothèque à GAUCHE, Inspecteur à DROITE (inversion
+    // pour matcher la maquette) — la scène occupe l'espace entre les deux.
+    var panel = document.getElementById('editor-panel');
+    var leftOffset = 0;
     if (panel && !zen
         && getComputedStyle(panel).display !== 'none'
         && !panel.classList.contains('collapsed')) {
-        rightOffset = Math.round(panel.getBoundingClientRect().width) || 0;
+        leftOffset = Math.round(panel.getBoundingClientRect().width) || 0;
     }
-    // E2.3 : ajouter la largeur du panneau Inspecteur quand il est visible
-    // (docké entre la scène et le panneau principal).
     var inspector = document.getElementById('editor-inspector');
+    var rightOffset = 0;
     if (inspector && !zen && getComputedStyle(inspector).display !== 'none') {
-        rightOffset += Math.round(inspector.getBoundingClientRect().width) || 0;
+        rightOffset = Math.round(inspector.getBoundingClientRect().width) || 0;
     }
-    var w = Math.max(1, window.innerWidth - rightOffset);
+    var w = Math.max(1, window.innerWidth - leftOffset - rightOffset);
     var h = Math.max(1, window.innerHeight - CHROME_H);
     var c = renderer.domElement;
     c.style.position = 'fixed';
     c.style.top = CHROME_H + 'px';
-    c.style.left = '0px';
+    c.style.left = leftOffset + 'px';
     renderer.setSize(w, h); // met à jour le buffer de rendu ET le style width/height
     if (typeof camera !== 'undefined' && camera) {
         camera.aspect = w / h;
@@ -1456,6 +1458,12 @@ function addEditorUIElements() {
             } else {
                 panel.classList.remove('collapsed'); btnEl.classList.remove('collapsed');
                 btnImg.src = 'icones/circle-chevron-right.svg';
+            }
+            // E2.6 : forcer explicitement (ceinture et bretelles) — la classe
+            // .collapsed seule ne suffisait pas de façon fiable après
+            // l'inversion du panneau à gauche, cause exacte non identifiée.
+            if (document.body.classList.contains('es-shell')) {
+                panel.style.setProperty('left', isPanelCollapsed ? '-380px' : '0px', 'important');
             }
             // E2.2 : le repli/dépli change la largeur de la scène (le transform
             // ne déclenche pas ResizeObserver, on appelle explicitement)
