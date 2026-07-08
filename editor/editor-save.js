@@ -921,8 +921,8 @@ async function bootstrapFromFiles() {
                 // Si version.json est plus récent → re-bootstrap pour prendre les changements de project.json
                 // Si IDB est plus récent → l'utilisateur a sauvegardé des modifications → garder l'IDB
                 try {
-                    const vRes = await fetch('scene_data/version.json?_=' + Date.now());
-                    if (vRes.ok) {
+                    const vRes = await RoomEditorDB.fetchAvecRetry('scene_data/version.json?_=' + Date.now());
+                    if (vRes && vRes.ok) {
                         const vData = await vRes.json();
                         const idbTs = existing.timestamp || 0;
                         const fileTs = vData.timestamp || 0;
@@ -971,8 +971,8 @@ async function bootstrapFromFiles() {
     try {
         if (subtitle) subtitle.textContent = 'Chargement des données de la scène...';
 
-        const response = await fetch('scene_data/project.json');
-        if (!response.ok) throw new Error('project.json introuvable (HTTP ' + response.status + ')');
+        const response = await RoomEditorDB.fetchAvecRetry('scene_data/project.json');
+        if (!response || !response.ok) throw new Error('project.json introuvable (HTTP ' + (response ? response.status : '?') + ')');
         const manifest = await response.json();
 
         // Restaurer localStorage
@@ -2182,6 +2182,23 @@ const RoomEditorDB = {
         });
     },
 
+    // Fetch avec 3 tentatives (délai croissant 500 ms / 1 s) : les chargements
+    // parallèles de gros blobs peuvent échouer transitoirement (serveur local,
+    // réseau instable) — un échec unique ne doit pas priver la scène d'un objet.
+    async fetchAvecRetry(url, tentatives = 3) {
+        for (let i = 1; i <= tentatives; i++) {
+            try {
+                const response = await fetch(url);
+                if (response.ok) return response;
+                if (response.status === 404) return response; // fichier absent : inutile de réessayer
+            } catch (e) {
+                if (i === tentatives) throw e;
+            }
+            if (i < tentatives) await new Promise(r => setTimeout(r, 500 * i));
+        }
+        return null;
+    },
+
     async get(storeName, key) {
         const db = await this.open();
         const result = await new Promise((resolve, reject) => {
@@ -2196,8 +2213,8 @@ const RoomEditorDB = {
         if (!result && storeName === this.STORE_BLOBS && key) {
             try {
                 console.log(`📥 Blob ${key} absent du cache, chargement depuis scene_data/...`);
-                const response = await fetch(`scene_data/blobs/${key}.json`);
-                if (response.ok) {
+                const response = await this.fetchAvecRetry(`scene_data/blobs/${key}.json`);
+                if (response && response.ok) {
                     const blobData = await response.json();
                     // Sauvegarder dans IndexedDB pour le prochain chargement
                     try { await this.put(this.STORE_BLOBS, blobData); } catch (e) { /* ignore */ }
@@ -2205,7 +2222,7 @@ const RoomEditorDB = {
                     return blobData;
                 }
             } catch (e) {
-                console.warn(`⚠️ Impossible de charger blob ${key} depuis scene_data/:`, e);
+                console.warn(`⚠️ Impossible de charger blob ${key} depuis scene_data/ (après 3 tentatives):`, e);
             }
         }
         return result;
