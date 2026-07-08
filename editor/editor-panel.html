@@ -188,154 +188,9 @@
         </div>
     </div>
 
-    <div class="editor-accordion open" id="object-info">
-        <div class="editor-accordion-header" onclick="toggleAccordion(this)">
-            <span class="accordion-arrow">▾</span>
-            <span>Position / Rotation / Échelle</span>
-        </div>
-        <div class="editor-accordion-content" style="display: block;">
-            <div class="mb-2">
-                <div class="text-[10px] font-semibold mb-1">Position</div>
-                <div class="grid grid-cols-3 gap-1">
-                    <div>
-                        <div class="text-[9px] font-bold text-error">X</div>
-                        <input type="number" id="manual-pos-x" step="0.1" class="input input-xs input-bordered input-error w-full h-6" />
-                    </div>
-                    <div>
-                        <div class="text-[9px] font-bold text-success">Y</div>
-                        <input type="number" id="manual-pos-y" step="0.1" class="input input-xs input-bordered input-success w-full h-6" />
-                    </div>
-                    <div>
-                        <div class="text-[9px] font-bold text-info">Z</div>
-                        <input type="number" id="manual-pos-z" step="0.1" class="input input-xs input-bordered input-info w-full h-6" />
-                    </div>
-                </div>
-            </div>
-
-            <div class="mb-2">
-                <div class="text-[10px] font-semibold mb-1">Rotation (°)</div>
-                <div class="grid grid-cols-3 gap-1">
-                    <div>
-                        <div class="text-[9px] font-bold text-error">X</div>
-                        <input type="number" id="manual-rot-x" step="1" class="input input-xs input-bordered input-error w-full h-6" />
-                    </div>
-                    <div>
-                        <div class="text-[9px] font-bold text-success">Y</div>
-                        <input type="number" id="manual-rot-y" step="1" class="input input-xs input-bordered input-success w-full h-6" />
-                    </div>
-                    <div>
-                        <div class="text-[9px] font-bold text-info">Z</div>
-                        <input type="number" id="manual-rot-z" step="1" class="input input-xs input-bordered input-info w-full h-6" />
-                    </div>
-                </div>
-            </div>
-
-            <div class="mb-2">
-                <div class="text-[10px] font-semibold mb-1">Échelle</div>
-                <div class="grid grid-cols-3 gap-1">
-                    <div>
-                        <div class="text-[9px] font-bold text-error">X</div>
-                        <input type="number" id="manual-scale-x" step="0.1" class="input input-xs input-bordered input-error w-full h-6" />
-                    </div>
-                    <div>
-                        <div class="text-[9px] font-bold text-success">Y</div>
-                        <input type="number" id="manual-scale-y" step="0.1" class="input input-xs input-bordered input-success w-full h-6" />
-                    </div>
-                    <div>
-                        <div class="text-[9px] font-bold text-info">Z</div>
-                        <input type="number" id="manual-scale-z" step="0.1" class="input input-xs input-bordered input-info w-full h-6" />
-                    </div>
-                </div>
-            </div>
-
-            <button class="btn btn-xs btn-success w-full h-7" id="apply-manual-values">
-                ✓ Appliquer
-            </button>
-        </div>
-    </div>
-
-    <!-- Accordéon Matériau -->
-    <div class="editor-accordion" id="material-section">
-        <div class="editor-accordion-header" onclick="toggleAccordion(this)">
-            <span class="accordion-arrow">▸</span>
-            <span>Matériau</span>
-        </div>
-        <div class="editor-accordion-content" style="display: none;">
-            <div class="mb-2">
-                <div class="text-[9px] font-semibold mb-0.5 flex items-center justify-between">
-                    <span>Rugosité (Roughness): <span id="roughness-value">-</span></span>
-                    <span class="text-[8px] text-base-content/60">0=Brillant, 1=Mat</span>
-                </div>
-                <input type="range" id="roughness-slider" min="0" max="1" step="0.05" value="0.8" class="range range-xs range-primary" disabled />
-                <div class="flex justify-between text-[8px] text-base-content/60 mt-0.5">
-                    <span>Miroir</span>
-                    <span>Cuir: 0.4-0.6</span>
-                    <span>Tissu</span>
-                </div>
-            </div>
-            <div class="mb-2 mt-2">
-                <div class="text-[9px] font-semibold mb-0.5 flex items-center justify-between">
-                    <span>Luminosité: <span id="brightness-value">0.00</span></span>
-                    <span class="text-[8px] text-base-content/60">0=Sombre, 0.5=Très lumineux</span>
-                </div>
-                <input type="range" id="brightness-slider" min="0" max="0.5" step="0.01" value="0" class="range range-xs range-warning" disabled />
-                <div class="flex justify-between text-[8px] text-base-content/60 mt-0.5">
-                    <span>Normal</span>
-                    <span>Subtil: 0.05-0.15</span>
-                    <span>Fort</span>
-                </div>
-            </div>
-            <div class="mb-2 mt-1">
-                <div class="text-[9px] font-semibold mb-0.5 flex items-center justify-between">
-                    <span>Exposition: <span id="exposure-value">1.00</span></span>
-                    <span class="text-[8px] text-base-content/60">0.5=Sombre, 2=Surexposé</span>
-                </div>
-                <input type="range" id="exposure-slider" min="0.2" max="3.0" step="0.05" value="1.0" class="range range-xs range-info" disabled />
-            </div>
-            <div class="mb-2 mt-1">
-                <div class="text-[9px] font-semibold mb-0.5 flex items-center justify-between">
-                    <span>Contraste: <span id="contrast-value">1.00</span></span>
-                    <span class="text-[8px] text-base-content/60">0.5=Plat, 2=Fort</span>
-                </div>
-                <input type="range" id="contrast-slider" min="0.3" max="2.5" step="0.05" value="1.0" class="range range-xs range-secondary" disabled />
-            </div>
-            <div class="mb-2 mt-1">
-                <div class="text-[9px] font-semibold mb-0.5 flex items-center justify-between">
-                    <span>Décalage: <span id="offset-value">0.00</span></span>
-                    <span class="text-[8px] text-base-content/60">-0.3=Assombrir, +0.3=Éclaircir</span>
-                </div>
-                <input type="range" id="offset-slider" min="-0.3" max="0.3" step="0.01" value="0" class="range range-xs range-accent" disabled />
-            </div>
-            <div class="mb-2 mt-1">
-                <div class="text-[9px] font-semibold mb-0.5 flex items-center justify-between">
-                    <span>Gamma: <span id="gamma-value">1.00</span></span>
-                    <span class="text-[8px] text-base-content/60">0.5=Clair, 2=Sombre</span>
-                </div>
-                <input type="range" id="gamma-slider" min="0.3" max="2.5" step="0.05" value="1.0" class="range range-xs" disabled />
-            </div>
-            <!-- Transparence — désactivée par défaut, case à cocher pour activer -->
-            <div class="mb-2 mt-2 border border-base-300 rounded p-1.5">
-                <div class="text-[9px] font-semibold mb-1 flex items-center gap-1.5">
-                    <input type="checkbox" id="opacity-enabled-checkbox" class="checkbox checkbox-xs checkbox-warning" disabled />
-                    <label for="opacity-enabled-checkbox" class="cursor-pointer select-none">
-                        Transparence : <span id="opacity-value">100%</span>
-                    </label>
-                    <span class="text-[8px] text-base-content/60 ml-auto">0%=Invisible</span>
-                </div>
-                <input type="range" id="opacity-slider" min="0" max="100" step="1" value="100" class="range range-xs range-warning opacity-40" disabled />
-                <div class="flex justify-between text-[8px] text-base-content/60 mt-0.5">
-                    <span>Invisible</span>
-                    <span>50% translucide</span>
-                    <span>Opaque</span>
-                </div>
-                <div class="text-[8px] text-base-content/60 italic mt-0.5">⚠️ Cocher pour activer</div>
-            </div>
-            <div class="text-[8px] text-base-content/60 italic">
-                💡 Sélectionne un objet importé pour ajuster
-            </div>
-        </div>
-    </div>
-
+    <!-- E2.3 : Position/Rotation/Échelle + Matériau déplacés vers le panneau
+         Inspecteur (#editor-inspector, editor.html) — voir accordéons
+         #object-info / #material-section là-bas. -->
 
         <!-- Bouton d'import d'objets 3D -->
         <div class="border border-dashed border-primary rounded px-2 py-1.5 my-1">
@@ -560,6 +415,9 @@
     <div id="floor-plan-panel" style="display: none;">
         <div class="text-xs font-semibold mb-2">Plan de Pièce</div>
 
+        <!-- E2.3 : contenu visible à l'étape « Construire » du pipeline -->
+        <div id="fp-step-construire">
+
         <!-- Section 1: Éditeur de plan interactif (directement visible) -->
         <div id="interactive-plan-section" style="margin-bottom: 4px;">
             <div class="text-[10px] font-semibold mb-1 px-1" style="color: #b0b0b0;">📐 Éditeur de Plan Interactif</div>
@@ -613,63 +471,6 @@
                     <div class="text-[8px] text-base-content/60 mt-1">
                         💡 <kbd class="kbd kbd-xs">B</kbd> (maintenir) = Tracer mur/oblique | <kbd class="kbd kbd-xs">Ctrl</kbd> + glisser = Effacer section<br>
                         Relâchez <kbd class="kbd kbd-xs">B</kbd> pour fixer le mur et préparer le suivant
-                    </div>
-                </div>
-
-                <!-- Panneau réglages Texture (visible uniquement quand outil texture actif) -->
-                <div id="texture-tool-panel" class="mb-2" style="display: none; background: #242424; border: 1px solid #3a3a3a; border-radius: 4px; padding: 6px;">
-                    <div class="text-[9px] font-semibold mb-1" style="color: #ff8800;">🎨 Outil Texture</div>
-
-                    <!-- Upload texture -->
-                    <div class="mb-2">
-                        <div class="text-[9px] mb-1">Image (JPEG) :</div>
-                        <input type="file" id="texture-file-input" accept=".jpg,.jpeg" style="display: none;">
-                        <button class="btn btn-xs btn-outline w-full h-7 flex items-center justify-center gap-1" id="texture-upload-btn">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
-                            Charger texture
-                        </button>
-                        <!-- Aperçu texture chargée -->
-                        <div id="texture-preview-container" style="display: none; margin-top: 4px;">
-                            <img id="texture-preview-img" style="width: 100%; height: 50px; object-fit: cover; border: 1px solid #3a3a3a; border-radius: 2px;">
-                            <div class="text-[8px] mt-0.5" style="color: #999;" id="texture-file-name">-</div>
-                        </div>
-                    </div>
-
-                    <!-- Type de texture -->
-                    <div class="mb-2">
-                        <div class="text-[9px] mb-1">Type :</div>
-                        <div class="flex gap-1">
-                            <button class="btn btn-xs btn-primary flex-1 h-6" id="texture-type-tile" title="Texture répétable (carrelage, brique...)">Tuile</button>
-                            <button class="btn btn-xs btn-outline flex-1 h-6" id="texture-type-panel" title="Panneau pleine hauteur (papier peint...)">Panneau</button>
-                        </div>
-                    </div>
-
-                    <!-- Taille de tuile (visible seulement en mode tile) -->
-                    <div id="texture-tile-size-container" class="mb-2">
-                        <div class="text-[9px] mb-0.5">Taille tuile : <span id="texture-tile-size-value">1</span>m</div>
-                        <input type="range" id="texture-tile-size" min="0.25" max="4" step="0.25" value="1" class="range range-xs range-warning" />
-                    </div>
-
-                    <!-- Surface cible -->
-                    <div class="mb-1">
-                        <div class="text-[9px] mb-1">Appliquer sur :</div>
-                        <div class="flex gap-1">
-                            <button class="btn btn-xs btn-primary flex-1 h-6" id="texture-target-wall">Murs</button>
-                            <button class="btn btn-xs btn-outline flex-1 h-6" id="texture-target-floor">Sol</button>
-                            <button class="btn btn-xs btn-outline flex-1 h-6" id="texture-target-ceiling">Plafond</button>
-                        </div>
-                    </div>
-
-                    <!-- Option tranches automatiques -->
-                    <div class="form-control mb-1" id="auto-edge-container">
-                        <label class="label cursor-pointer justify-start gap-2 py-0.5">
-                            <input type="checkbox" id="auto-apply-edges" class="checkbox checkbox-xs checkbox-warning" checked />
-                            <span class="label-text text-[8px]">Appliquer aussi aux tranches</span>
-                        </label>
-                    </div>
-
-                    <div class="text-[8px] text-base-content/60 mt-1">
-                        💡 Clic = 1 face | <kbd class="kbd kbd-xs">Maj</kbd>+Clic = toute la pièce | <kbd class="kbd kbd-xs">Ctrl</kbd>+Clic = supprimer
                     </div>
                 </div>
 
@@ -750,6 +551,32 @@
 
         <div style="border-top: 1px solid #3a3a3a; margin: 6px 0;"></div>
 
+        <!-- Section : Position de départ du joueur (déplacée depuis game-setup-panel — E2.3) -->
+        <div id="spawn-section" style="margin-bottom: 4px;">
+            <div class="text-[10px] font-semibold mb-1 px-1" style="color: #999999 !important;">Position de départ du joueur</div>
+            <div class="grid grid-cols-2 gap-1 mb-2 px-1">
+                <button class="btn btn-xs btn-outline w-full h-8 flex flex-col items-center justify-center gap-0" id="tool-spawn-player" title="Placer la position de départ du joueur">
+                    <img src="icones/person-standing.svg" width="16" height="16" style="filter: brightness(0) invert(0.8);">
+                    <span class="text-[8px]">Joueur</span>
+                </button>
+                <button class="btn btn-xs btn-outline w-full h-8 flex flex-col items-center justify-center gap-0" id="btn-save-spawn" title="Enregistrer la position de départ">
+                    <img src="icones/pin.svg" width="14" height="14" style="filter: brightness(0) invert(0.8);">
+                    <span class="text-[8px]">Fixer</span>
+                </button>
+            </div>
+            <div id="spawn-info" class="text-[10px] px-2 py-1 mb-2" style="color: #888; display: none;">
+                <div>Position: <span id="spawn-pos-display">-</span></div>
+                <div>Orientation: <span id="spawn-rot-display">-</span></div>
+            </div>
+            <div class="text-[9px] px-2 mb-2" style="color: #666;">
+                1. Cliquez sur <b>Joueur</b> puis cliquez dans la scène pour placer la position de départ.<br>
+                2. Utilisez les flèches ← → pour orienter le regard.<br>
+                3. Cliquez sur <b>Fixer</b> pour enregistrer la position.
+            </div>
+        </div>
+
+        <div style="border-top: 1px solid #3a3a3a; margin: 6px 0;"></div>
+
         <!-- Section 2: Import SVG (directement visible) -->
         <div id="svg-import-section" style="margin-bottom: 4px;">
             <div class="text-[10px] font-semibold mb-1 px-1" style="color: #b0b0b0;">📥 Import Plan SVG</div>
@@ -795,40 +622,72 @@
         <div class="text-[8px] text-base-content/60 italic mt-2 px-1">
             💡 Dessine ton plan ou importe un fichier SVG pour créer des pièces personnalisées
         </div>
+        </div>
+        <!-- FIN fp-step-construire -->
+
+        <!-- E2.3 : contenu visible à l'étape « Habiller » du pipeline -->
+        <div id="fp-step-habiller" style="display: none;">
+            <div id="texture-tool-panel" class="mb-2" style="display: none; background: #242424; border: 1px solid #3a3a3a; border-radius: 4px; padding: 6px;">
+                <div class="text-[9px] font-semibold mb-1" style="color: #ff8800;">🎨 Outil Texture</div>
+
+                <!-- Upload texture -->
+                <div class="mb-2">
+                    <div class="text-[9px] mb-1">Image (JPEG) :</div>
+                    <input type="file" id="texture-file-input" accept=".jpg,.jpeg" style="display: none;">
+                    <button class="btn btn-xs btn-outline w-full h-7 flex items-center justify-center gap-1" id="texture-upload-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+                        Charger texture
+                    </button>
+                    <!-- Aperçu texture chargée -->
+                    <div id="texture-preview-container" style="display: none; margin-top: 4px;">
+                        <img id="texture-preview-img" style="width: 100%; height: 50px; object-fit: cover; border: 1px solid #3a3a3a; border-radius: 2px;">
+                        <div class="text-[8px] mt-0.5" style="color: #999;" id="texture-file-name">-</div>
+                    </div>
+                </div>
+
+                <!-- Type de texture -->
+                <div class="mb-2">
+                    <div class="text-[9px] mb-1">Type :</div>
+                    <div class="flex gap-1">
+                        <button class="btn btn-xs btn-primary flex-1 h-6" id="texture-type-tile" title="Texture répétable (carrelage, brique...)">Tuile</button>
+                        <button class="btn btn-xs btn-outline flex-1 h-6" id="texture-type-panel" title="Panneau pleine hauteur (papier peint...)">Panneau</button>
+                    </div>
+                </div>
+
+                <!-- Taille de tuile (visible seulement en mode tile) -->
+                <div id="texture-tile-size-container" class="mb-2">
+                    <div class="text-[9px] mb-0.5">Taille tuile : <span id="texture-tile-size-value">1</span>m</div>
+                    <input type="range" id="texture-tile-size" min="0.25" max="4" step="0.25" value="1" class="range range-xs range-warning" />
+                </div>
+
+                <!-- Surface cible -->
+                <div class="mb-1">
+                    <div class="text-[9px] mb-1">Appliquer sur :</div>
+                    <div class="flex gap-1">
+                        <button class="btn btn-xs btn-primary flex-1 h-6" id="texture-target-wall">Murs</button>
+                        <button class="btn btn-xs btn-outline flex-1 h-6" id="texture-target-floor">Sol</button>
+                        <button class="btn btn-xs btn-outline flex-1 h-6" id="texture-target-ceiling">Plafond</button>
+                    </div>
+                </div>
+
+                <!-- Option tranches automatiques -->
+                <div class="form-control mb-1" id="auto-edge-container">
+                    <label class="label cursor-pointer justify-start gap-2 py-0.5">
+                        <input type="checkbox" id="auto-apply-edges" class="checkbox checkbox-xs checkbox-warning" checked />
+                        <span class="label-text text-[8px]">Appliquer aussi aux tranches</span>
+                    </label>
+                </div>
+
+                <div class="text-[8px] text-base-content/60 mt-1">
+                    💡 Clic = 1 face | <kbd class="kbd kbd-xs">Maj</kbd>+Clic = toute la pièce | <kbd class="kbd kbd-xs">Ctrl</kbd>+Clic = supprimer
+                </div>
+            </div>
+        </div>
     </div>
     <!-- FIN PANNEAU MODE PLAN DE PIÈCE -->
 
     <!-- ============ PANNEAU MODE ÉLÉMENTS DE JEU ============ -->
     <div id="game-setup-panel" style="display: none;">
-
-        <!-- Section: Position de départ du joueur -->
-        <div class="text-[10px] font-semibold mb-1 px-1" style="color: #999999 !important;">Position de départ du joueur</div>
-
-        <div class="grid grid-cols-2 gap-1 mb-2 px-1">
-            <button class="btn btn-xs btn-outline w-full h-8 flex flex-col items-center justify-center gap-0" id="tool-spawn-player" title="Placer la position de départ du joueur">
-                <img src="icones/person-standing.svg" width="16" height="16" style="filter: brightness(0) invert(0.8);">
-                <span class="text-[8px]">Joueur</span>
-            </button>
-            <button class="btn btn-xs btn-outline w-full h-8 flex flex-col items-center justify-center gap-0" id="btn-save-spawn" title="Enregistrer la position de départ">
-                <img src="icones/pin.svg" width="14" height="14" style="filter: brightness(0) invert(0.8);">
-                <span class="text-[8px]">Fixer</span>
-            </button>
-        </div>
-
-        <!-- Info sur la position actuelle -->
-        <div id="spawn-info" class="text-[10px] px-2 py-1 mb-2" style="color: #888; display: none;">
-            <div>Position: <span id="spawn-pos-display">-</span></div>
-            <div>Orientation: <span id="spawn-rot-display">-</span></div>
-        </div>
-
-        <div class="text-[9px] px-2 mb-2" style="color: #666;">
-            1. Cliquez sur <b>Joueur</b> puis cliquez dans la scène pour placer la position de départ.<br>
-            2. Utilisez les flèches ← → pour orienter le regard.<br>
-            3. Cliquez sur <b>Fixer</b> pour enregistrer la position.
-        </div>
-
-        <!-- Séparateur -->
-        <div class="divider my-1" style="border-color: #3a3a3a;"></div>
 
         <!-- Section: Zones d'interaction -->
         <div class="text-[10px] font-semibold mb-1 px-1" style="color: #999999 !important;">Zones d'interaction</div>

@@ -1870,6 +1870,10 @@ function updateObjectInfo() {
 
     const obj = selectedEditorObject;
 
+    // E2.3 : nom de l'objet dans l'en-tête du panneau Inspecteur
+    const inspName = document.getElementById('es-insp-name');
+    if (inspName) inspName.textContent = obj.userData.editorName || obj.name || 'Objet';
+
     // Mettre à jour les champs de saisie manuelle
     document.getElementById('manual-pos-x').value = obj.position.x.toFixed(2);
     document.getElementById('manual-pos-y').value = obj.position.y.toFixed(2);

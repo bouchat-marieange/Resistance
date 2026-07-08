@@ -13,7 +13,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Epilogue:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="editor/editor-shell.css?v=e2.1">
+    <link rel="stylesheet" href="editor/editor-shell.css?v=e2.3">
 
     <style>
         body {
@@ -118,9 +118,9 @@
     <button class="es-tbtn primary" id="es-save-btn" title="Sauvegarder (Ctrl+S)"><span>💾</span> Sauvegarder</button>
   </div>
   <div class="es-pipeline" id="es-pipeline">
-    <button class="es-step" data-i="0" data-mode="floor-plan" data-tool="draw-wall"><span class="es-node">1</span><span class="es-lbl">Construire</span></button>
+    <button class="es-step" data-i="0" data-mode="floor-plan" data-tool="draw-wall" data-substep="construire"><span class="es-node">1</span><span class="es-lbl">Construire</span></button>
     <span class="es-conn"></span>
-    <button class="es-step" data-i="1" data-mode="floor-plan" data-tool="texture"><span class="es-node">2</span><span class="es-lbl">Habiller</span></button>
+    <button class="es-step" data-i="1" data-mode="floor-plan" data-tool="texture" data-substep="habiller"><span class="es-node">2</span><span class="es-lbl">Habiller</span></button>
     <span class="es-conn"></span>
     <button class="es-step" data-i="2" data-mode="objects"><span class="es-node">3</span><span class="es-lbl">Peupler</span></button>
     <span class="es-conn"></span>
@@ -181,6 +181,165 @@
 
 <!-- Conteneur éditeur -->
 <div id="editor-container"></div>
+
+<!-- ========== E2.3 : PANNEAU INSPECTEUR (objet sélectionné) ========== -->
+<div id="editor-inspector">
+    <div class="es-insp-head">
+        <span class="es-insp-icon">◆</span>
+        <div>
+            <div class="es-insp-name" id="es-insp-name">Objet</div>
+            <div class="es-insp-type">Inspecteur</div>
+        </div>
+    </div>
+
+    <div class="editor-accordion open" id="object-info">
+        <div class="editor-accordion-header" onclick="toggleAccordion(this)">
+            <span class="accordion-arrow">▾</span>
+            <span>Position / Rotation / Échelle</span>
+        </div>
+        <div class="editor-accordion-content" style="display: block;">
+            <div class="mb-2">
+                <div class="text-[10px] font-semibold mb-1">Position</div>
+                <div class="grid grid-cols-3 gap-1">
+                    <div>
+                        <div class="text-[9px] font-bold text-error">X</div>
+                        <input type="number" id="manual-pos-x" step="0.1" class="input input-xs input-bordered input-error w-full h-6" />
+                    </div>
+                    <div>
+                        <div class="text-[9px] font-bold text-success">Y</div>
+                        <input type="number" id="manual-pos-y" step="0.1" class="input input-xs input-bordered input-success w-full h-6" />
+                    </div>
+                    <div>
+                        <div class="text-[9px] font-bold text-info">Z</div>
+                        <input type="number" id="manual-pos-z" step="0.1" class="input input-xs input-bordered input-info w-full h-6" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-2">
+                <div class="text-[10px] font-semibold mb-1">Rotation (°)</div>
+                <div class="grid grid-cols-3 gap-1">
+                    <div>
+                        <div class="text-[9px] font-bold text-error">X</div>
+                        <input type="number" id="manual-rot-x" step="1" class="input input-xs input-bordered input-error w-full h-6" />
+                    </div>
+                    <div>
+                        <div class="text-[9px] font-bold text-success">Y</div>
+                        <input type="number" id="manual-rot-y" step="1" class="input input-xs input-bordered input-success w-full h-6" />
+                    </div>
+                    <div>
+                        <div class="text-[9px] font-bold text-info">Z</div>
+                        <input type="number" id="manual-rot-z" step="1" class="input input-xs input-bordered input-info w-full h-6" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-2">
+                <div class="text-[10px] font-semibold mb-1">Échelle</div>
+                <div class="grid grid-cols-3 gap-1">
+                    <div>
+                        <div class="text-[9px] font-bold text-error">X</div>
+                        <input type="number" id="manual-scale-x" step="0.1" class="input input-xs input-bordered input-error w-full h-6" />
+                    </div>
+                    <div>
+                        <div class="text-[9px] font-bold text-success">Y</div>
+                        <input type="number" id="manual-scale-y" step="0.1" class="input input-xs input-bordered input-success w-full h-6" />
+                    </div>
+                    <div>
+                        <div class="text-[9px] font-bold text-info">Z</div>
+                        <input type="number" id="manual-scale-z" step="0.1" class="input input-xs input-bordered input-info w-full h-6" />
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn btn-xs btn-success w-full h-7" id="apply-manual-values">
+                ✓ Appliquer
+            </button>
+        </div>
+    </div>
+
+    <!-- Accordéon Matériau -->
+    <div class="editor-accordion open" id="material-section">
+        <div class="editor-accordion-header" onclick="toggleAccordion(this)">
+            <span class="accordion-arrow">▾</span>
+            <span>Réglages visuels (matériau)</span>
+        </div>
+        <div class="editor-accordion-content" style="display: block;">
+            <div class="mb-2">
+                <div class="text-[9px] font-semibold mb-0.5 flex items-center justify-between">
+                    <span>Rugosité (Roughness): <span id="roughness-value">-</span></span>
+                    <span class="text-[8px] text-base-content/60">0=Brillant, 1=Mat</span>
+                </div>
+                <input type="range" id="roughness-slider" min="0" max="1" step="0.05" value="0.8" class="range range-xs range-primary" disabled />
+                <div class="flex justify-between text-[8px] text-base-content/60 mt-0.5">
+                    <span>Miroir</span>
+                    <span>Cuir: 0.4-0.6</span>
+                    <span>Tissu</span>
+                </div>
+            </div>
+            <div class="mb-2 mt-2">
+                <div class="text-[9px] font-semibold mb-0.5 flex items-center justify-between">
+                    <span>Luminosité: <span id="brightness-value">0.00</span></span>
+                    <span class="text-[8px] text-base-content/60">0=Sombre, 0.5=Très lumineux</span>
+                </div>
+                <input type="range" id="brightness-slider" min="0" max="0.5" step="0.01" value="0" class="range range-xs range-warning" disabled />
+                <div class="flex justify-between text-[8px] text-base-content/60 mt-0.5">
+                    <span>Normal</span>
+                    <span>Subtil: 0.05-0.15</span>
+                    <span>Fort</span>
+                </div>
+            </div>
+            <div class="mb-2 mt-1">
+                <div class="text-[9px] font-semibold mb-0.5 flex items-center justify-between">
+                    <span>Exposition: <span id="exposure-value">1.00</span></span>
+                    <span class="text-[8px] text-base-content/60">0.5=Sombre, 2=Surexposé</span>
+                </div>
+                <input type="range" id="exposure-slider" min="0.2" max="3.0" step="0.05" value="1.0" class="range range-xs range-info" disabled />
+            </div>
+            <div class="mb-2 mt-1">
+                <div class="text-[9px] font-semibold mb-0.5 flex items-center justify-between">
+                    <span>Contraste: <span id="contrast-value">1.00</span></span>
+                    <span class="text-[8px] text-base-content/60">0.5=Plat, 2=Fort</span>
+                </div>
+                <input type="range" id="contrast-slider" min="0.3" max="2.5" step="0.05" value="1.0" class="range range-xs range-secondary" disabled />
+            </div>
+            <div class="mb-2 mt-1">
+                <div class="text-[9px] font-semibold mb-0.5 flex items-center justify-between">
+                    <span>Décalage: <span id="offset-value">0.00</span></span>
+                    <span class="text-[8px] text-base-content/60">-0.3=Assombrir, +0.3=Éclaircir</span>
+                </div>
+                <input type="range" id="offset-slider" min="-0.3" max="0.3" step="0.01" value="0" class="range range-xs range-accent" disabled />
+            </div>
+            <div class="mb-2 mt-1">
+                <div class="text-[9px] font-semibold mb-0.5 flex items-center justify-between">
+                    <span>Gamma: <span id="gamma-value">1.00</span></span>
+                    <span class="text-[8px] text-base-content/60">0.5=Clair, 2=Sombre</span>
+                </div>
+                <input type="range" id="gamma-slider" min="0.3" max="2.5" step="0.05" value="1.0" class="range range-xs" disabled />
+            </div>
+            <!-- Transparence — désactivée par défaut, case à cocher pour activer -->
+            <div class="mb-2 mt-2 border border-base-300 rounded p-1.5">
+                <div class="text-[9px] font-semibold mb-1 flex items-center gap-1.5">
+                    <input type="checkbox" id="opacity-enabled-checkbox" class="checkbox checkbox-xs checkbox-warning" disabled />
+                    <label for="opacity-enabled-checkbox" class="cursor-pointer select-none">
+                        Transparence : <span id="opacity-value">100%</span>
+                    </label>
+                    <span class="text-[8px] text-base-content/60 ml-auto">0%=Invisible</span>
+                </div>
+                <input type="range" id="opacity-slider" min="0" max="100" step="1" value="100" class="range range-xs range-warning opacity-40" disabled />
+                <div class="flex justify-between text-[8px] text-base-content/60 mt-0.5">
+                    <span>Invisible</span>
+                    <span>50% translucide</span>
+                    <span>Opaque</span>
+                </div>
+                <div class="text-[8px] text-base-content/60 italic mt-0.5">⚠️ Cocher pour activer</div>
+            </div>
+            <div class="text-[8px] text-base-content/60 italic">
+                💡 Sélectionne un objet importé pour ajuster
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- ========== BOUTONS INFO / VOLUME / SETTINGS ========== -->
 <div id="info-icon" title="Informations" style="position:fixed; top:20px; left:20px; width:36px; height:36px; background:transparent; border-radius:6px; display:flex; justify-content:center; align-items:center; cursor:pointer; z-index:60; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
@@ -267,7 +426,7 @@
 <!-- ========== EDITOR SCRIPTS (tous chargés) ========== -->
 <script src="editor/editor-state.js"></script>
 <script src="editor/editor-utils.js"></script>
-<script src="editor/editor-objects.js"></script>
+<script src="editor/editor-objects.js?v=e2.3"></script>
 <script src="editor/editor-camera-lights.js"></script>
 <script src="editor/editor-audio.js"></script>
 <script src="editor/editor-save.js"></script>
@@ -1096,6 +1255,12 @@ function layoutEditorViewport() {
         && !panel.classList.contains('collapsed')) {
         rightOffset = Math.round(panel.getBoundingClientRect().width) || 0;
     }
+    // E2.3 : ajouter la largeur du panneau Inspecteur quand il est visible
+    // (docké entre la scène et le panneau principal).
+    var inspector = document.getElementById('editor-inspector');
+    if (inspector && !zen && getComputedStyle(inspector).display !== 'none') {
+        rightOffset += Math.round(inspector.getBoundingClientRect().width) || 0;
+    }
     var w = Math.max(1, window.innerWidth - rightOffset);
     var h = Math.max(1, window.innerHeight - CHROME_H);
     var c = renderer.domElement;
@@ -1114,7 +1279,7 @@ function layoutEditorViewport() {
 async function initEditorPanel() {
     // Charger le panneau HTML
     try {
-        const resp = await fetch('editor/editor-panel.html');
+        const resp = await fetch('editor/editor-panel.html?v=e2.3');
         if (resp.ok) {
             document.getElementById('editor-container').innerHTML = await resp.text();
         }
@@ -1190,16 +1355,31 @@ function setupEditorShell() {
         steps.forEach(function(el, k) { el.classList.toggle('active', k === i); el.classList.toggle('done', k < i); });
         conns.forEach(function(c, k) { c.classList.toggle('filled', k < i); });
     }
+    // E2.3 : floor-plan-panel contient deux sous-étapes (Construire / Habiller)
+    // qui partagent le même mode éditeur ('floor-plan') — on les distingue via
+    // data-substep pour n'afficher que les contrôles pertinents à l'étape active.
+    function setFloorPlanSubstep(substep) {
+        var construire = document.getElementById('fp-step-construire');
+        var habiller = document.getElementById('fp-step-habiller');
+        if (construire) construire.style.display = (substep === 'habiller') ? 'none' : '';
+        if (habiller) habiller.style.display = (substep === 'habiller') ? '' : 'none';
+    }
     steps.forEach(function(el, i) {
         el.addEventListener('click', function() {
             setActiveStep(i);
-            var action = el.dataset.action, mode = el.dataset.mode, tool = el.dataset.tool;
+            var action = el.dataset.action, mode = el.dataset.mode, tool = el.dataset.tool, substep = el.dataset.substep;
             if (action === 'test') { if (typeof runPublishChecklist === 'function') runPublishChecklist(); return; }
+            if (mode === 'floor-plan') setFloorPlanSubstep(substep);
             if (mode && typeof switchEditorMode === 'function') switchEditorMode(mode);
             if (tool && typeof setFloorPlanTool === 'function') { try { setFloorPlanTool(tool); } catch (e) {} }
+            // E2.3 : le panneau Inspecteur (position/rotation/matériau) n'a de
+            // sens que pendant « Peupler » (mode objets, gizmo de transformation actif).
+            document.body.classList.toggle('es-inspector-visible', mode === 'objects');
+            layoutEditorViewport();
         });
     });
     setActiveStep(2); // démarrer sur « Peupler » (objets)
+    document.body.classList.add('es-inspector-visible'); // le mode objets est déjà actif par défaut au chargement
 
     // Boutons de la barre → fonctions existantes
     function wire(id, fn) { var b = document.getElementById(id); if (b) b.addEventListener('click', fn); }

@@ -109,3 +109,19 @@ body.es-shell #info-icon { top: 118px !important; }
 body.es-shell #volume-icon { top: 158px !important; }
 body.es-shell #settings-icon { top: 198px !important; }
 body.es-shell #toggle-panel-collapse { top: 118px !important; }
+
+/* ---- E2.3 : panneau Inspecteur (objet sélectionné), docké entre la
+   scène et le panneau principal — visible seulement à l'étape « Peupler » ---- */
+#editor-inspector {
+  display: none;
+  position: fixed; top: 106px; right: 360px; bottom: 0; width: 280px;
+  background: var(--es-bg-1); border-left: 1px solid var(--es-line);
+  overflow-y: auto; z-index: 149; padding: 14px 15px;
+  color: var(--es-txt-0); font-family: 'Epilogue', system-ui, sans-serif; font-size: 13px;
+}
+body.es-shell.es-inspector-visible #editor-inspector { display: block; }
+body.es-zen #editor-inspector { display: none !important; }
+.es-insp-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--es-line); }
+.es-insp-head .es-insp-icon { width: 30px; height: 30px; border-radius: 7px; background: var(--es-acc-soft); border: 1px solid var(--es-acc-line); display: grid; place-items: center; font-size: 15px; flex-shrink: 0; color: var(--es-acc); }
+.es-insp-head .es-insp-name { font-weight: 600; font-size: 13px; color: var(--es-txt-0); }
+.es-insp-head .es-insp-type { font-size: 10px; color: var(--es-txt-2); text-transform: uppercase; letter-spacing: 0.08em; }
