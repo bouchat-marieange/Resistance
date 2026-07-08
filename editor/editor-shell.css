@@ -91,8 +91,21 @@ body.es-zen-active .es-zenbtn { border-color: var(--es-acc-line); color: var(--e
 .es-budget .es-bv { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--es-txt-1); }
 .es-play { display: inline-flex; align-items: center; gap: 8px; padding: 8px 15px; border-radius: 8px; border: none; cursor: pointer; background: var(--es-acc); color: oklch(0.16 0.02 230); font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 0.06em; box-shadow: 0 4px 14px oklch(0.83 0.135 200 / 0.3); }
 
-/* ---- décalage des éléments existants sous la coque (barre 44 + rail 62 = 106) ---- */
-body.es-shell #editor-panel { top: 118px !important; }
+/* ---- E2.2 : dock du panneau en colonne droite pleine hauteur ---- */
+/* (le panneau est naturellement à droite — son repli le fait déjà glisser
+   vers la droite ; on le rend flush, sans coins arrondis ni ombre) */
+body.es-shell #editor-panel {
+  position: fixed !important;
+  top: 106px !important; right: 0 !important; left: auto !important; bottom: 0 !important;
+  width: 360px !important; height: auto !important; max-height: none !important;
+  margin: 0 !important; border-radius: 0 !important; box-shadow: none !important;
+  border-left: 1px solid var(--es-line) !important;
+}
+/* le canvas 3D docké (position/taille posées en JS via layoutEditorViewport)
+   passe sous le panneau et la coque */
+body.es-shell canvas { z-index: 1 !important; }
+/* icônes utilitaires flottantes, sous la coque */
 body.es-shell #info-icon { top: 118px !important; }
 body.es-shell #volume-icon { top: 158px !important; }
 body.es-shell #settings-icon { top: 198px !important; }
+body.es-shell #toggle-panel-collapse { top: 118px !important; }

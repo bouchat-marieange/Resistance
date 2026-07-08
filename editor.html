@@ -1065,10 +1065,48 @@ function initScene() {
     animate();
 
     window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
+        // E2.2 : si la coque est active, dimensionner le canvas à la région
+        // « scène » (fenêtre moins la barre+rail en haut et le panneau à droite).
+        // Sinon, plein écran (comportement d'origine).
+        if (document.body.classList.contains('es-shell') && typeof layoutEditorViewport === 'function') {
+            layoutEditorViewport();
+        } else {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
     });
+}
+
+/* ============================================================
+   E2.2 — Dock du canvas dans la région « scène »
+   La région = fenêtre − barre+rail (106px en haut) − panneau (à droite,
+   sauf si replié / masqué / mode zen). Le raycasting suit le rect réel
+   du canvas (renderer.domElement.getBoundingClientRect), donc la
+   sélection/le gizmo/le tracé de murs restent alignés.
+   ============================================================ */
+function layoutEditorViewport() {
+    if (typeof renderer === 'undefined' || !renderer || !renderer.domElement) return;
+    var CHROME_H = 106; // barre 44 + rail 62
+    var panel = document.getElementById('editor-panel');
+    var zen = document.body.classList.contains('es-zen');
+    var rightOffset = 0;
+    if (panel && !zen
+        && getComputedStyle(panel).display !== 'none'
+        && !panel.classList.contains('collapsed')) {
+        rightOffset = Math.round(panel.getBoundingClientRect().width) || 0;
+    }
+    var w = Math.max(1, window.innerWidth - rightOffset);
+    var h = Math.max(1, window.innerHeight - CHROME_H);
+    var c = renderer.domElement;
+    c.style.position = 'fixed';
+    c.style.top = CHROME_H + 'px';
+    c.style.left = '0px';
+    renderer.setSize(w, h); // met à jour le buffer de rendu ET le style width/height
+    if (typeof camera !== 'undefined' && camera) {
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+    }
 }
 
 // ========== EDITOR PANEL ==========
@@ -1180,8 +1218,23 @@ function setupEditorShell() {
         if (zenBtn) { zenBtn.innerHTML = zen ? ICON_MIN : ICON_MAX; zenBtn.title = zen ? 'Réafficher les panneaux' : 'Masquer les panneaux · scène plein écran'; }
         document.body.classList.toggle('es-zen-active', zen);
     }
-    if (zenBtn) zenBtn.addEventListener('click', function() { document.body.classList.toggle('es-zen'); updateZen(); });
+    if (zenBtn) zenBtn.addEventListener('click', function() {
+        document.body.classList.toggle('es-zen');
+        updateZen();
+        layoutEditorViewport(); // le zen change la largeur disponible de la scène
+    });
     updateZen();
+
+    // E2.2 : docker le canvas dans la région scène, et re-layouter chaque fois
+    // que le panneau change de taille (repli/dépli, changement de contenu).
+    layoutEditorViewport();
+    var panel = document.getElementById('editor-panel');
+    if (panel && window.ResizeObserver) {
+        try { new ResizeObserver(function() { layoutEditorViewport(); }).observe(panel); } catch (e) {}
+    }
+    // Filet supplémentaire : re-layout après un court délai (le panneau finit
+    // de se dimensionner après l'injection de son contenu).
+    setTimeout(layoutEditorViewport, 300);
 }
 
 function addEditorUIElements() {
@@ -1212,6 +1265,9 @@ function addEditorUIElements() {
                 panel.classList.remove('collapsed'); btnEl.classList.remove('collapsed');
                 btnImg.src = 'icones/circle-chevron-right.svg';
             }
+            // E2.2 : le repli/dépli change la largeur de la scène (le transform
+            // ne déclenche pas ResizeObserver, on appelle explicitement)
+            if (typeof layoutEditorViewport === 'function') layoutEditorViewport();
         });
     }
 
