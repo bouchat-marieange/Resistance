@@ -341,6 +341,23 @@ async function saveProject() {
             }
         }
 
+        // E2.7 : sérialiser les dossiers (organisation de la liste "Peupler",
+        // pas de contenu 3D propre — juste un nom + les enfants qu'ils contiennent).
+        const seenFolderNames = new Set();
+        const foldersData = [];
+        selectableObjects.forEach(o => {
+            if (o.userData.isFolder && o.parent && o.userData.editorName && !seenFolderNames.has(o.userData.editorName)) {
+                seenFolderNames.add(o.userData.editorName);
+                foldersData.push({
+                    editorName: o.userData.editorName,
+                    editorCategory: o.userData.editorCategory,
+                    sortOrder: o.userData.sortOrder,
+                    parentFolderName: (o.parent.userData && o.parent.userData.isFolder) ? o.parent.userData.editorName : null,
+                    childNames: o.children.filter(c => c.userData.editorName).map(c => c.userData.editorName)
+                });
+            }
+        });
+
         // 5. Sérialiser les lumières personnalisées
         const lightsData = customLights
             .filter(light => !light.userData.isDefault)
@@ -393,6 +410,7 @@ async function saveProject() {
             floorPolygons: floorPolygonsData,
             ceilingPolygons: ceilingPolygonsData,
             importedObjects: objectsData,
+            folders: foldersData,
             lights: lightsData,
             // Intensité + nom de la lumière ambiante par défaut
             ambientLightIntensity: window.defaultAmbientLight ? window.defaultAmbientLight.intensity : 0.7,
@@ -1499,6 +1517,40 @@ async function loadProjectFromIndexedDB(projectData) {
             await restoreImportedObject(objData);
         }
         console.log(`  ✅ ${projectData.importedObjects.length} objets importés en cours de restauration`);
+    }
+
+    // E2.7 : restaurer les dossiers — d'abord tous les créer (vides), puis les
+    // réattacher par nom dans un 2e passage (gère les dossiers imbriqués et
+    // les objets qu'ils contiennent, indépendamment de l'ordre de sauvegarde ;
+    // tous les objets réguliers sont déjà restaurés et en scène à ce stade
+    // grâce à l'attente séquentielle ci-dessus).
+    if (projectData.folders && projectData.folders.length > 0) {
+        const restoredFolders = new Map(); // editorName -> Object3D
+        projectData.folders.forEach(fData => {
+            const folder = new THREE.Object3D();
+            folder.name = fData.editorName;
+            folder.userData.editorName = fData.editorName;
+            folder.userData.isFolder = true;
+            folder.userData.visible = true;
+            folder.userData.locked = false;
+            folder.userData.editorCategory = fData.editorCategory;
+            folder.userData.sortOrder = fData.sortOrder;
+            scene.add(folder);
+            selectableObjects.push(folder);
+            restoredFolders.set(fData.editorName, folder);
+        });
+        projectData.folders.forEach(fData => {
+            const folder = restoredFolders.get(fData.editorName);
+            if (fData.parentFolderName && restoredFolders.has(fData.parentFolderName)) {
+                restoredFolders.get(fData.parentFolderName).add(folder);
+            }
+            (fData.childNames || []).forEach(childName => {
+                let child = restoredFolders.get(childName);
+                if (!child) child = selectableObjects.find(o => o.userData.editorName === childName && o.parent === scene);
+                if (child) folder.add(child);
+            });
+        });
+        console.log(`  ✅ ${projectData.folders.length} dossier(s) restauré(s)`);
     }
 
     // 6. Restaurer les lumières personnalisées
