@@ -1402,7 +1402,10 @@ function updateAllCharacterCollisionProxies() { PlayerMovement.updateAllCharacte
 function updateControlsForMode() { PlayerMovement.updateControlsForMode(interactionMode); }
 function setupFPSCamera() { if (interactionMode === 'game') PlayerMovement.setupFPSCamera(); }
 function updateHeadBob(delta) { PlayerMovement.updateHeadBob(delta, interactionMode); }
-function handleSceneMovement(delta) { PlayerMovement.handleSceneMovement(delta, interactionMode); }
+function handleSceneMovement(delta) {
+    PlayerMovement.handleSceneMovement(delta, interactionMode);
+    isMoving = PlayerMovement.getIsMoving();
+}
 function enforceGameHeight() { PlayerMovement.enforceGameHeight(interactionMode); }
 
 function onWindowResize() {

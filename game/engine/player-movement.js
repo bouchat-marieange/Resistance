@@ -526,6 +526,7 @@ var PlayerMovement = (function() {
         updateControlsForMode: updateControlsForMode,
         setupFPSCamera: setupFPSCamera,
         getPlayerEyeY: getPlayerEyeY,
+        getIsMoving: function() { return isMoving; },
         setupMouseLook: setupMouseLook,
         resetMovementState: resetMovementState,
         updateHeadBob: updateHeadBob,
