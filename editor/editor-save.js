@@ -81,12 +81,32 @@ function markUnsavedChanges() {
     }
 }
 
-// Mettre à jour le voyant rouge de sauvegarde
+// Mettre à jour le voyant rouge de sauvegarde (barre latérale + barre du haut)
 function updateUnsavedIndicator() {
     const indicator = document.getElementById('unsaved-indicator');
     if (indicator) {
         indicator.style.display = hasUnsavedChanges ? 'block' : 'none';
     }
+    const dot = document.getElementById('es-unsaved-dot');
+    if (dot) {
+        dot.classList.toggle('show', hasUnsavedChanges);
+    }
+}
+
+// Petit message flottant temporaire (confirmation de sauvegarde, etc.)
+// type: 'ok' | 'warn' | 'error'
+function showEditorToast(message, type) {
+    const toast = document.getElementById('es-toast');
+    const msgEl = document.getElementById('es-toast-msg');
+    if (!toast || !msgEl) return;
+    msgEl.textContent = message;
+    toast.classList.remove('es-toast-ok', 'es-toast-warn', 'es-toast-error');
+    toast.classList.add('es-toast-' + (type === 'warn' ? 'warn' : type === 'error' ? 'error' : 'ok'));
+    toast.classList.add('show');
+    clearTimeout(showEditorToast._hideTimer);
+    showEditorToast._hideTimer = setTimeout(() => {
+        toast.classList.remove('show');
+    }, 2600);
 }
 
 // Marquer comme sauvegardé
@@ -489,6 +509,7 @@ async function saveProject() {
 
         markAsSaved();
         console.log(`💾 Projet sauvegardé ! (${wallsData.length} murs, ${roomsData.length} pièces, ${floorTilesData.length} dalles sol, ${ceilingTilesData.length} dalles plafond, ${floorPolygonsData.length} polygones sol, ${ceilingPolygonsData.length} polygones plafond, ${objectsData.length} objets, ${lightsData.length} lumières)`);
+        if (typeof showEditorToast === 'function') showEditorToast('✓ Projet sauvegardé', 'ok');
 
     } catch (error) {
         console.error('❌ Erreur sauvegarde IndexedDB:', error);
@@ -497,11 +518,13 @@ async function saveProject() {
         try {
             saveFloorPlan();
             console.log(`💾 Fallback localStorage: ${floorPlanWalls.length} murs sauvegardés`);
+            markAsSaved();
+            console.log('💾 Projet partiellement sauvegardé (localStorage uniquement)');
+            if (typeof showEditorToast === 'function') showEditorToast('⚠ Sauvegardé en mode dégradé (localStorage)', 'warn');
         } catch (lsError) {
             console.error('❌ Erreur sauvegarde localStorage aussi:', lsError);
+            if (typeof showEditorToast === 'function') showEditorToast('✗ Échec de la sauvegarde — réessaie', 'error');
         }
-        markAsSaved();
-        console.log('💾 Projet partiellement sauvegardé (localStorage uniquement)');
     }
 }
 

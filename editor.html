@@ -139,11 +139,13 @@
       <button class="es-tbtn icon-only" id="es-history-btn" title="Historique des sauvegardes"><span>↺</span></button>
       <button class="es-tbtn icon-only" id="es-check-btn" title="Vérifier avant publication"><span>✓</span></button>
       <button class="es-tbtn icon-only" id="es-export-btn" title="Exporter project.json + tous les blobs pour scene_data/"><span>⭳</span></button>
-      <button class="es-tbtn icon-only primary" id="es-save-btn" title="Sauvegarder (Ctrl+S)"><span>💾</span></button>
+      <button class="es-tbtn icon-only primary es-has-save-dot" id="es-save-btn" title="Sauvegarder (Ctrl+S)"><span>💾</span><span id="es-unsaved-dot" class="es-unsaved-dot"></span></button>
     </div>
 
     <button class="es-play" id="es-play-btn" title="Jouer la salle">▶ Jouer ici</button>
   </div>
+
+  <div class="es-toast" id="es-toast"><span class="es-toast-dot"></span><span id="es-toast-msg"></span></div>
 
   <!-- E2.4 : popover de conseils quand la pièce dépasse le seuil de poids -->
   <div class="es-budget-pop" id="es-budget-pop">

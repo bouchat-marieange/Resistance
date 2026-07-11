@@ -106,6 +106,22 @@ body.es-zen-active .es-zenbtn { border-color: var(--es-acc-line); color: var(--e
 .es-budget-heavy-row { display: flex; justify-content: space-between; font-size: 11px; padding: 6px 9px; border-radius: 6px; background: var(--es-bg-2); margin-bottom: 5px; color: var(--es-txt-1); }
 .es-budget-heavy-row span:last-child { font-family: 'JetBrains Mono', monospace; color: var(--es-danger); }
 
+/* ---- Voyant de modifications non sauvegardées + toast de confirmation ---- */
+.es-tbtn.es-has-save-dot { position: relative; overflow: visible; }
+.es-unsaved-dot { position: absolute; top: -3px; right: -3px; width: 9px; height: 9px; border-radius: 50%; background: var(--es-danger); box-shadow: 0 0 6px var(--es-danger); display: none; animation: es-blink 1.4s ease-in-out infinite; pointer-events: none; }
+.es-unsaved-dot.show { display: block; }
+@keyframes es-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+.es-toast { position: fixed; top: 62px; right: 20px; min-width: 200px; max-width: 340px; background: var(--es-bg-1); border: 1px solid var(--es-line-2); border-radius: 10px; box-shadow: var(--es-shadow); padding: 10px 14px; z-index: 200; font-family: 'Epilogue', system-ui, sans-serif; font-size: 12px; color: var(--es-txt-1); display: flex; align-items: center; gap: 8px; opacity: 0; transform: translateY(-6px); transition: opacity .2s ease, transform .2s ease; pointer-events: none; }
+.es-toast.show { opacity: 1; transform: translateY(0); }
+.es-toast.es-toast-ok { border-color: var(--es-ok); }
+.es-toast.es-toast-ok .es-toast-dot { background: var(--es-ok); }
+.es-toast.es-toast-warn { border-color: var(--es-warn); }
+.es-toast.es-toast-warn .es-toast-dot { background: var(--es-warn); }
+.es-toast.es-toast-error { border-color: var(--es-danger); }
+.es-toast.es-toast-error .es-toast-dot { background: var(--es-danger); }
+.es-toast-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+
 /* ---- E2.2 / E2.6 : dock du panneau bibliothèque en colonne GAUCHE pleine
    hauteur (E2.6 : inversion pour matcher la maquette — bibliothèque à
    gauche, Inspecteur à droite, scène au centre) ---- */
