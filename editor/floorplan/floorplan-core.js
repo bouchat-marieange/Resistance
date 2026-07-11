@@ -296,6 +296,20 @@ function setFloorPlanTool(tool) {
         texturePanel.style.display = (tool === 'texture') ? 'block' : 'none';
     }
 
+    // Le panneau texture vit dans la sous-étape "Habiller" du pipeline
+    // (fp-step-habiller), distincte de "Construire" (fp-step-construire) où
+    // vit ce bouton. Ces deux conteneurs ne sont normalement basculés que par
+    // le rail du haut (data-substep sur les boutons .es-step) — en y accédant
+    // via l'onglet latéral "Plan de pièce", fp-step-habiller restait caché
+    // même quand ce bouton mettait bien texturePanel en display:block.
+    // On rend cette fonction autonome, quel que soit le point d'entrée.
+    const fpConstruire = document.getElementById('fp-step-construire');
+    const fpHabiller = document.getElementById('fp-step-habiller');
+    if (fpConstruire && fpHabiller) {
+        fpConstruire.style.display = (tool === 'texture') ? 'none' : '';
+        fpHabiller.style.display = (tool === 'texture') ? '' : 'none';
+    }
+
     // Afficher/masquer le panneau d'arrondi des coins
     const roundingPanel = document.getElementById('room-rounding-panel');
     if (roundingPanel) {
