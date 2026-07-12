@@ -721,11 +721,19 @@ async function generateSceneDataDownload() {
         }
         if (projectData.walls) {
             projectData.walls.forEach(function(w) {
-                if (w.textureInfo) {
-                    ['blobId','normalBlobId','roughnessBlobId'].forEach(function(k) {
-                        if (w.textureInfo[k] && !blobIds.includes(w.textureInfo[k])) blobIds.push(w.textureInfo[k]);
-                    });
-                }
+                if (!w.textureInfo) return;
+                // Ancien format éventuel : clés plates au niveau de textureInfo
+                ['blobId','normalBlobId','roughnessBlobId'].forEach(function(k) {
+                    if (typeof w.textureInfo[k] === 'string' && !blobIds.includes(w.textureInfo[k])) blobIds.push(w.textureInfo[k]);
+                });
+                // Format réel écrit par saveProject : une entrée PAR FACE
+                // { type, tileSize, fileName, textureBlobId } — même lecture que
+                // _collectTexBlobId dans game/engine/bootstrap.js. Sans ceci, les
+                // textures de murs n'étaient JAMAIS exportées (cause du blob_5bkai3
+                // manquant : référencé par project.json, absent de scene_data/blobs/).
+                Object.values(w.textureInfo).forEach(function(info) {
+                    if (info && info.textureBlobId && !blobIds.includes(info.textureBlobId)) blobIds.push(info.textureBlobId);
+                });
             });
         }
         if (projectData.floorTiles) {
@@ -741,6 +749,20 @@ async function generateSceneDataDownload() {
         if (projectData.ceilingPolygons) {
             projectData.ceilingPolygons.forEach(function(t) {
                 if (t.textureBlobId && !blobIds.includes(t.textureBlobId)) blobIds.push(t.textureBlobId);
+            });
+        }
+        // Dalles de plafond — même clé que les dalles de sol, oubliées par l'export
+        if (projectData.ceilingTiles) {
+            projectData.ceilingTiles.forEach(function(t) {
+                if (t.textureBlobId && !blobIds.includes(t.textureBlobId)) blobIds.push(t.textureBlobId);
+            });
+        }
+        // Pistes audio (musique, ambiance, bruitages, mouvement) — le jeu les
+        // restaure au boot depuis scene_data/blobs/ (cf. bootstrapFromFiles),
+        // elles doivent donc faire partie de l'export
+        if (projectData.audioTracks) {
+            projectData.audioTracks.forEach(function(a) {
+                if (a && a.blobId && !blobIds.includes(a.blobId)) blobIds.push(a.blobId);
             });
         }
 
