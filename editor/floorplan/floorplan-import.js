@@ -56,16 +56,26 @@ function parseSVGContent(svgContent) {
             paths: Array.from(paths)
         };
 
-        // Afficher l'aperçu
+        // Afficher l'aperçu — SÉCURITÉ : le SVG importé est du contenu non fiable.
+        // On ne l'insère JAMAIS dans le DOM vivant (un gestionnaire inline type
+        // onload/onbegin/onerror ou une balise <script>/<animate> s'y exécuterait).
+        // On le rend via un <img> : dans ce contexte le navigateur désactive scripts,
+        // ressources externes et gestionnaires d'événements. L'extraction géométrique
+        // (extractPointsFromSVG) continue de lire le DOM détaché, sans danger.
         const previewContainer = document.getElementById('svg-preview-container');
         const preview = document.getElementById('svg-preview');
 
         preview.innerHTML = '';
-        const clonedSVG = svgElement.cloneNode(true);
-        clonedSVG.style.width = '100%';
-        clonedSVG.style.height = 'auto';
-        clonedSVG.style.maxHeight = '200px';
-        preview.appendChild(clonedSVG);
+        const previewImg = document.createElement('img');
+        previewImg.alt = 'Aperçu du plan importé';
+        previewImg.style.width = '100%';
+        previewImg.style.height = 'auto';
+        previewImg.style.maxHeight = '200px';
+        const svgBlob = new Blob([svgContent], { type: 'image/svg+xml' });
+        const blobUrl = URL.createObjectURL(svgBlob);
+        previewImg.onload = previewImg.onerror = function() { URL.revokeObjectURL(blobUrl); };
+        previewImg.src = blobUrl;
+        preview.appendChild(previewImg);
 
         previewContainer.style.display = 'block';
 

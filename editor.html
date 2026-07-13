@@ -625,22 +625,56 @@ function populateRoomList() {
     }
 
     allRooms.forEach(room => {
+        // SÉCURITÉ : name/title peuvent provenir de l'URL d'une page de jeu
+        // (?room=/?title=) persistée dans le localStorage partagé. On construit la
+        // carte via les API DOM (textContent) et non innerHTML pour empêcher toute
+        // injection HTML/JS (XSS stocké) — y compris dans les id et le handler.
         const card = document.createElement('div');
         card.className = 'room-card';
-        card.innerHTML = `
-            <div class="room-card-body">
-                <div class="room-thumb-wrap">
-                    <img class="room-thumb" id="thumb-${room.name}" style="display:none;" alt="">
-                    <span class="room-thumb-placeholder" id="thumb-placeholder-${room.name}">🏠</span>
-                </div>
-                <div>
-                    <div class="room-name">${room.name}</div>
-                    <div class="room-title">${room.title || ''}</div>
-                    ${room.createdAt ? '<div class="room-date">Créée le ' + new Date(room.createdAt).toLocaleDateString('fr-FR') + '</div>' : ''}
-                </div>
-            </div>
-            <button class="room-card-btn" onclick="selectRoom('${room.name}', '${(room.title || '').replace(/'/g, "\\'")}')">Ouvrir</button>
-        `;
+
+        const body = document.createElement('div');
+        body.className = 'room-card-body';
+
+        const thumbWrap = document.createElement('div');
+        thumbWrap.className = 'room-thumb-wrap';
+        const thumbImg = document.createElement('img');
+        thumbImg.className = 'room-thumb';
+        thumbImg.id = 'thumb-' + room.name;
+        thumbImg.style.display = 'none';
+        thumbImg.alt = '';
+        const thumbPlaceholder = document.createElement('span');
+        thumbPlaceholder.className = 'room-thumb-placeholder';
+        thumbPlaceholder.id = 'thumb-placeholder-' + room.name;
+        thumbPlaceholder.textContent = '🏠';
+        thumbWrap.appendChild(thumbImg);
+        thumbWrap.appendChild(thumbPlaceholder);
+
+        const info = document.createElement('div');
+        const nameEl = document.createElement('div');
+        nameEl.className = 'room-name';
+        nameEl.textContent = room.name;
+        const titleEl = document.createElement('div');
+        titleEl.className = 'room-title';
+        titleEl.textContent = room.title || '';
+        info.appendChild(nameEl);
+        info.appendChild(titleEl);
+        if (room.createdAt) {
+            const dateEl = document.createElement('div');
+            dateEl.className = 'room-date';
+            dateEl.textContent = 'Créée le ' + new Date(room.createdAt).toLocaleDateString('fr-FR');
+            info.appendChild(dateEl);
+        }
+
+        body.appendChild(thumbWrap);
+        body.appendChild(info);
+
+        const openBtn = document.createElement('button');
+        openBtn.className = 'room-card-btn';
+        openBtn.textContent = 'Ouvrir';
+        openBtn.addEventListener('click', () => selectRoom(room.name, room.title || ''));
+
+        card.appendChild(body);
+        card.appendChild(openBtn);
         listEl.appendChild(card);
         // Vignette chargée en tâche de fond (E1) — ne bloque pas l'affichage de la liste
         loadRoomThumbnail(room.name);

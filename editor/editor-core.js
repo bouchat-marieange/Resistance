@@ -915,20 +915,10 @@ function openNewRoomDialog() {
     overlay.id = 'new-room-overlay';
     overlay.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.75); z-index:10001; display:flex; align-items:center; justify-content:center;';
 
+    // La sous-liste des pièces existantes est construite plus bas via les API DOM
+    // (textContent) et non par concaténation innerHTML : name/title peuvent venir
+    // de l'URL d'une page de jeu et sont donc du contenu non fiable (XSS stocké).
     const existingRooms = getRoomsList();
-    var roomsListHTML = '';
-    if (existingRooms.length > 0) {
-        roomsListHTML = '<div style="margin-top:16px; padding-top:12px; border-top:1px solid #333;">' +
-            '<div style="font-size:11px; color:#888; margin-bottom:8px;">Pièces existantes :</div>' +
-            '<div style="max-height:120px; overflow-y:auto;">' +
-            existingRooms.map(function(r) {
-                return '<div style="display:flex; align-items:center; justify-content:space-between; padding:4px 8px; margin-bottom:2px; background:#1a1a1a; border-radius:4px; font-size:11px;">' +
-                    '<span style="color:#ccc;">' + (r.title || r.name) + '</span>' +
-                    '<button onclick="navigateToRoom(\'' + r.name + '\')" style="background:#1a3a3a; border:1px solid #00CED1; color:#00CED1; padding:2px 8px; border-radius:4px; cursor:pointer; font-size:10px;">Ouvrir</button>' +
-                '</div>';
-            }).join('') +
-            '</div></div>';
-    }
 
     overlay.innerHTML =
         '<div style="background:#1e1e1e; border:1px solid #00E5FF; border-radius:12px; padding:24px 28px; min-width:340px; max-width:420px; box-shadow:0 8px 32px rgba(0,0,0,0.6);">' +
@@ -945,10 +935,40 @@ function openNewRoomDialog() {
                 '<button id="new-room-create-btn" style="flex:1; background:#0d2040; border:1px solid #00E5FF; color:#00E5FF; padding:10px; border-radius:8px; cursor:pointer; font-size:14px; font-weight:600; transition:all 0.2s;">Créer la pièce</button>' +
                 '<button id="new-room-cancel-btn" style="padding:10px 18px; background:#2a2a2a; border:1px solid #555; color:#ccc; border-radius:8px; cursor:pointer; font-size:14px; transition:all 0.2s;">Annuler</button>' +
             '</div>' +
-            roomsListHTML +
+            (existingRooms.length > 0 ? '<div id="new-room-existing-wrap"></div>' : '') +
         '</div>';
 
     document.body.appendChild(overlay);
+
+    // Liste des pièces existantes — construite via API DOM (textContent) pour
+    // empêcher toute injection HTML/JS depuis un name/title non fiable (XSS).
+    if (existingRooms.length > 0) {
+        var wrap = document.getElementById('new-room-existing-wrap');
+        if (wrap) {
+            wrap.style.cssText = 'margin-top:16px; padding-top:12px; border-top:1px solid #333;';
+            var lbl = document.createElement('div');
+            lbl.style.cssText = 'font-size:11px; color:#888; margin-bottom:8px;';
+            lbl.textContent = 'Pièces existantes :';
+            wrap.appendChild(lbl);
+            var scroll = document.createElement('div');
+            scroll.style.cssText = 'max-height:120px; overflow-y:auto;';
+            existingRooms.forEach(function(r) {
+                var row = document.createElement('div');
+                row.style.cssText = 'display:flex; align-items:center; justify-content:space-between; padding:4px 8px; margin-bottom:2px; background:#1a1a1a; border-radius:4px; font-size:11px;';
+                var nameSpan = document.createElement('span');
+                nameSpan.style.color = '#ccc';
+                nameSpan.textContent = r.title || r.name;
+                var openBtn = document.createElement('button');
+                openBtn.style.cssText = 'background:#1a3a3a; border:1px solid #00CED1; color:#00CED1; padding:2px 8px; border-radius:4px; cursor:pointer; font-size:10px;';
+                openBtn.textContent = 'Ouvrir';
+                openBtn.addEventListener('click', function() { navigateToRoom(r.name); });
+                row.appendChild(nameSpan);
+                row.appendChild(openBtn);
+                scroll.appendChild(row);
+            });
+            wrap.appendChild(scroll);
+        }
+    }
 
     var nameInput = document.getElementById('new-room-name-input');
     var titleInput = document.getElementById('new-room-title-input');

@@ -305,9 +305,14 @@ function loadPermanentObjects() {}
 // Enregistrer cette pièce dans la liste des pièces (pour le dialogue "Nouvelle pièce")
 (function() {
     try {
+        // Sécurité : l'identifiant vient de l'URL (?room=) et est ré-affiché par
+        // l'éditeur ; on ne persiste qu'une liste blanche [A-Za-z0-9_-] pour éviter
+        // tout XSS stocké via le localStorage partagé.
+        var safeName = String(ROOM_CONFIG.name || '').replace(/[^A-Za-z0-9_-]/g, '');
+        if (!safeName) return;
         var rooms = JSON.parse(localStorage.getItem('resistance_rooms_list') || '[]');
-        if (!rooms.find(function(r) { return r.name === ROOM_CONFIG.name; })) {
-            rooms.push({ name: ROOM_CONFIG.name, title: ROOM_CONFIG.title, createdAt: new Date().toISOString() });
+        if (!rooms.find(function(r) { return r.name === safeName; })) {
+            rooms.push({ name: safeName, title: String(ROOM_CONFIG.title || ''), createdAt: new Date().toISOString() });
             localStorage.setItem('resistance_rooms_list', JSON.stringify(rooms));
         }
     } catch(e) {}
